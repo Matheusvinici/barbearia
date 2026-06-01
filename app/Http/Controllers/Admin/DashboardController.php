@@ -24,7 +24,8 @@ class DashboardController extends Controller
         $realizados = $agendamentosHoje->where('status', 'realizado')->count();
         $totalFaturamentoHoje = $agendamentosHoje->where('status', 'realizado')->sum('total');
 
-        $agendamentosSemana = Agendamento::whereBetween('data', [Carbon::today(), Carbon::today()->addDays(7)])
+        $agendamentosSemana = Agendamento::whereDate('data', '>=', Carbon::today())
+            ->whereDate('data', '<=', Carbon::today()->addDays(7))
             ->whereNotIn('status', ['cancelado', 'ausente'])
             ->count();
 

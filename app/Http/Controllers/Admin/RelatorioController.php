@@ -25,7 +25,8 @@ class RelatorioController extends Controller
         $dataFim = $request->get('data_fim', Carbon::now()->format('Y-m-d'));
 
         $agendamentos = Agendamento::where('status', 'realizado')
-            ->whereBetween('data', [$dataInicio, $dataFim])
+            ->whereDate('data', '>=', $dataInicio)
+            ->whereDate('data', '<=', $dataFim)
             ->with('barbeiro')
             ->get();
 
@@ -38,12 +39,15 @@ class RelatorioController extends Controller
         });
 
         $despesas = Despesa::where('pago', true)
-            ->whereBetween('data_pagamento', [$dataInicio, $dataFim])
+            ->whereDate('data_pagamento', '>=', $dataInicio)
+            ->whereDate('data_pagamento', '<=', $dataFim)
             ->sum('valor');
 
         $lucroLiquido = $totalFaturamento - $despesas;
 
-        $caixas = Caixa::whereBetween('data', [$dataInicio, $dataFim])->get();
+        $caixas = Caixa::whereDate('data', '>=', $dataInicio)
+            ->whereDate('data', '<=', $dataFim)
+            ->get();
 
         return view('admin.relatorios.faturamento', compact(
             'dataInicio', 'dataFim', 'totalFaturamento', 'porBarbeiro', 'despesas', 'lucroLiquido', 'caixas'
@@ -56,7 +60,9 @@ class RelatorioController extends Controller
         $dataFim = $request->get('data_fim', Carbon::now()->format('Y-m-d'));
 
         $servicos = Servico::withCount(['agendamentos' => function ($q) use ($dataInicio, $dataFim) {
-            $q->where('status', 'realizado')->whereBetween('data', [$dataInicio, $dataFim]);
+            $q->where('status', 'realizado')
+              ->whereDate('data', '>=', $dataInicio)
+              ->whereDate('data', '<=', $dataFim);
         }])->get();
 
         return view('admin.relatorios.servicos', compact('dataInicio', 'dataFim', 'servicos'));
@@ -68,7 +74,8 @@ class RelatorioController extends Controller
         $dataFim = $request->get('data_fim', Carbon::now()->format('Y-m-d'));
 
         $agendamentos = Agendamento::where('status', 'realizado')
-            ->whereBetween('data', [$dataInicio, $dataFim])
+            ->whereDate('data', '>=', $dataInicio)
+            ->whereDate('data', '<=', $dataFim)
             ->with('barbeiro', 'cliente', 'servicos')
             ->get();
 
