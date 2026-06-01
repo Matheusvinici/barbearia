@@ -1,23 +1,30 @@
-@extends('layouts.guest')
-@section('title', 'Entrar')
+@extends('admin.layouts.admin')
 
-@section('content')
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
-        <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" value="{{ old('email') }}" required autofocus>
-            @error('email') <div class="text-danger small">{{ $message }}</div> @enderror
+@section('admin-content')
+    <div style="max-width: 400px; margin: 4rem auto;">
+        <div class="card">
+            <h2 style="font-weight: 800; text-align: center; margin-bottom: 1.5rem;">🔐 Login do Mediador</h2>
+            <form method="POST" action="{{ route('login') }}">
+                @csrf
+                <div class="mb-3">
+                    <label>E-mail</label>
+                    <input type="email" name="email" class="input-giant" style="font-size: 1.1rem; padding: 0.7rem 1rem;" required autofocus>
+                </div>
+                <div class="mb-3">
+                    <label>Senha</label>
+                    <input type="password" name="password" class="input-giant" style="font-size: 1.1rem; padding: 0.7rem 1rem;" required>
+                </div>
+                @error('email')
+                    <p style="color: #E74C3C; font-size: 0.9rem; margin-bottom: 0.5rem;">{{ $message }}</p>
+                @enderror
+                <button type="submit" class="btn btn-orange" style="width: 100%; padding: 0.8rem; font-size: 1.1rem;">Entrar</button>
+            </form>
         </div>
-        <div class="mb-3">
-            <label class="form-label">Senha</label>
-            <input type="password" name="password" class="form-control" required>
-            @error('password') <div class="text-danger small">{{ $message }}</div> @enderror
-        </div>
-        <div class="mb-3 form-check">
-            <input type="checkbox" name="remember" class="form-check-input" id="remember" {{ old('remember') ? 'checked' : '' }}>
-            <label class="form-check-label" for="remember">Lembrar-me</label>
-        </div>
-        <button type="submit" class="btn btn-login text-white w-100">Entrar</button>
-    </form>
+    </div>
+
+    <style>
+        .input-giant { font-family: 'Nunito', sans-serif; border: 2px solid #ddd; border-radius: 10px; width: 100%; outline: none; transition: border-color 0.3s; }
+        .input-giant:focus { border-color: #FF6B35; }
+        label { font-size: 0.9rem; font-weight: 700; display: block; margin-bottom: 0.3rem; color: #2D2D2D; }
+    </style>
 @endsection

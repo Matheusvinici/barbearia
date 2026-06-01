@@ -41,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified' => EnsureEmailIsVerified::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'check.aluno' => \App\Http\Middleware\CheckAluno::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

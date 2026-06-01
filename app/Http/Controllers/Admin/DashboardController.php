@@ -3,39 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\Agendamento;
-use App\Models\Caixa;
-use App\Models\Despesa;
-use Carbon\Carbon;
+use App\Models\Aluno;
+use App\Models\Historia;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        $hoje = Carbon::today();
-
-        $agendamentosHoje = Agendamento::whereDate('data', $hoje)
-            ->with(['barbeiro', 'cliente', 'servicos'])
-            ->orderBy('hora_inicio')
+        $totalAlunos = Aluno::count();
+        $totalHistorias = Historia::count();
+        $historiasHoje = Historia::whereDate('created_at', today())->count();
+        $historiasConcluidas = Historia::where('status', 'concluido')->count();
+        $ultimasHistorias = Historia::with('aluno')
+            ->where('status', 'concluido')
+            ->latest()
+            ->take(5)
             ->get();
 
-        $pendentes = $agendamentosHoje->where('status', 'pendente')->count();
-        $confirmados = $agendamentosHoje->where('status', 'confirmado')->count();
-        $realizados = $agendamentosHoje->where('status', 'realizado')->count();
-        $totalFaturamentoHoje = $agendamentosHoje->where('status', 'realizado')->sum('total');
-
-        $agendamentosSemana = Agendamento::whereBetween('data', [Carbon::today(), Carbon::today()->addDays(7)])
-            ->whereNotIn('status', ['cancelado', 'ausente'])
-            ->count();
-
-        $caixaHoje = Caixa::whereDate('data', $hoje)->first();
-        $despesasPendentes = Despesa::where('pago', false)->where('data_vencimento', '>=', $hoje)->sum('valor');
-        $despesasVencidas = Despesa::where('pago', false)->where('data_vencimento', '<', $hoje)->sum('valor');
-
         return view('admin.dashboard', compact(
-            'agendamentosHoje', 'pendentes', 'confirmados', 'realizados',
-            'totalFaturamentoHoje', 'agendamentosSemana', 'caixaHoje',
-            'despesasPendentes', 'despesasVencidas'
+            'totalAlunos',
+            'totalHistorias',
+            'historiasHoje',
+            'historiasConcluidas',
+            'ultimasHistorias'
         ));
     }
 }
