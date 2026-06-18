@@ -187,7 +187,7 @@ $(document).on('click', '.btn-inline-status', function() {
         if (!r.isConfirmed) return;
         $.ajax({
             url: `{{ url('admin/agendamentos') }}/${id}/inline-status`,
-            method: 'PATCH',
+            method: 'POST',
             data: { _token: token, status: status },
             success: function() {
                 const badge = tr.find('.status-badge');
@@ -214,7 +214,7 @@ $(document).on('change', '.inline-pagamento', function() {
 
     $.ajax({
         url: `{{ url('admin/agendamentos') }}/${id}/inline-pagamento`,
-        method: 'PATCH',
+        method: 'POST',
         data: { _token: token, forma_pagamento: forma },
         success: function() {
             Swal.fire('Pagamento atualizado!', '', 'success');
