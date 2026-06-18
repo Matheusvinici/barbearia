@@ -67,7 +67,7 @@
                     <tbody>
                         @forelse($agendamentosHoje as $ag)
                         <tr>
-                            <td>{{ substr($ag->hora_inicio, 0, 5) }}</td>
+                            <td>{{ $ag->hora_inicio->format('H:i') }}</td>
                             <td>{{ $ag->cliente->nome }}</td>
                             <td>{{ $ag->barbeiro->nome }}</td>
                             <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>

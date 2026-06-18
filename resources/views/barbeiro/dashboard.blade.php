@@ -53,7 +53,7 @@
                     <tbody>
                         @forelse($agendamentosHoje as $ag)
                         <tr>
-                            <td>{{ substr($ag->hora_inicio, 0, 5) }}</td>
+                            <td>{{ $ag->hora_inicio->format('H:i') }}</td>
                             <td>{{ $ag->cliente->nome }}<br><small>{{ $ag->cliente->telefone }}</small></td>
                             <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>
                             <td><span class="badge-status status-{{ $ag->status }}">{{ ucfirst($ag->status) }}</span></td>
@@ -94,7 +94,7 @@
                         @forelse($proximosAgendamentos as $ag)
                         <tr>
                             <td>{{ $ag->data->format('d/m') }}</td>
-                            <td>{{ substr($ag->hora_inicio, 0, 5) }}</td>
+                            <td>{{ $ag->hora_inicio->format('H:i') }}</td>
                             <td>{{ $ag->cliente->nome }}</td>
                         </tr>
                         @empty

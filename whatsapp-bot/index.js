@@ -58,6 +58,8 @@ async function startBot() {
         browser: ['Barbearia Bot', 'Chrome', '136.0.7103.92'],
         markOnlineOnConnect: false,
         connectTimeoutMs: 60000,
+        syncFullHistory: false,
+        fireInitQueries: false,
     });
 
     sock.ev.on('creds.update', saveCreds);

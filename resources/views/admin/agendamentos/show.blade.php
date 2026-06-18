@@ -18,7 +18,7 @@
                     <tr><th>Cliente:</th><td>{{ $agendamento->cliente->nome }}<br><small>{{ $agendamento->cliente->telefone }}</small></td></tr>
                     <tr><th>Barbeiro:</th><td>{{ $agendamento->barbeiro->nome }}</td></tr>
                     <tr><th>Data:</th><td>{{ $agendamento->data->format('d/m/Y') }}</td></tr>
-                    <tr><th>Horário:</th><td>{{ substr($agendamento->hora_inicio, 0, 5) }} às {{ substr($agendamento->hora_fim, 0, 5) }}</td></tr>
+                    <tr><th>Horário:</th><td>{{ $agendamento->hora_inicio->format('H:i') }} às {{ $agendamento->hora_fim->format('H:i') }}</td></tr>
                 </table>
             </div>
             <div class="col-md-6">

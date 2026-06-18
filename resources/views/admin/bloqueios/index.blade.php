@@ -57,7 +57,7 @@
                         <tr>
                             <td>{{ $bl->data->format('d/m/Y') }}</td>
                             <td>{{ $bl->barbeiro->nome }}</td>
-                            <td>{{ substr($bl->hora_inicio, 0, 5) }} - {{ substr($bl->hora_fim, 0, 5) }}</td>
+                            <td>{{ $bl->hora_inicio->format('H:i') }} - {{ $bl->hora_fim->format('H:i') }}</td>
                             <td>{{ $bl->motivo ?? '-' }}</td>
                             <td>{!! $bl->recorrente ? '<span class="badge bg-info">Sim</span>' : '<span class="badge bg-secondary">Não</span>' !!}</td>
                             <td><button onclick="confirmarExclusao('{{ route('admin.bloqueios.destroy', $bl) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></td>

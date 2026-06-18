@@ -23,7 +23,7 @@
                 @foreach($cliente->agendamentos as $ag)
                 <tr>
                     <td>{{ $ag->data->format('d/m/Y') }}</td>
-                    <td>{{ substr($ag->hora_inicio, 0, 5) }}</td>
+                    <td>{{ $ag->hora_inicio->format('H:i') }}</td>
                     <td>{{ $ag->barbeiro->nome }}</td>
                     <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>
                     <td><span class="badge-status status-{{ $ag->status }}">{{ ucfirst($ag->status) }}</span></td>
