@@ -143,6 +143,10 @@ class WebhookController extends Controller
             ['nome' => $request->cliente_nome]
         );
 
+        if ($cliente->nome === 'Cliente WhatsApp' || $cliente->nome !== $request->cliente_nome) {
+            $cliente->update(['nome' => $request->cliente_nome]);
+        }
+
         if ($request->has('whatsapp_id')) {
             $cliente->update(['whatsapp_id' => $request->whatsapp_id]);
         }
@@ -211,7 +215,7 @@ class WebhookController extends Controller
             ->orWhere('telefone', $whatsappId)
             ->first(['nome']);
 
-        if ($cliente) {
+        if ($cliente && $cliente->nome !== 'Cliente WhatsApp') {
             return response()->json(['exists' => true, 'nome' => $cliente->nome]);
         }
 
