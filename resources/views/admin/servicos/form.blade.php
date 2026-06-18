@@ -6,7 +6,7 @@
 <div class="card">
     <div class="card-header"><h5>{{ $edit ? 'Editar Serviço' : 'Novo Serviço' }}</h5></div>
     <div class="card-body">
-        <form action="{{ $edit ? route('admin.servicos.update', $servico) : route('admin.servicos.store') }}" method="POST">
+        <form action="{{ $edit ? route('admin.servicos.update', $servico) : route('admin.servicos.store') }}" method="POST" enctype="multipart/form-data">
             @csrf @if($edit) @method('PUT') @endif
             <div class="row">
                 <div class="col-md-6 mb-3">
@@ -24,6 +24,20 @@
                 <div class="col-md-12 mb-3">
                     <label>Descrição</label>
                     <textarea name="descricao" class="form-control" rows="2">{{ old('descricao', $edit ? $servico->descricao : '') }}</textarea>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label>Foto do Serviço</label>
+                    <input type="file" name="foto" class="form-control" accept="image/jpeg,image/png,image/webp">
+                    <small class="text-muted">Formatos: JPEG, PNG, WebP • Máx: 2MB</small>
+                    @if($edit && $servico->foto)
+                    <div class="mt-2 d-flex align-items-center gap-2">
+                        <img src="{{ $servico->foto_url }}" alt="Foto" style="height:60px;border-radius:4px">
+                        <div class="form-check">
+                            <input type="checkbox" name="remover_foto" value="1" class="form-check-input" id="removerFoto">
+                            <label class="form-check-label text-danger" for="removerFoto">Remover foto</label>
+                        </div>
+                    </div>
+                    @endif
                 </div>
                 <div class="col-md-3 mb-3">
                     <label>Ativo</label>

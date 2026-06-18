@@ -10,10 +10,17 @@
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead><tr><th>Nome</th><th>Preço</th><th>Duração</th><th>Ativo</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Foto</th><th>Nome</th><th>Preço</th><th>Duração</th><th>Ativo</th><th>Ações</th></tr></thead>
             <tbody>
                 @foreach($servicos as $s)
                 <tr>
+                    <td>
+                        @if($s->foto)
+                            <img src="{{ $s->foto_url }}" alt="{{ $s->nome }}" style="width:50px;height:50px;object-fit:cover;border-radius:6px">
+                        @else
+                            <span class="text-muted">—</span>
+                        @endif
+                    </td>
                     <td>{{ $s->nome }}</td>
                     <td>R$ {{ number_format($s->preco, 2, ',', '.') }}</td>
                     <td>{{ $s->duracao_minutos }} min</td>

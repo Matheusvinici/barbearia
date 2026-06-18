@@ -24,10 +24,15 @@ class ServicoController extends Controller
         $data = $request->validate([
             'nome' => 'required|string|max:255',
             'descricao' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'preco' => 'required|numeric|min:0',
             'duracao_minutos' => 'required|integer|min:5',
             'ativo' => 'boolean',
         ]);
+
+        if ($request->hasFile('foto')) {
+            $data['foto'] = $request->file('foto')->store('servicos', 'public');
+        }
 
         Servico::create($data);
 
@@ -49,10 +54,22 @@ class ServicoController extends Controller
         $data = $request->validate([
             'nome' => 'required|string|max:255',
             'descricao' => 'nullable|string',
+            'foto' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'preco' => 'required|numeric|min:0',
             'duracao_minutos' => 'required|integer|min:5',
             'ativo' => 'boolean',
+            'remover_foto' => 'boolean',
         ]);
+
+        if ($request->boolean('remover_foto') && $servico->foto) {
+            \Storage::disk('public')->delete($servico->foto);
+            $data['foto'] = null;
+        } elseif ($request->hasFile('foto')) {
+            if ($servico->foto) {
+                \Storage::disk('public')->delete($servico->foto);
+            }
+            $data['foto'] = $request->file('foto')->store('servicos', 'public');
+        }
 
         $servico->update($data);
 
@@ -61,6 +78,9 @@ class ServicoController extends Controller
 
     public function destroy(Servico $servico)
     {
+        if ($servico->foto) {
+            \Storage::disk('public')->delete($servico->foto);
+        }
         $servico->delete();
         return response()->json(['success' => true, 'message' => 'Serviço excluído com sucesso']);
     }

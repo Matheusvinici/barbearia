@@ -12,10 +12,16 @@ class Servico extends Model
     protected $fillable = [
         'nome',
         'descricao',
+        'foto',
         'preco',
         'duracao_minutos',
         'ativo',
     ];
+
+    public function getFotoUrlAttribute()
+    {
+        return $this->foto ? asset('storage/' . $this->foto) : null;
+    }
 
     protected function casts(): array
     {
