@@ -64,4 +64,27 @@ class ConfiguracaoController extends Controller
             'Pragma' => 'no-cache',
         ]);
     }
+
+    public function pairBot(Request $request)
+    {
+        $phone = preg_replace('/\D/', '', $request->phone);
+        if (!$phone) {
+            return back()->with('error', 'Telefone inválido');
+        }
+
+        try {
+            $response = Http::timeout(10)->post('http://localhost:3000/pair', [
+                'phone' => $phone,
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                return back()->with('pairing_code', $data['pairing_code']);
+            }
+
+            return back()->with('error', 'Erro ao conectar: ' . ($response->json()['error'] ?? 'desconhecido'));
+        } catch (\Exception $e) {
+            return back()->with('error', 'Bot offline. Verifique se o servidor está rodando.');
+        }
+    }
 }

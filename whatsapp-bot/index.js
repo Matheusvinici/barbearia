@@ -399,6 +399,28 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
 });
 
+app.post('/pair', express.json(), async (req, res) => {
+    try {
+        const { phone } = req.body;
+        if (!phone) return res.status(400).json({ error: 'Phone number required' });
+
+        const sock = global.sock;
+        if (!sock) return res.status(503).json({ error: 'Bot not ready' });
+
+        const cleaned = phone.replace(/\D/g, '');
+        const pairingCode = await sock.requestPairingCode(cleaned);
+
+        res.json({
+            success: true,
+            pairing_code: pairingCode,
+            message: `Código de pareamento: ${pairingCode}`,
+        });
+    } catch (err) {
+        console.error('Pairing error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`Bot server running on port ${PORT}`);
 });

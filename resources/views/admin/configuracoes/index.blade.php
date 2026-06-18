@@ -79,16 +79,43 @@
                     </div>
                 @endif
 
-                @if($qrExiste)
+                @if($qrExiste && !$botOnline)
                     <hr>
                     <strong>QR Code para conectar:</strong>
                     <div class="mt-2">
                         <img src="{{ route('admin.configuracoes.qr-code') }}?t={{ time() }}" class="img-fluid" style="max-width:250px" alt="QR Code WhatsApp">
                     </div>
                     <small class="text-muted">Escaneie com o WhatsApp da barbearia</small>
-                @elseif($botOnline)
+                    <hr>
+                @endif
+
+                @if(!$botOnline)
+                <div class="mt-2">
+                    <strong>Ou conecte por código:</strong>
+                    <form action="{{ route('admin.configuracoes.pair') }}" method="POST" class="mt-2">
+                        @csrf
+                        <div class="input-group">
+                            <input type="text" name="phone" class="form-control" placeholder="Ex: 558799999999" required>
+                            <button class="btn btn-success" type="submit">Conectar</button>
+                        </div>
+                        <small class="text-muted">Digite o número do WhatsApp da barbearia com DDD e código do país (ex: 55 para Brasil)</small>
+                    </form>
+                    @if(session('pairing_code'))
+                    <div class="alert alert-info mt-2 py-2">
+                        <strong>Código de pareamento:</strong>
+                        <div style="font-size:24px;letter-spacing:4px;font-weight:bold;text-align:center;padding:8px;background:#f8f9fa;border-radius:4px;margin-top:4px">
+                            {{ session('pairing_code') }}
+                        </div>
+                        <small>Abra WhatsApp > Dispositivos Conectados > Conectar Dispositivo > "Conectar com número de telefone" e digite o código acima</small>
+                    </div>
+                    @endif
+                    @if(session('error'))
+                    <div class="alert alert-danger mt-2 py-2">{{ session('error') }}</div>
+                    @endif
+                </div>
+                @else
                     <div class="alert alert-success py-2 mt-2 mb-0">
-                        <small>✅ Bot conectado! Nenhum QR necessário.</small>
+                        <small>✅ Bot conectado!</small>
                     </div>
                 @endif
             </div>
