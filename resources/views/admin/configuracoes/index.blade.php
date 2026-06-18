@@ -83,7 +83,7 @@
                     <hr>
                     <strong>QR Code para conectar:</strong>
                     <div class="mt-2">
-                        <img src="{{ asset('storage/bot-qr.png') }}" class="img-fluid" style="max-width:250px" alt="QR Code WhatsApp">
+                        <img src="{{ route('admin.configuracoes.qr-code') }}?t={{ time() }}" class="img-fluid" style="max-width:250px" alt="QR Code WhatsApp">
                     </div>
                     <small class="text-muted">Escaneie com o WhatsApp da barbearia</small>
                 @elseif($botOnline)
@@ -105,6 +105,10 @@ $('input[name="dias_funcionamento_checkbox[]"]').change(function() {
     });
     $('#dias_funcionamento_hidden').val(valores.join(','));
 });
+
+@if($qrExiste && !$botOnline)
+setTimeout(function() { location.reload(); }, 10000);
+@endif
 </script>
 @endpush
 @endsection

@@ -52,4 +52,16 @@ class ConfiguracaoController extends Controller
 
         return redirect()->route('admin.configuracoes.index')->with('success', 'Configurações atualizadas com sucesso!');
     }
+
+    public function qrCode()
+    {
+        $path = public_path('storage/bot-qr.png');
+        if (!file_exists($path)) {
+            abort(404);
+        }
+        return response()->file($path, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Pragma' => 'no-cache',
+        ]);
+    }
 }

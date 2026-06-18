@@ -78,8 +78,10 @@ async function startBot() {
             const shouldReconnect =
                 lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
             if (shouldReconnect) {
-                console.log('Disconnected, reconnecting...');
-                startBot();
+                const hasSession = state.creds?.registered;
+                const delay = hasSession ? 1000 : 30000;
+                console.log(`Disconnected, reconnecting in ${delay/1000}s...`);
+                setTimeout(() => startBot(), delay);
             } else {
                 console.log('Logged out. Delete auth_baileys folder and restart.');
             }

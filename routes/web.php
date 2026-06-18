@@ -92,6 +92,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/configuracoes', [ConfiguracaoController::class, 'index'])->name('configuracoes.index');
         Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
+        Route::get('/configuracoes/qr-code', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.qr-code');
     });
 
     Route::get('/notificacoes', [NotificationController::class, 'index'])->name('notificacoes.index');
