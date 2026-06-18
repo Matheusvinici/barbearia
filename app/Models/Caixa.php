@@ -24,7 +24,7 @@ class Caixa extends Model
     protected function casts(): array
     {
         return [
-            'data' => 'date',
+            'data' => 'date:Y-m-d',
             'saldo_inicial' => 'decimal:2',
             'total_entradas' => 'decimal:2',
             'total_saidas' => 'decimal:2',

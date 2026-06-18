@@ -77,12 +77,16 @@ class AgendamentoController extends Controller
 
     private function registrarNoCaixa(Agendamento $agendamento)
     {
-        $data = Carbon::parse($agendamento->data);
+        $dataStr = Carbon::parse($agendamento->data)->format('Y-m-d');
 
-        $caixa = Caixa::firstOrCreate(
-            ['data' => $data->format('Y-m-d')],
-            ['saldo_inicial' => 0]
-        );
+        $caixa = Caixa::whereDate('data', $dataStr)->first();
+
+        if (!$caixa) {
+            $caixa = Caixa::create([
+                'data' => $dataStr,
+                'saldo_inicial' => 0,
+            ]);
+        }
 
         if (!$caixa->fechado) {
             $caixa->increment('total_entradas', $agendamento->total);

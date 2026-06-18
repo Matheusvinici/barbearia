@@ -63,15 +63,19 @@ class AgendamentosTable extends Component
 
     private function registrarNoCaixa(Agendamento $agendamento)
     {
-        $data = $agendamento->data instanceof Carbon ? $agendamento->data : Carbon::parse($agendamento->data);
+        $dataStr = $agendamento->data instanceof Carbon
+            ? $agendamento->data->format('Y-m-d')
+            : Carbon::parse($agendamento->data)->format('Y-m-d');
 
-        $caixa = Caixa::firstOrCreate(
-            ['data' => $data->format('Y-m-d')],
-            [
+        $caixa = Caixa::whereDate('data', $dataStr)->first();
+
+        if (!$caixa) {
+            $caixa = Caixa::create([
+                'data' => $dataStr,
                 'saldo_inicial' => 0,
                 'user_id_abertura' => Auth::guard('web')->id(),
-            ]
-        );
+            ]);
+        }
 
         if (!$caixa->fechado) {
             $caixa->increment('total_entradas', $agendamento->total);
