@@ -1,22 +1,24 @@
-require('dotenv').config();
-const { Client, LocalAuth } = require('whatsapp-web.js');
-const qrcode = require('qrcode-terminal');
-const express = require('express');
-const axios = require('axios');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import {
+    makeWASocket,
+    useMultiFileAuthState,
+    DisconnectReason,
+    fetchLatestBaileysVersion,
+} from '@whiskeysockets/baileys';
+import qrcode from 'qrcode';
+import QRTerminal from 'qrcode-terminal';
+import express from 'express';
+import axios from 'axios';
+import pino from 'pino';
 
 const APP_URL = process.env.APP_URL || 'http://localhost:8000';
 const PORT = process.env.PORT || 3000;
-const BOT_TOKEN = process.env.BOT_TOKEN || '';
 
 const app = express();
 app.use(express.json());
 
-const client = new Client({
-    authStrategy: new LocalAuth(),
-    puppeteer: { headless: true, args: ['--no-sandbox'] }
-});
-
-// State machine for conversations
 const sessions = {};
 
 const STEPS = {
@@ -26,322 +28,374 @@ const STEPS = {
     TIME: 'time',
     SERVICE: 'service',
     CONFIRM: 'confirm',
-    DONE: 'done'
 };
 
-client.on('qr', (qr) => {
-    qrcode.generate(qr, { small: true });
-    console.log('Scan the QR code above with WhatsApp');
+function formatMenu(title, items, extra = '') {
+    let txt = `*${title}*\n`;
+    if (extra) txt += `\n${extra}\n`;
+    txt += '\n' + items.map((item, i) => `*${i + 1}* - ${item.label}`).join('\n');
+    txt += '\n\n*0* - ❌ Sair';
+    return txt;
+}
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+});
+process.on('unhandledRejection', (err) => {
+    console.error('Unhandled Rejection:', err);
 });
 
-client.on('ready', () => {
-    console.log('WhatsApp Bot is ready!');
-});
+async function startBot() {
+    const { version } = await fetchLatestBaileysVersion();
+    const { state, saveCreds } = await useMultiFileAuthState('auth_baileys');
 
-client.on('message', async (msg) => {
-    if (msg.from.includes('@g.us')) return; // Ignore group messages
-    if (msg.body.startsWith('/')) return; // Commands
+    const sock = makeWASocket({
+        version,
+        auth: state,
+        printQRInTerminal: false,
+        logger: pino({ level: 'warn' }),
+        browser: ['Barbearia Bot', 'Chrome', '136.0.7103.92'],
+        markOnlineOnConnect: false,
+        connectTimeoutMs: 60000,
+    });
 
-    const from = msg.from;
-    const text = msg.body.trim().toLowerCase();
+    sock.ev.on('creds.update', saveCreds);
 
-    if (!sessions[from]) {
-        sessions[from] = { step: STEPS.INIT };
-    }
+    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+        if (qr) {
+            QRTerminal.generate(qr, { small: true });
+            qrcode.toFile('/tmp/whatsapp-qr.png', qr, { type: 'png', width: 512 }, () => {
+                console.log('\n📱 QR code saved as /tmp/whatsapp-qr.png');
+            });
+        }
+        if (connection === 'open') {
+            console.log('WhatsApp Bot is ready!');
+        }
+        if (connection === 'close') {
+            const shouldReconnect =
+                lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
+            if (shouldReconnect) {
+                console.log('Disconnected, reconnecting...');
+                startBot();
+            } else {
+                console.log('Logged out. Delete auth_baileys folder and restart.');
+            }
+        }
+    });
 
-    const session = sessions[from];
+    global.sock = sock;
 
-    switch (session.step) {
-        case STEPS.INIT:
-            await handleInit(from, msg, session);
-            break;
-        case STEPS.BARBER:
-            await handleBarber(from, msg, session, text);
-            break;
-        case STEPS.DAY:
-            await handleDay(from, msg, session, text);
-            break;
-        case STEPS.TIME:
-            await handleTime(from, msg, session, text);
-            break;
-        case STEPS.SERVICE:
-            await handleService(from, msg, session, text);
-            break;
-        case STEPS.CONFIRM:
-            await handleConfirm(from, msg, session, text);
-            break;
-        default:
-            session.step = STEPS.INIT;
-            await sendMsg(from, 'Olá! Digite *"agendar"* para marcar um horário ou *"sair"* para encerrar.');
-            break;
-    }
-});
-
-async function handleInit(from, msg, session) {
-    const text = msg.body.trim().toLowerCase();
-
-    if (text === 'agendar' || text === 'quero agendar' || text === 'agendamento') {
+    sock.ev.on('messages.upsert', async ({ messages }) => {
         try {
-            const res = await axios.get(`${APP_URL}/api/bot/barbeiros`);
-            const barbeiros = res.data;
+            const msg = messages[0];
+            if (!msg || msg.key.fromMe) return;
 
-            if (barbeiros.length === 0) {
-                await sendMsg(from, 'Desculpe, não temos barbeiros disponíveis no momento.');
-                session.step = STEPS.INIT;
+            const from = msg.key.remoteJid;
+            const text =
+                msg.message?.conversation ||
+                msg.message?.extendedTextMessage?.text ||
+                '';
+
+            if (!text) return;
+
+            const input = text.trim();
+
+            if (!sessions[from]) {
+                sessions[from] = { step: STEPS.INIT };
+            }
+
+            const session = sessions[from];
+
+            if (input === '0') {
+                delete sessions[from];
+                await sock.sendMessage(from, {
+                    text: '✅ Atendimento encerrado. Mande qualquer mensagem quando quiser voltar.',
+                });
                 return;
             }
 
-            let lista = '👨‍🦰 *Barbeiros disponíveis:*\n\n';
-            barbeiros.forEach((b, i) => {
-                lista += `${i + 1} - ${b.nome}\n`;
-            });
-            lista += '\nDigite o *número* ou *nome* do barbeiro desejado.';
-
-            session.barbers = barbeiros;
-            session.step = STEPS.BARBER;
-            await sendMsg(from, lista);
-        } catch (err) {
-            console.error('Error fetching barbers:', err.message);
-            await sendMsg(from, 'Desculpe, ocorreu um erro. Tente novamente mais tarde.');
-            session.step = STEPS.INIT;
-        }
-    } else if (text === 'sair' || text === 'cancelar') {
-        delete sessions[from];
-        await sendMsg(from, '✅ Atendimento encerrado. Digite *"agendar"* quando quiser marcar um horário.');
-    } else {
-        await sendMsg(from, '👋 Olá! Bem-vindo à barbearia!\n\nDigite *"agendar"* para marcar um horário.');
-    }
-}
-
-async function handleBarber(from, msg, session, text) {
-    const barbers = session.barbers || [];
-    let selected = null;
-
-    // Try to find by number
-    const num = parseInt(text);
-    if (num > 0 && num <= barbers.length) {
-        selected = barbers[num - 1];
-    }
-
-    // Try to find by name
-    if (!selected) {
-        selected = barbers.find(b => b.nome.toLowerCase().includes(text));
-    }
-
-    if (!selected) {
-        await sendMsg(from, '❌ Barbeiro não encontrado. Digite o número ou nome correto:');
-        return;
-    }
-
-    session.barber = selected;
-    session.step = STEPS.DAY;
-
-    try {
-        const res = await axios.get(`${APP_URL}/api/bot/dias-disponiveis`, {
-            params: { barbeiro_id: selected.id }
-        });
-        const dias = res.data;
-
-        if (dias.length === 0) {
-            await sendMsg(from, '😕 Infelizmente não há dias disponíveis para este barbeiro no momento.');
-            session.step = STEPS.INIT;
-            return;
-        }
-
-        let lista = `📅 *${selected.nome}* - Dias disponíveis:\n\n`;
-        dias.forEach((d, i) => {
-            lista += `${i + 1} - ${d.label}\n`;
-        });
-        lista += '\nDigite o *número* do dia desejado.';
-
-        session.dias = dias;
-        await sendMsg(from, lista);
-    } catch (err) {
-        console.error('Error fetching days:', err.message);
-        await sendMsg(from, 'Erro ao buscar dias disponíveis. Tente novamente.');
-        session.step = STEPS.INIT;
-    }
-}
-
-async function handleDay(from, msg, session, text) {
-    const dias = session.dias || [];
-    const num = parseInt(text);
-
-    if (num < 1 || num > dias.length) {
-        await sendMsg(from, '❌ Dia inválido. Digite o número correto:');
-        return;
-    }
-
-    const dia = dias[num - 1];
-    session.dia = dia;
-
-    try {
-        const res = await axios.get(`${APP_URL}/api/bot/horarios`, {
-            params: {
-                barbeiro_id: session.barber.id,
-                data: dia.data
+            if (input.toLowerCase() === 'voltar' && session.step !== STEPS.BARBER) {
+                const prev = { day: STEPS.BARBER, time: STEPS.DAY, service: STEPS.TIME };
+                session.step = prev[session.step] || STEPS.INIT;
+                const redo = {
+                    [STEPS.BARBER]: () => showBarbers(sock, from, session),
+                    [STEPS.DAY]: () => showDays(sock, from, session),
+                    [STEPS.TIME]: () => showTimes(sock, from, session),
+                };
+                if (redo[session.step]) await redo[session.step]();
+                return;
             }
-        });
-        const horarios = res.data;
 
-        if (horarios.length === 0) {
-            await sendMsg(from, '😕 Não há horários disponíveis para esta data.');
-            session.step = STEPS.DAY;
-            return;
+            switch (session.step) {
+                case STEPS.INIT:
+                    await handleInit(sock, from, session);
+                    break;
+                case STEPS.BARBER:
+                    await handleBarber(sock, from, input, session);
+                    break;
+                case STEPS.DAY:
+                    await handleDay(sock, from, input, session);
+                    break;
+                case STEPS.TIME:
+                    await handleTime(sock, from, input, session);
+                    break;
+                case STEPS.SERVICE:
+                    await handleService(sock, from, input, session);
+                    break;
+                case STEPS.CONFIRM:
+                    await handleConfirm(sock, from, input, session);
+                    break;
+            }
+        } catch (err) {
+            console.error('Error processing message:', err.message);
+            try {
+                await msg?.key?.remoteJid && sock.sendMessage(msg.key.remoteJid, {
+                    text: '❌ Ocorreu um erro. Tente novamente.',
+                });
+            } catch (_) {}
         }
-
-        let lista = `🕐 *Horários disponíveis para ${dia.label}:*\n\n`;
-        horarios.forEach((h, i) => {
-            lista += `${i + 1} - ${h}\n`;
-        });
-        lista += '\nDigite o *número* do horário desejado.';
-
-        session.horarios = horarios;
-        session.step = STEPS.TIME;
-        await sendMsg(from, lista);
-    } catch (err) {
-        console.error('Error fetching times:', err.message);
-        await sendMsg(from, 'Erro ao buscar horários. Tente novamente.');
-        session.step = STEPS.DAY;
-    }
+    });
 }
 
-async function handleTime(from, msg, session, text) {
-    const horarios = session.horarios || [];
-    const num = parseInt(text);
-
-    if (num < 1 || num > horarios.length) {
-        await sendMsg(from, '❌ Horário inválido. Digite o número correto:');
-        return;
-    }
-
-    session.hora = horarios[num - 1];
-
+async function showBarbers(sock, from, session) {
     try {
-        const res = await axios.get(`${APP_URL}/api/bot/servicos`);
-        const servicos = res.data;
-
-        if (servicos.length === 0) {
-            await sendMsg(from, '😕 Não há serviços disponíveis no momento.');
-            session.step = STEPS.INIT;
-            return;
+        const { data } = await axios.get(`${APP_URL}/api/bot/barbeiros`);
+        if (!data.length) {
+            await sock.sendMessage(from, {
+                text: 'Desculpe, não temos barbeiros disponíveis no momento.',
+            });
+            return false;
         }
+        session.barbers = data;
+        session.step = STEPS.BARBER;
 
-        let lista = '💈 *Serviços disponíveis:*\n\n';
-        servicos.forEach((s, i) => {
-            lista += `${i + 1} - ${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}\n`;
-        });
-        lista += '\nDigite o *número* do serviço desejado.';
-
-        session.servicos = servicos;
-        session.step = STEPS.SERVICE;
-        await sendMsg(from, lista);
+        const items = data.map((b) => ({ label: `👨‍🦰 ${b.nome}`, id: b.id }));
+        const msg = formatMenu('🪒 Selecione o Barbeiro', items, 'Responda com o número desejado:');
+        await sock.sendMessage(from, { text: msg });
+        return true;
     } catch (err) {
-        console.error('Error fetching services:', err.message);
-        await sendMsg(from, 'Erro ao buscar serviços. Tente novamente.');
-        session.step = STEPS.DAY;
+        console.error('Error showBarbers:', err.message);
+        await sock.sendMessage(from, {
+            text: 'Desculpe, ocorreu um erro. Tente novamente mais tarde.',
+        });
+        return false;
     }
 }
 
-async function handleService(from, msg, session, text) {
-    const servicos = session.servicos || [];
-    const num = parseInt(text);
+async function showDays(sock, from, session) {
+    try {
+        const { data } = await axios.get(`${APP_URL}/api/bot/dias-disponiveis`, {
+            params: { barbeiro_id: session.barber.id },
+        });
+        if (!data.length) {
+            await sock.sendMessage(from, {
+                text: '😕 Não há dias disponíveis para este barbeiro.',
+            });
+            return false;
+        }
+        session.dias = data;
+        session.step = STEPS.DAY;
 
-    if (num < 1 || num > servicos.length) {
-        await sendMsg(from, '❌ Serviço inválido. Digite o número correto:');
+        const items = data.map((d) => ({ label: `📅 ${d.label}`, id: d.data }));
+        const msg = formatMenu(`📅 Dias - ${session.barber.nome}`, items, 'Responda com o número desejado:');
+        await sock.sendMessage(from, { text: msg });
+        return true;
+    } catch (err) {
+        console.error('Error showDays:', err.message);
+        await sock.sendMessage(from, { text: 'Erro ao buscar dias. Tente novamente.' });
+        return false;
+    }
+}
+
+async function showTimes(sock, from, session) {
+    try {
+        const { data } = await axios.get(`${APP_URL}/api/bot/horarios`, {
+            params: { barbeiro_id: session.barber.id, data: session.dia.data },
+        });
+        if (!data.length) {
+            await sock.sendMessage(from, {
+                text: '😕 Não há horários disponíveis para esta data.',
+            });
+            return false;
+        }
+        session.horarios = data;
+        session.step = STEPS.TIME;
+
+        const items = data.map((h) => ({ label: `🕐 ${h}`, id: h }));
+        const msg = formatMenu('🕐 Horários Disponíveis', items, `Data: *${session.dia.label}*\n\nResponda com o número desejado:`);
+        await sock.sendMessage(from, { text: msg });
+        return true;
+    } catch (err) {
+        console.error('Error showTimes:', err.message);
+        await sock.sendMessage(from, { text: 'Erro ao buscar horários. Tente novamente.' });
+        return false;
+    }
+}
+
+async function showServices(sock, from, session) {
+    try {
+        const { data } = await axios.get(`${APP_URL}/api/bot/servicos`);
+        if (!data.length) {
+            await sock.sendMessage(from, {
+                text: '😕 Não há serviços disponíveis no momento.',
+            });
+            return false;
+        }
+        session.servicos = data;
+        session.step = STEPS.SERVICE;
+
+        const items = data.map((s) => ({
+            label: `💈 ${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}`,
+            id: s.id,
+        }));
+        const msg = formatMenu('💈 Selecione o Serviço', items, 'Responda com o número desejado:');
+        await sock.sendMessage(from, { text: msg });
+        return true;
+    } catch (err) {
+        console.error('Error showServices:', err.message);
+        await sock.sendMessage(from, { text: 'Erro ao buscar serviços. Tente novamente.' });
+        return false;
+    }
+}
+
+function getSelected(items, input) {
+    const idx = parseInt(input);
+    if (isNaN(idx) || idx < 1 || idx > items.length) return null;
+    return items[idx - 1];
+}
+
+function getSelectedRaw(items, input) {
+    const idx = parseInt(input);
+    if (isNaN(idx) || idx < 1 || idx > items.length) return null;
+    return { item: items[idx - 1], index: idx - 1 };
+}
+
+async function handleInit(sock, from, session) {
+    delete sessions[from];
+    sessions[from] = { step: STEPS.INIT };
+    await showBarbers(sock, from, sessions[from]);
+}
+
+async function handleBarber(sock, from, input, session) {
+    const sel = getSelected(session.barbers, input);
+    if (!sel) {
+        await sock.sendMessage(from, { text: '❌ Número inválido. Digite o número do barbeiro desejado.' });
         return;
     }
-
-    session.servico = servicos[num - 1];
-
-    const confirmMsg = `✅ *Confirme seu agendamento:*
-
-👨‍🦰 Barbeiro: ${session.barber.nome}
-📅 Data: ${session.dia.label}
-🕐 Horário: ${session.hora}
-💈 Serviço: ${session.servico.nome}
-💰 Valor: R$ ${parseFloat(session.servico.preco).toFixed(2)}
-
-Digite *"confirmar"* para finalizar ou *"cancelar"* para desistir.`;
-
-    session.step = STEPS.CONFIRM;
-    await sendMsg(from, confirmMsg);
+    session.barber = sel;
+    await showDays(sock, from, session);
 }
 
-async function handleConfirm(from, msg, session, text) {
-    if (text === 'confirmar') {
+async function handleDay(sock, from, input, session) {
+    const sel = getSelectedRaw(session.dias, input);
+    if (!sel) {
+        await sock.sendMessage(from, { text: '❌ Número inválido. Digite o número do dia desejado.' });
+        return;
+    }
+    session.dia = sel.item;
+    await showTimes(sock, from, session);
+}
+
+async function handleTime(sock, from, input, session) {
+    const sel = getSelectedRaw(session.horarios, input);
+    if (!sel) {
+        await sock.sendMessage(from, { text: '❌ Número inválido. Digite o número do horário desejado.' });
+        return;
+    }
+    session.hora = sel.item;
+    await showServices(sock, from, session);
+}
+
+async function handleService(sock, from, input, session) {
+    const sel = getSelectedRaw(session.servicos, input);
+    if (!sel) {
+        await sock.sendMessage(from, { text: '❌ Número inválido. Digite o número do serviço desejado.' });
+        return;
+    }
+    session.servico = sel.item;
+    session.step = STEPS.CONFIRM;
+
+    const msg = `✅ *Confirme seu agendamento:*\n\n👨‍🦰 *Barbeiro:* ${session.barber.nome}\n📅 *Data:* ${session.dia.label}\n🕐 *Horário:* ${session.hora}\n💈 *Serviço:* ${session.servico.nome}\n💰 *Valor:* R$ ${parseFloat(session.servico.preco).toFixed(2)}\n\n*1* - ✅ Confirmar\n*2* - 🔙 Voltar\n*0* - ❌ Sair`;
+
+    await sock.sendMessage(from, { text: msg });
+}
+
+async function handleConfirm(sock, from, input, session) {
+    if (input === '1') {
         try {
+            const telefone = from.replace('@s.whatsapp.net', '').replace('@lid', '');
             const payload = {
                 barbeiro_id: session.barber.id,
                 servico_id: session.servico.id,
                 data: session.dia.data,
                 hora: session.hora,
                 cliente_nome: 'Cliente WhatsApp',
-                cliente_telefone: from.replace('@c.us', ''),
-                whatsapp_id: from.replace('@c.us', ''),
+                cliente_telefone: telefone,
+                whatsapp_id: telefone,
             };
 
-            const res = await axios.post(`${APP_URL}/api/bot/agendar`, payload);
+            const { data } = await axios.post(`${APP_URL}/api/bot/agendar`, payload);
 
-            if (res.data.success) {
-                await sendMsg(from, `🎉 *Agendamento confirmado!*
-
-📅 Data: ${res.data.data}
-🕐 Horário: ${res.data.hora}
-👨‍🦰 Barbeiro: ${res.data.barbeiro}
-💈 Serviço: ${res.data.servico}
-💰 Valor: R$ ${parseFloat(res.data.preco).toFixed(2)}
-
-🕐 *Lembrete:* Enviaremos uma mensagem 1 hora antes do horário!`);
+            if (data.success) {
+                await sock.sendMessage(from, {
+                    text: `🎉 *Agendamento confirmado!*\n\n📅 *Data:* ${data.data}\n🕐 *Horário:* ${data.hora}\n👨‍🦰 *Barbeiro:* ${data.barbeiro}\n💈 *Serviço:* ${data.servico}\n💰 *Valor:* R$ ${parseFloat(data.preco).toFixed(2)}\n\n🕐 Enviaremos um lembrete 1h antes!\n\nDigite *1* para novo agendamento ou *0* para sair.`,
+                });
                 delete sessions[from];
             } else {
-                await sendMsg(from, '❌ Erro ao confirmar agendamento. Tente novamente.');
-                session.step = STEPS.INIT;
+                await sock.sendMessage(from, {
+                    text: '❌ Erro ao confirmar agendamento. Tente novamente.',
+                });
+                session.step = STEPS.SERVICE;
+                await showServices(sock, from, session);
             }
         } catch (err) {
             console.error('Error creating appointment:', err.response?.data || err.message);
-            await sendMsg(from, '❌ Erro ao confirmar agendamento. Tente novamente.');
-            session.step = STEPS.INIT;
+            await sock.sendMessage(from, {
+                text: '❌ Erro ao confirmar agendamento. Tente novamente.',
+            });
+            session.step = STEPS.SERVICE;
+            await showServices(sock, from, session);
         }
-    } else if (text === 'cancelar' || text === 'sair') {
+    } else if (input === '2') {
+        session.step = STEPS.SERVICE;
+        await showServices(sock, from, session);
+    } else if (input === '1' && !session.servico) {
         delete sessions[from];
-        await sendMsg(from, '✅ Agendamento cancelado. Digite *"agendar"* quando quiser tentar novamente.');
+        sessions[from] = { step: STEPS.INIT };
+        await showBarbers(sock, from, sessions[from]);
     } else {
-        await sendMsg(from, 'Digite *"confirmar"* para finalizar ou *"cancelar"* para desistir.');
+        await sock.sendMessage(from, {
+            text: 'Responda com *1* para confirmar, *2* para voltar ou *0* para sair.',
+        });
     }
 }
 
-async function sendMsg(to, message) {
-    try {
-        await client.sendMessage(to, message);
-    } catch (err) {
-        console.error('Error sending message:', err.message);
-    }
-}
-
-// Reminder system - check every minute for appointments 1 hour away
 setInterval(async () => {
     try {
         const { data } = await axios.get(`${APP_URL}/api/bot/lembretes`);
         if (!data.length) return;
+
+        const sock = global.sock;
+        if (!sock) return;
+
         for (const ag of data) {
             const numero = ag.cliente_telefone.replace(/\D/g, '');
-            const chatId = `55${numero}@c.us`;
+            const chatId = `${numero}@s.whatsapp.net`;
             const msg = `✂️ *Lembrete de Agendamento*\n\nOlá *${ag.cliente_nome}*! Lembramos que você tem um horário marcado hoje às *${ag.hora}* com *${ag.barbeiro_nome}*.\n\nServiço: ${ag.servicos}\n\nTe esperamos! 🫡`;
-            await client.sendMessage(chatId, msg);
+            await sock.sendMessage(chatId, { text: msg });
             console.log(`Reminder sent to ${ag.cliente_nome} (${ag.cliente_telefone})`);
         }
     } catch (err) {
-        // silent - server may not be running
+        // silent
     }
 }, 60000);
 
-client.initialize();
-
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok', ready: client.info?.wid?.user || false });
+    res.json({ status: 'ok' });
 });
 
 app.listen(PORT, () => {
     console.log(`Bot server running on port ${PORT}`);
 });
+
+startBot();

@@ -61,8 +61,8 @@ class WebhookController extends Controller
             $disponivel = true;
 
             foreach ($agendamentos as $ag) {
-                $agInicio = Carbon::parse($data . ' ' . $ag->hora_inicio);
-                $agFim = Carbon::parse($data . ' ' . $ag->hora_fim);
+                $agInicio = Carbon::parse($data . ' ' . $ag->hora_inicio->format('H:i'));
+                $agFim = Carbon::parse($data . ' ' . $ag->hora_fim->format('H:i'));
                 if ($inicio < $agFim && $fimSlot > $agInicio) {
                     $disponivel = false;
                     break;
@@ -70,8 +70,8 @@ class WebhookController extends Controller
             }
 
             foreach ($bloqueios as $bl) {
-                $blInicio = Carbon::parse($data . ' ' . $bl->hora_inicio);
-                $blFim = Carbon::parse($data . ' ' . $bl->hora_fim);
+                $blInicio = Carbon::parse($data . ' ' . $bl->hora_inicio->format('H:i'));
+                $blFim = Carbon::parse($data . ' ' . $bl->hora_fim->format('H:i'));
                 if ($inicio < $blFim && $fimSlot > $blInicio) {
                     $disponivel = false;
                     break;
@@ -100,7 +100,7 @@ class WebhookController extends Controller
 
         $dias = [];
         $hoje = Carbon::today();
-        $diasFuncionamentoNomes = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+        Carbon::setLocale('pt_BR');
 
         for ($i = 0; $i < 14; $i++) {
             $data = $hoje->copy()->addDays($i);
@@ -115,7 +115,6 @@ class WebhookController extends Controller
             if ($temVaga) {
                 $dias[] = [
                     'data' => $data->format('Y-m-d'),
-                    'dia_semana' => $diasFuncionamentoNomes[$diaSemana],
                     'label' => $data->isoFormat('dddd, D [de] MMMM'),
                 ];
             }
