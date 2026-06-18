@@ -10,4 +10,5 @@ Route::prefix('bot')->group(function () {
     Route::get('/dias-disponiveis', [WebhookController::class, 'diasDisponiveis']);
     Route::post('/agendar', [WebhookController::class, 'agendar']);
     Route::get('/lembretes', [WebhookController::class, 'lembretes']);
+    Route::get('/cliente/{whatsapp}', [WebhookController::class, 'verificarCliente']);
 });

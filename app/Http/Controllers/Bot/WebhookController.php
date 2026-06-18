@@ -205,6 +205,19 @@ class WebhookController extends Controller
         }));
     }
 
+    public function verificarCliente($whatsappId)
+    {
+        $cliente = Cliente::where('whatsapp_id', $whatsappId)
+            ->orWhere('telefone', $whatsappId)
+            ->first(['nome']);
+
+        if ($cliente) {
+            return response()->json(['exists' => true, 'nome' => $cliente->nome]);
+        }
+
+        return response()->json(['exists' => false]);
+    }
+
     private function temHorariosDisponiveis(int $barbeiroId, string $data): bool
     {
         $agendamentos = Agendamento::where('barbeiro_id', $barbeiroId)

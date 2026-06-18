@@ -23,6 +23,7 @@ const sessions = {};
 
 const STEPS = {
     INIT: 'init',
+    NAME: 'name',
     BARBER: 'barber',
     DAY: 'day',
     TIME: 'time',
@@ -119,7 +120,12 @@ async function startBot() {
                 return;
             }
 
-            if (input.toLowerCase() === 'voltar' && session.step !== STEPS.BARBER) {
+            if (input.toLowerCase() === 'voltar') {
+                if (session.step === STEPS.NAME || session.step === STEPS.BARBER) {
+                    delete sessions[from];
+                    await handleInit(sock, from, {});
+                    return;
+                }
                 const prev = { day: STEPS.BARBER, time: STEPS.DAY, service: STEPS.TIME };
                 session.step = prev[session.step] || STEPS.INIT;
                 const redo = {
@@ -134,6 +140,9 @@ async function startBot() {
             switch (session.step) {
                 case STEPS.INIT:
                     await handleInit(sock, from, session);
+                    break;
+                case STEPS.NAME:
+                    await handleName(sock, from, input, session);
                     break;
                 case STEPS.BARBER:
                     await handleBarber(sock, from, input, session);
@@ -278,7 +287,38 @@ function getSelectedRaw(items, input) {
 async function handleInit(sock, from, session) {
     delete sessions[from];
     sessions[from] = { step: STEPS.INIT };
-    await showBarbers(sock, from, sessions[from]);
+
+    const telefone = from.replace('@s.whatsapp.net', '').replace('@lid', '');
+    sessions[from].telefone = telefone;
+
+    try {
+        const { data } = await axios.get(`${APP_URL}/api/bot/cliente/${telefone}`);
+        if (data.exists) {
+            sessions[from].cliente_nome = data.nome;
+            await showBarbers(sock, from, sessions[from]);
+        } else {
+            sessions[from].step = STEPS.NAME;
+            await sock.sendMessage(from, {
+                text: '✂️ *Bem-vindo à Barbearia!*\n\nAntes de agendar, preciso saber seu nome.\n\nDigite seu *nome completo* abaixo:',
+            });
+        }
+    } catch (err) {
+        console.error('Error checking client:', err.message);
+        sessions[from].step = STEPS.NAME;
+        await sock.sendMessage(from, {
+            text: '✂️ *Bem-vindo à Barbearia!*\n\nDigite seu *nome completo* para começarmos:',
+        });
+    }
+}
+
+async function handleName(sock, from, input, session) {
+    const nome = input.trim();
+    if (nome.length < 2) {
+        await sock.sendMessage(from, { text: '❌ Nome inválido. Digite seu nome completo:' });
+        return;
+    }
+    session.cliente_nome = nome;
+    await showBarbers(sock, from, session);
 }
 
 async function handleBarber(sock, from, input, session) {
@@ -334,7 +374,7 @@ async function handleConfirm(sock, from, input, session) {
                 servico_id: session.servico.id,
                 data: session.dia.data,
                 hora: session.hora,
-                cliente_nome: 'Cliente WhatsApp',
+                cliente_nome: session.cliente_nome || 'Cliente WhatsApp',
                 cliente_telefone: telefone,
                 whatsapp_id: telefone,
             };
