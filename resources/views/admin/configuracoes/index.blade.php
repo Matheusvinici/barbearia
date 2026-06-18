@@ -66,10 +66,12 @@
             <div class="card-body text-center">
                 <div class="mb-3">
                     <strong>Status:</strong><br>
-                    @if($botOnline)
-                        <span class="badge bg-success" style="font-size:14px">🟢 Online</span>
+                    @if($botAuthenticated)
+                        <span class="badge bg-success" style="font-size:14px">🟢 Conectado ao WhatsApp</span>
+                    @elseif($botOnline)
+                        <span class="badge bg-warning" style="font-size:14px">🟡 Aguardando QR...</span>
                     @else
-                        <span class="badge bg-danger" style="font-size:14px">🔴 Offline</span>
+                        <span class="badge bg-danger" style="font-size:14px">🔴 Bot Offline</span>
                     @endif
                 </div>
 
@@ -79,17 +81,17 @@
                     </div>
                 @endif
 
-                @if($qrExiste && !$botOnline)
+                @if($qrExiste && !$botAuthenticated)
                     <hr>
                     <strong>QR Code para conectar:</strong>
                     <div class="mt-2">
-                        <img src="{{ route('admin.configuracoes.qr-code') }}?t={{ time() }}" class="img-fluid" style="max-width:250px" alt="QR Code WhatsApp">
+                        <img src="{{ route('admin.configuracoes.qr-code') }}?t={{ time() }}" class="img-fluid" style="max-width:250px;border:2px solid #ddd;border-radius:8px;padding:8px;background:#fff" alt="QR Code WhatsApp">
                     </div>
-                    <small class="text-muted">Escaneie com o WhatsApp da barbearia</small>
+                    <small class="text-muted">📱 Abra o WhatsApp no celular → Dispositivos Conectados → Conectar → Escaneie este QR</small>
                     <hr>
                 @endif
 
-                @if(!$botOnline)
+                @if(!$botAuthenticated)
                 <div class="mt-2">
                     <strong>Ou conecte por código:</strong>
                     <form action="{{ route('admin.configuracoes.pair') }}" method="POST" class="mt-2">
@@ -115,7 +117,7 @@
                 </div>
                 @else
                     <div class="alert alert-success py-2 mt-2 mb-0">
-                        <small>✅ Bot conectado!</small>
+                        <small>✅ Bot conectado ao WhatsApp!</small>
                     </div>
                 @endif
             </div>
@@ -133,8 +135,8 @@ $('input[name="dias_funcionamento_checkbox[]"]').change(function() {
     $('#dias_funcionamento_hidden').val(valores.join(','));
 });
 
-@if($qrExiste && !$botOnline)
-setTimeout(function() { location.reload(); }, 10000);
+@if(!$botAuthenticated)
+setTimeout(function() { location.reload(); }, 8000);
 @endif
 </script>
 @endpush

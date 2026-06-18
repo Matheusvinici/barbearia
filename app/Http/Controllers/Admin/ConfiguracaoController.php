@@ -23,14 +23,19 @@ class ConfiguracaoController extends Controller
         ];
 
         $botOnline = false;
+        $botAuthenticated = false;
         try {
             $response = Http::timeout(3)->get('http://localhost:3000/health');
-            $botOnline = $response->successful();
+            if ($response->successful()) {
+                $botOnline = true;
+                $data = $response->json();
+                $botAuthenticated = $data['authenticated'] ?? false;
+            }
         } catch (\Exception $e) {}
 
         $qrExiste = file_exists(public_path('storage/bot-qr.png'));
 
-        return view('admin.configuracoes.index', compact('configuracoes', 'botOnline', 'qrExiste'));
+        return view('admin.configuracoes.index', compact('configuracoes', 'botOnline', 'botAuthenticated', 'qrExiste'));
     }
 
     public function update(Request $request)

@@ -396,7 +396,14 @@ setInterval(async () => {
 }, 60000);
 
 app.get('/health', (req, res) => {
-    res.json({ status: 'ok' });
+    const sock = global.sock;
+    const authed = sock?.authState?.creds?.registered === true;
+    res.json({
+        status: 'ok',
+        connected: !!sock?.ws?.isOpen,
+        authenticated: authed,
+        has_qr: authed ? false : true,
+    });
 });
 
 app.post('/pair', express.json(), async (req, res) => {
