@@ -67,8 +67,7 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/agendamentos/{agendamento}', [AgendamentoController::class, 'update'])->name('agendamentos.update');
         Route::delete('/agendamentos/{agendamento}', [AgendamentoController::class, 'destroy'])->name('agendamentos.destroy');
         Route::get('/agendamentos/horarios/disponiveis', [AgendamentoController::class, 'horariosDisponiveis'])->name('agendamentos.horarios');
-        Route::post('/agendamentos/{agendamento}/inline-status', [AgendamentoController::class, 'inlineStatus'])->name('agendamentos.inline-status');
-        Route::post('/agendamentos/{agendamento}/inline-pagamento', [AgendamentoController::class, 'inlinePagamento'])->name('agendamentos.inline-pagamento');
+
 
         Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
         Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
