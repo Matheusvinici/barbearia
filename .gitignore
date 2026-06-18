@@ -30,3 +30,5 @@ yarn-error.log
 /.wwebjs_cache
 /whatsapp-bot/bot.log
 /whatsapp-bot/.wwebjs_cache
+whatsapp-bot/auth_baileys/
+whatsapp-bot/node_modules/
