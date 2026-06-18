@@ -92,6 +92,7 @@ async function startBot() {
     });
 
     global.sock = sock;
+    global.authState = state;
 
     sock.ev.on('messages.upsert', async ({ messages }) => {
         try {
@@ -439,12 +440,15 @@ setInterval(async () => {
 
 app.get('/health', (req, res) => {
     const sock = global.sock;
-    const authed = sock?.authState?.creds?.registered === true;
+    const state = global.authState;
+    const authed = state?.creds?.registered === true || !!state?.creds?.me;
+    const me = state?.creds?.me;
     res.json({
         status: 'ok',
         connected: !!sock?.ws?.isOpen,
         authenticated: authed,
         has_qr: authed ? false : true,
+        me_phone: me ? (me.id || '').split(':')[0] : null,
     });
 });
 
