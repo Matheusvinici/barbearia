@@ -3,98 +3,15 @@
 @section('breadcrumb', 'Agendamentos')
 
 @section('content')
-<div class="card">
-    <div class="card-header">
-        <div class="d-flex justify-content-between align-items-center flex-wrap">
-            <form method="GET" class="d-flex gap-2 align-items-center flex-wrap">
-                <label class="mb-0">Data:</label>
-                <input type="date" name="data" class="form-control form-control-sm" value="{{ $data }}" style="width:auto">
-                <label class="mb-0">Barbeiro:</label>
-                <select name="barbeiro_id" class="form-control form-control-sm" style="width:auto">
-                    <option value="">Todos</option>
-                    @foreach($barbeiros as $b)
-                    <option value="{{ $b->id }}" {{ $barbeiroId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
-                    @endforeach
-                </select>
-                <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-search"></i></button>
-            </form>
-            <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNovoAgendamento">
-                <i class="fas fa-plus"></i> Novo Agendamento
-            </button>
-        </div>
-    </div>
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0" id="agendamentosTable">
-                <thead>
-                    <tr>
-                        <th>Hora</th>
-                        <th>Cliente</th>
-                        <th>Barbeiro</th>
-                        <th>Serviços</th>
-                        <th>Status</th>
-                        <th>Valor</th>
-                        <th>Pagamento</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($agendamentos as $ag)
-                    <tr data-id="{{ $ag->id }}">
-                        <td>{{ $ag->hora_inicio->format('H:i') }}</td>
-                        <td>{{ $ag->cliente->nome }}<br><small class="text-muted">{{ $ag->cliente->telefone }}</small></td>
-                        <td>{{ $ag->barbeiro->nome }}</td>
-                        <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>
-                        <td class="status-cell">
-                            <span class="badge-status status-{{ $ag->status }} status-badge">{{ ucfirst($ag->status) }}</span>
-                            @if(in_array($ag->status, ['pendente', 'confirmado']))
-                            <div class="btn-group btn-group-xs mt-1 d-flex gap-1">
-                                <button class="btn btn-sm btn-outline-success btn-inline-status" data-status="realizado" title="Confirmar presença">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger btn-inline-status" data-status="ausente" title="Faltou">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                                @if($ag->status === 'pendente')
-                                <button class="btn btn-sm btn-outline-primary btn-inline-status" data-status="confirmado" title="Confirmar">
-                                    <i class="fas fa-user-check"></i>
-                                </button>
-                                @endif
-                            </div>
-                            @endif
-                        </td>
-                        <td>R$ {{ number_format($ag->total ?? 0, 2, ',', '.') }}</td>
-                        <td class="pagamento-cell">
-                            <select class="form-select form-select-sm inline-pagamento" style="width:auto;min-width:110px">
-                                <option value="">--</option>
-                                @foreach(App\Models\Agendamento::FORMAS_PAGAMENTO as $fp)
-                                <option value="{{ $fp }}" {{ $ag->forma_pagamento === $fp ? 'selected' : '' }}>{{ $fp }}</option>
-                                @endforeach
-                            </select>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-1">
-                                <a href="{{ route('admin.agendamentos.show', $ag) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
-                                <a href="{{ route('admin.agendamentos.edit', $ag) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                <button onclick="confirmarExclusao('{{ route('admin.agendamentos.destroy', $ag) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                            </div>
-                        </td>
-                    </tr>
-                    @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
+
+@livewire('agendamentos-table')
 
 <div class="modal fade" id="modalNovoAgendamento" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="{{ route('admin.agendamentos.store') }}" method="POST" id="formAgendamento">
+            <form action="{{ route('admin.agendamentos.store') }}" method="POST">
                 @csrf
-                <input type="hidden" name="data" value="{{ $data }}">
+                <input type="hidden" name="data" value="{{ request('data', now()->format('Y-m-d')) }}">
                 <div class="modal-header">
                     <h5 class="modal-title">Novo Agendamento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -115,7 +32,7 @@
                             <label>Barbeiro</label>
                             <select name="barbeiro_id" class="form-control" id="barbeiroSelect" required>
                                 <option value="">Selecione...</option>
-                                @foreach($barbeiros as $b)
+                                @foreach(App\Models\Barbeiro::where('ativo', true)->get() as $b)
                                 <option value="{{ $b->id }}">{{ $b->nome }}</option>
                                 @endforeach
                             </select>
@@ -129,8 +46,8 @@
                         <div class="col-md-6 mb-3">
                             <label>Serviços</label>
                             <select name="servico_ids[]" class="form-control" multiple required size="4">
-                                @foreach($servicos as $s)
-                                <option value="{{ $s->id }}" data-minutos="{{ $s->duracao_minutos }}">{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}</option>
+                                @foreach(App\Models\Servico::where('ativo', true)->get() as $s)
+                                <option value="{{ $s->id }}">{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -166,63 +83,6 @@ $('#barbeiroSelect').change(function() {
             res.forEach(function(h) { select.append(`<option value="${h}">${h}</option>`); });
         });
     }
-});
-
-$(document).on('click', '.btn-inline-status', function() {
-    const btn = $(this);
-    const tr = btn.closest('tr');
-    const id = tr.data('id');
-    const status = btn.data('status');
-    const token = '{{ csrf_token() }}';
-
-    Swal.fire({
-        title: 'Confirmar alteração?',
-        text: `Status será alterado para "${status}"`,
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: btn.hasClass('btn-outline-success') ? '#28a745' : (btn.hasClass('btn-outline-danger') ? '#dc3545' : '#007bff'),
-        confirmButtonText: 'Sim, alterar!',
-        cancelButtonText: 'Cancelar',
-    }).then((r) => {
-        if (!r.isConfirmed) return;
-        $.ajax({
-            url: `{{ url('admin/agendamentos') }}/${id}/inline-status`,
-            method: 'POST',
-            data: { _token: token, status: status },
-            success: function() {
-                const badge = tr.find('.status-badge');
-                badge.attr('class', `badge-status status-${status} status-badge`);
-                badge.text(status.charAt(0).toUpperCase() + status.slice(1));
-                if (['realizado', 'ausente', 'cancelado'].includes(status)) {
-                    tr.find('.btn-group').remove();
-                }
-                Swal.fire('Atualizado!', '', 'success');
-            },
-            error: function() {
-                Swal.fire('Erro', 'Não foi possível atualizar o status.', 'error');
-            }
-        });
-    });
-});
-
-$(document).on('change', '.inline-pagamento', function() {
-    const sel = $(this);
-    const tr = sel.closest('tr');
-    const id = tr.data('id');
-    const forma = sel.val();
-    const token = '{{ csrf_token() }}';
-
-    $.ajax({
-        url: `{{ url('admin/agendamentos') }}/${id}/inline-pagamento`,
-        method: 'POST',
-        data: { _token: token, forma_pagamento: forma },
-        success: function() {
-            Swal.fire('Pagamento atualizado!', '', 'success');
-        },
-        error: function() {
-            Swal.fire('Erro', 'Não foi possível atualizar o pagamento.', 'error');
-        }
-    });
 });
 </script>
 @endpush
