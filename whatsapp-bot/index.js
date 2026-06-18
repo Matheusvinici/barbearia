@@ -67,6 +67,9 @@ async function startBot() {
             qrcode.toFile('/tmp/whatsapp-qr.png', qr, { type: 'png', width: 512 }, () => {
                 console.log('\n📱 QR code saved as /tmp/whatsapp-qr.png');
             });
+            qrcode.toFile('../public/storage/bot-qr.png', qr, { type: 'png', width: 512 }, () => {
+                console.log('📱 QR also saved for Laravel admin');
+            });
         }
         if (connection === 'open') {
             console.log('WhatsApp Bot is ready!');

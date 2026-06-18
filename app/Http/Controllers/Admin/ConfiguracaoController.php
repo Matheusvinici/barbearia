@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Configuracao;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
 
 class ConfiguracaoController extends Controller
 {
@@ -21,7 +22,15 @@ class ConfiguracaoController extends Controller
             'telefone' => Configuracao::get('telefone', ''),
         ];
 
-        return view('admin.configuracoes.index', compact('configuracoes'));
+        $botOnline = false;
+        try {
+            $response = Http::timeout(3)->get('http://localhost:3000/health');
+            $botOnline = $response->successful();
+        } catch (\Exception $e) {}
+
+        $qrExiste = file_exists(public_path('storage/bot-qr.png'));
+
+        return view('admin.configuracoes.index', compact('configuracoes', 'botOnline', 'qrExiste'));
     }
 
     public function update(Request $request)
