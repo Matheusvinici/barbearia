@@ -17,6 +17,7 @@ class Agendamento extends Model
         'hora_fim',
         'status',
         'total',
+        'forma_pagamento',
         'observacoes',
         'created_by',
         'origem',
@@ -31,6 +32,8 @@ class Agendamento extends Model
             'total' => 'decimal:2',
         ];
     }
+
+    const FORMAS_PAGAMENTO = ['Dinheiro', 'Cartão de Crédito', 'Cartão de Débito', 'Pix', 'Outro'];
 
     public function barbeiro()
     {

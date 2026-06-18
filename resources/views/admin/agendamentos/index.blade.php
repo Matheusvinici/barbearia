@@ -24,30 +24,68 @@
         </div>
     </div>
     <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead>
-                <tr><th>Hora</th><th>Cliente</th><th>Barbeiro</th><th>Serviços</th><th>Status</th><th>Valor</th><th>Ações</th></tr>
-            </thead>
-            <tbody>
-                @forelse($agendamentos as $ag)
-                <tr>
-                    <td>{{ $ag->hora_inicio->format('H:i') }}</td>
-                    <td>{{ $ag->cliente->nome }}<br><small class="text-muted">{{ $ag->cliente->telefone }}</small></td>
-                    <td>{{ $ag->barbeiro->nome }}</td>
-                    <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>
-                    <td><span class="badge-status status-{{ $ag->status }}">{{ ucfirst($ag->status) }}</span></td>
-                    <td>R$ {{ number_format($ag->total ?? 0, 2, ',', '.') }}</td>
-                    <td>
-                        <a href="{{ route('admin.agendamentos.show', $ag) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
-                        <a href="{{ route('admin.agendamentos.edit', $ag) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                        <button onclick="confirmarExclusao('{{ route('admin.agendamentos.destroy', $ag) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
-                    </td>
-                </tr>
-                @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-hover mb-0" id="agendamentosTable">
+                <thead>
+                    <tr>
+                        <th>Hora</th>
+                        <th>Cliente</th>
+                        <th>Barbeiro</th>
+                        <th>Serviços</th>
+                        <th>Status</th>
+                        <th>Valor</th>
+                        <th>Pagamento</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($agendamentos as $ag)
+                    <tr data-id="{{ $ag->id }}">
+                        <td>{{ $ag->hora_inicio->format('H:i') }}</td>
+                        <td>{{ $ag->cliente->nome }}<br><small class="text-muted">{{ $ag->cliente->telefone }}</small></td>
+                        <td>{{ $ag->barbeiro->nome }}</td>
+                        <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>
+                        <td class="status-cell">
+                            <span class="badge-status status-{{ $ag->status }} status-badge">{{ ucfirst($ag->status) }}</span>
+                            @if(in_array($ag->status, ['pendente', 'confirmado']))
+                            <div class="btn-group btn-group-xs mt-1 d-flex gap-1">
+                                <button class="btn btn-sm btn-outline-success btn-inline-status" data-status="realizado" title="Confirmar presença">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button class="btn btn-sm btn-outline-danger btn-inline-status" data-status="ausente" title="Faltou">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                                @if($ag->status === 'pendente')
+                                <button class="btn btn-sm btn-outline-primary btn-inline-status" data-status="confirmado" title="Confirmar">
+                                    <i class="fas fa-user-check"></i>
+                                </button>
+                                @endif
+                            </div>
+                            @endif
+                        </td>
+                        <td>R$ {{ number_format($ag->total ?? 0, 2, ',', '.') }}</td>
+                        <td class="pagamento-cell">
+                            <select class="form-select form-select-sm inline-pagamento" style="width:auto;min-width:110px">
+                                <option value="">--</option>
+                                @foreach(App\Models\Agendamento::FORMAS_PAGAMENTO as $fp)
+                                <option value="{{ $fp }}" {{ $ag->forma_pagamento === $fp ? 'selected' : '' }}>{{ $fp }}</option>
+                                @endforeach
+                            </select>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-1">
+                                <a href="{{ route('admin.agendamentos.show', $ag) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                <a href="{{ route('admin.agendamentos.edit', $ag) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                <button onclick="confirmarExclusao('{{ route('admin.agendamentos.destroy', $ag) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                    @empty
+                    <tr><td colspan="8" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -128,6 +166,63 @@ $('#barbeiroSelect').change(function() {
             res.forEach(function(h) { select.append(`<option value="${h}">${h}</option>`); });
         });
     }
+});
+
+$(document).on('click', '.btn-inline-status', function() {
+    const btn = $(this);
+    const tr = btn.closest('tr');
+    const id = tr.data('id');
+    const status = btn.data('status');
+    const token = '{{ csrf_token() }}';
+
+    Swal.fire({
+        title: 'Confirmar alteração?',
+        text: `Status será alterado para "${status}"`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: btn.hasClass('btn-outline-success') ? '#28a745' : (btn.hasClass('btn-outline-danger') ? '#dc3545' : '#007bff'),
+        confirmButtonText: 'Sim, alterar!',
+        cancelButtonText: 'Cancelar',
+    }).then((r) => {
+        if (!r.isConfirmed) return;
+        $.ajax({
+            url: `{{ url('admin/agendamentos') }}/${id}/inline-status`,
+            method: 'PATCH',
+            data: { _token: token, status: status },
+            success: function() {
+                const badge = tr.find('.status-badge');
+                badge.attr('class', `badge-status status-${status} status-badge`);
+                badge.text(status.charAt(0).toUpperCase() + status.slice(1));
+                if (['realizado', 'ausente', 'cancelado'].includes(status)) {
+                    tr.find('.btn-group').remove();
+                }
+                Swal.fire('Atualizado!', '', 'success');
+            },
+            error: function() {
+                Swal.fire('Erro', 'Não foi possível atualizar o status.', 'error');
+            }
+        });
+    });
+});
+
+$(document).on('change', '.inline-pagamento', function() {
+    const sel = $(this);
+    const tr = sel.closest('tr');
+    const id = tr.data('id');
+    const forma = sel.val();
+    const token = '{{ csrf_token() }}';
+
+    $.ajax({
+        url: `{{ url('admin/agendamentos') }}/${id}/inline-pagamento`,
+        method: 'PATCH',
+        data: { _token: token, forma_pagamento: forma },
+        success: function() {
+            Swal.fire('Pagamento atualizado!', '', 'success');
+        },
+        error: function() {
+            Swal.fire('Erro', 'Não foi possível atualizar o pagamento.', 'error');
+        }
+    });
 });
 </script>
 @endpush

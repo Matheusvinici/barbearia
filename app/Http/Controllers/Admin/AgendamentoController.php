@@ -141,6 +141,39 @@ class AgendamentoController extends Controller
             ->with('success', 'Agendamento atualizado com sucesso!');
     }
 
+    public function inlineStatus(Request $request, Agendamento $agendamento)
+    {
+        $validStatus = ['pendente', 'confirmado', 'realizado', 'cancelado', 'ausente'];
+        $status = $request->input('status');
+
+        if (!in_array($status, $validStatus)) {
+            return response()->json(['success' => false, 'message' => 'Status inválido.'], 400);
+        }
+
+        $oldStatus = $agendamento->status;
+        $agendamento->update(['status' => $status]);
+
+        if ($status === 'realizado' && $oldStatus !== 'realizado') {
+            $this->registrarNoCaixa($agendamento);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Status atualizado!']);
+    }
+
+    public function inlinePagamento(Request $request, Agendamento $agendamento)
+    {
+        $validFormas = Agendamento::FORMAS_PAGAMENTO;
+        $forma = $request->input('forma_pagamento');
+
+        if (!in_array($forma, $validFormas) && $forma !== null) {
+            return response()->json(['success' => false, 'message' => 'Forma de pagamento inválida.'], 400);
+        }
+
+        $agendamento->update(['forma_pagamento' => $forma]);
+
+        return response()->json(['success' => true, 'message' => 'Pagamento atualizado!']);
+    }
+
     public function destroy(Agendamento $agendamento)
     {
         $agendamento->servicos()->detach();
