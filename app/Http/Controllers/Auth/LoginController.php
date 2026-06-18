@@ -12,7 +12,7 @@ class LoginController extends Controller
 {
     use AuthenticatesUsers;
 
-    protected $redirectTo = '/home';
+    protected $redirectTo = '/';
 
     public function __construct()
     {
@@ -39,6 +39,12 @@ class LoginController extends Controller
 
         if (Auth::guard('web')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
+
+            // Redirect to intended gift or home
+            $intendedGift = $request->input('intended_gift');
+            if ($intendedGift) {
+                return redirect('/presente/' . $intendedGift);
+            }
 
             return $this->sendLoginResponse($request);
         }
