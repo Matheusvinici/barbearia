@@ -50,6 +50,7 @@
 <body>
     <div class="main-content">
         <div class="container">
+            {{ $slot ?? '' }}
             @yield('content')
         </div>
     </div>
