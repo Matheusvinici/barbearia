@@ -40,6 +40,17 @@ class BuscarCliente extends Component
         $this->telefone = '';
     }
 
+    public function getClientes()
+    {
+        if (strlen($this->search) < 2) return collect();
+        $s = trim($this->search);
+        return Cliente::where('nome', 'like', '%' . $s . '%')
+            ->orWhere('telefone', 'like', '%' . preg_replace('/\D/', '', $s) . '%')
+            ->orderByRaw("CASE WHEN nome LIKE ? THEN 0 WHEN nome LIKE ? THEN 1 ELSE 2 END", [$s . '%', '%' . $s . '%'])
+            ->limit(10)
+            ->get();
+    }
+
     public function create()
     {
         $this->validate([
@@ -49,22 +60,13 @@ class BuscarCliente extends Component
 
         $telefone = preg_replace('/\D/', '', $this->telefone);
         $cliente = Cliente::create([
-            'nome' => $this->nome,
+            'nome' => trim($this->nome),
             'telefone' => $telefone,
         ]);
 
         $this->select($cliente->id);
         $this->creating = false;
         $this->dispatch('cliente-criado', id: $cliente->id);
-    }
-
-    public function getClientes()
-    {
-        if (strlen($this->search) < 2) return collect();
-        return Cliente::where('nome', 'like', '%' . $this->search . '%')
-            ->orWhere('telefone', 'like', '%' . preg_replace('/\D/', '', $this->search) . '%')
-            ->limit(8)
-            ->get();
     }
 
     public function render()
