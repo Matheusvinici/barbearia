@@ -18,7 +18,7 @@ class MeusAgendamentos extends Component
         $this->cliente = $clienteId ? Cliente::find($clienteId) : null;
 
         if (!$this->cliente) {
-            return redirect()->to(route('site.login'));
+            $this->redirect(route('site.login'));
         }
 
         $this->agendamentos = Agendamento::where('cliente_id', $clienteId)

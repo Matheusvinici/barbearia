@@ -35,11 +35,11 @@ class AgendarWizard extends Component
     public function mount()
     {
         $clienteId = session('cliente_id');
-
         $this->cliente = $clienteId ? Cliente::find($clienteId) : null;
 
         if (!$this->cliente) {
-            return redirect()->to(route('site.login'));
+            $this->redirect(route('site.login'));
+            return;
         }
 
         $this->barbeiros = Barbeiro::where('ativo', true)->get();
@@ -141,7 +141,7 @@ class AgendarWizard extends Component
                 $dias[] = [
                     'data' => $data->format('Y-m-d'),
                     'label' => $data->isoFormat('dddd'),
-                    'dia' => $data->format('d'),
+                    'dia' => $data->isoFormat('dddd'),
                     'mes' => $data->isoFormat('MMM'),
                 ];
             }
