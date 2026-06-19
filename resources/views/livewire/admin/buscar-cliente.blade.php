@@ -44,7 +44,21 @@
                 @empty
                     <div class="list-group-item text-muted small py-2">
                         Nenhum cliente encontrado.
-                        <a href="#" class="text-primary" wire:click.prevent="startCreate">Criar novo</a>
+                    </div>
+                    <div class="border rounded p-3 bg-light mt-1">
+                        <h6 class="mb-2"><i class="fas fa-plus-circle"></i> Cadastrar Novo Cliente</h6>
+                        <div class="mb-2">
+                            <input type="text" class="form-control form-control-sm" wire:model="nome" placeholder="Nome completo" autofocus>
+                            @error('nome') <div class="text-danger small">{{ $message }}</div> @enderror
+                        </div>
+                        <div class="mb-2">
+                            <input type="tel" class="form-control form-control-sm" wire:model="telefone" placeholder="Telefone com DDD"
+                                   oninput="this.value=this.value.replace(/\D/g,'').replace(/^(\d{2})(\d{5})(\d{4}).*/,'($1) $2-$3')">
+                            @error('telefone') <div class="text-danger small">{{ $message }}</div> @enderror
+                        </div>
+                        <button type="button" class="btn btn-sm btn-primary btn-block w-100" wire:click="create">
+                            <i class="fas fa-check"></i> Cadastrar e Selecionar
+                        </button>
                     </div>
                 @endforelse
             </div>

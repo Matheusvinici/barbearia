@@ -17,6 +17,8 @@ class BuscarCliente extends Component
     {
         $this->cliente_id = null;
         $this->creating = false;
+        $this->nome = '';
+        $this->telefone = '';
     }
 
     public function select($id)
