@@ -68,7 +68,7 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/agendamentos', [AgendamentoController::class, 'index'])->name('agendamentos.index');
         Route::post('/agendamentos', [AgendamentoController::class, 'store'])->name('agendamentos.store');
-        Route::get('/agendamentos/create', [AgendamentoController::class, 'create'])->name('agendamentos.create');
+        Route::get('/agendamentos/create', fn () => redirect()->route('admin.agendamentos.index'))->name('agendamentos.create');
         Route::get('/agendamentos/{agendamento}', [AgendamentoController::class, 'show'])->name('agendamentos.show');
         Route::get('/agendamentos/{agendamento}/edit', [AgendamentoController::class, 'edit'])->name('agendamentos.edit');
         Route::put('/agendamentos/{agendamento}', [AgendamentoController::class, 'update'])->name('agendamentos.update');

@@ -41,11 +41,18 @@
                 </div>
                 <div class="col-md-12 mb-3">
                     <label>Serviços</label>
-                    <select name="servico_ids[]" class="form-control" multiple required size="4">
+                    <div class="border rounded p-2" style="max-height:150px;overflow-y:auto">
                         @foreach($servicos as $s)
-                        <option value="{{ $s->id }}" {{ $agendamento->servicos->contains($s->id) ? 'selected' : '' }}>{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}</option>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="servico_ids[]"
+                                   value="{{ $s->id }}" id="servico{{ $s->id }}"
+                                   {{ $agendamento->servicos->contains($s->id) ? 'checked' : '' }}>
+                            <label class="form-check-label small" for="servico{{ $s->id }}">
+                                {{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}
+                            </label>
+                        </div>
                         @endforeach
-                    </select>
+                    </div>
                 </div>
                 <div class="col-md-12 mb-3">
                     <label>Observações</label>

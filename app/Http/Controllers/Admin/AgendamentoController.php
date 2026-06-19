@@ -181,8 +181,10 @@ class AgendamentoController extends Controller
             $disponivel = true;
 
             foreach ($agendamentos as $ag) {
-                $agInicio = Carbon::parse($data . ' ' . $ag->hora_inicio);
-                $agFim = Carbon::parse($data . ' ' . $ag->hora_fim);
+                $hi = $ag->hora_inicio instanceof \Carbon\Carbon ? $ag->hora_inicio->format('H:i') : $ag->hora_inicio;
+                $hf = $ag->hora_fim instanceof \Carbon\Carbon ? $ag->hora_fim->format('H:i') : $ag->hora_fim;
+                $agInicio = Carbon::parse($data . ' ' . $hi);
+                $agFim = Carbon::parse($data . ' ' . $hf);
                 if ($inicio < $agFim && $fimSlot > $agInicio) {
                     $disponivel = false;
                     break;
@@ -190,8 +192,10 @@ class AgendamentoController extends Controller
             }
 
             foreach ($bloqueios as $bl) {
-                $blInicio = Carbon::parse($data . ' ' . $bl->hora_inicio);
-                $blFim = Carbon::parse($data . ' ' . $bl->hora_fim);
+                $hi = $bl->hora_inicio instanceof \Carbon\Carbon ? $bl->hora_inicio->format('H:i') : $bl->hora_inicio;
+                $hf = $bl->hora_fim instanceof \Carbon\Carbon ? $bl->hora_fim->format('H:i') : $bl->hora_fim;
+                $blInicio = Carbon::parse($data . ' ' . $hi);
+                $blFim = Carbon::parse($data . ' ' . $hf);
                 if ($inicio < $blFim && $fimSlot > $blInicio) {
                     $disponivel = false;
                     break;

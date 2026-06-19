@@ -20,13 +20,7 @@
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>Cliente</label>
-                            <select name="cliente_id" class="form-control select2" required>
-                                <option value="">Selecione ou busque...</option>
-                                @foreach(App\Models\Cliente::all() as $c)
-                                <option value="{{ $c->id }}">{{ $c->nome }} - {{ $c->telefone }}</option>
-                                @endforeach
-                            </select>
-                            <small><a href="{{ route('admin.clientes.create') }}" target="_blank">+ Novo Cliente</a></small>
+                            @livewire('admin.buscar-cliente')
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Barbeiro</label>
@@ -45,11 +39,17 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label>Serviços</label>
-                            <select name="servico_ids[]" class="form-control" multiple required size="4">
+                            <div class="border rounded p-2" style="max-height:150px;overflow-y:auto">
                                 @foreach(App\Models\Servico::where('ativo', true)->get() as $s)
-                                <option value="{{ $s->id }}">{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}</option>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="servico_ids[]"
+                                           value="{{ $s->id }}" id="servico{{ $s->id }}">
+                                    <label class="form-check-label small" for="servico{{ $s->id }}">
+                                        {{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}
+                                    </label>
+                                </div>
                                 @endforeach
-                            </select>
+                            </div>
                         </div>
                         <div class="col-md-12 mb-3">
                             <label>Observações</label>
