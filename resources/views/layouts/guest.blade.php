@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Login') - Barbearia</title>
+    <title>@yield('title', 'Login') - Santa Barba</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -22,7 +22,7 @@
     <div class="login-card">
         <div class="login-header">
             <i class="fas fa-cut mb-3" style="font-size: 3rem;"></i>
-            <h4>Barbearia</h4>
+            <h4>Santa Barba</h4>
             <p>@yield('subtitle', 'Administração')</p>
         </div>
         <div class="card-body p-4 bg-white" style="border-radius: 0 0 15px 15px;">

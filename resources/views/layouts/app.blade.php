@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ Configuracao::get('nome_barbearia', 'Barbearia') }}</title>
+    <title>{{ Configuracao::get('nome_barbearia', 'Santa Barba') }}</title>
 
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -173,7 +173,7 @@
     <aside class="main-sidebar elevation-4 sidebar-custom">
         <div class="brand-area">
             <a href="{{ Auth::guard('web')->check() ? route('admin.dashboard') : route('barbeiro.dashboard') }}" class="brand-link text-center">
-                <span class="brand-text">{{ Configuracao::get('nome_barbearia', 'Barbearia') }}</span>
+                <span class="brand-text">{{ Configuracao::get('nome_barbearia', 'Santa Barba') }}</span>
             </a>
         </div>
         <div class="sidebar">
@@ -213,7 +213,7 @@
     </div>
 
     <footer class="main-footer">
-        <div class="float-end d-none d-sm-inline">{{ Configuracao::get('nome_barbearia', 'Barbearia') }}</div>
+        <div class="float-end d-none d-sm-inline">{{ Configuracao::get('nome_barbearia', 'Santa Barba') }}</div>
         <strong>&copy; {{ date('Y') }} Todos os direitos reservados.</strong>
     </footer>
 </div>

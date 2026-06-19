@@ -18,7 +18,7 @@ class DatabaseSeeder extends Seeder
         Configuracao::set('horario_fechamento', '18:00');
         Configuracao::set('intervalo_minutos', '30');
         Configuracao::set('dias_funcionamento', '1,2,3,4,5,6');
-        Configuracao::set('nome_barbearia', 'Minha Barbearia');
+        Configuracao::set('nome_barbearia', 'Santa Barba');
         Configuracao::set('telefone', '(87) 9xxxx-xxxx');
         Configuracao::set('endereco', 'Juazeiro-BA');
         Configuracao::set('whatsapp_bot_token', '');
