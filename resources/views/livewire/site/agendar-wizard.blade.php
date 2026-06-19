@@ -14,7 +14,7 @@
             <button class="btn btn-primary w-100" wire:click="novoAgendamento">
                 <i class="bi bi-plus-circle"></i> Novo Agendamento
             </button>
-            <a href="{{ route('site.meus-agendamentos') }}" class="btn btn-outline-secondary w-100 mt-2" wire:navigate>
+            <a href="{{ route('site.meus-agendamentos') }}" class="btn btn-outline-secondary w-100 mt-2">
                 <i class="bi bi-calendar-check"></i> Meus Agendamentos
             </a>
         </div>
@@ -147,7 +147,7 @@
     @endif
 
     <div class="text-center mt-2">
-        <a href="{{ route('site.meus-agendamentos') }}" class="text-muted small" wire:navigate>
+        <a href="{{ route('site.meus-agendamentos') }}" class="text-muted small">
             <i class="bi bi-calendar-check"></i> Meus Agendamentos
         </a>
     </div>
