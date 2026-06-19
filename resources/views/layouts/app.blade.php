@@ -26,9 +26,10 @@
         .sidebar-custom .nav-treeview .nav-link { padding-left: 2.5rem; }
         .sidebar-custom .nav-treeview .nav-link i { font-size: 0.5rem; width: 16px; }
 
-        .brand-area { background-color: #ffffff; padding: 18px 0; border-bottom: 1px solid #e9ecef; }
-        .brand-text { font-size: 1.15rem; font-weight: 600; color: #212529 !important; text-align: center; letter-spacing: -0.3px; }
-        .brand-link { padding: 0; background: transparent !important; }
+        .brand-area { background-color: #ffffff; padding: 18px 0; border-bottom: 1px solid #e9ecef; text-align: center; }
+        .brand-text { font-size: 0.9rem; font-weight: 600; color: #212529 !important; letter-spacing: -0.3px; }
+        .brand-link { padding: 0; background: transparent !important; display: block; }
+        .brand-logo { max-width: 70%; height: auto; max-height: 55px; object-fit: contain; }
 
         .main-header { background-color: #ffffff !important; border-bottom: 1px solid #e9ecef; box-shadow: none; }
         .main-header .nav-link { color: #495057 !important; }
@@ -173,7 +174,8 @@
     <aside class="main-sidebar elevation-4 sidebar-custom">
         <div class="brand-area">
             <a href="{{ Auth::guard('web')->check() ? route('admin.dashboard') : route('barbeiro.dashboard') }}" class="brand-link text-center">
-                <span class="brand-text">{{ Configuracao::get('nome_barbearia', 'Santa Barba') }}</span>
+                <img src="{{ asset('images/logo.jpg') }}" alt="Logo" class="brand-logo">
+                <span class="brand-text mt-1 d-block">{{ Configuracao::get('nome_barbearia', 'Santa Barba') }}</span>
             </a>
         </div>
         <div class="sidebar">

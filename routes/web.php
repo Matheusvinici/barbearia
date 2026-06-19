@@ -13,6 +13,8 @@ use App\Http\Controllers\Admin\CaixaController;
 use App\Http\Controllers\Admin\RelatorioController;
 use App\Http\Controllers\Admin\ConfiguracaoController;
 use App\Http\Controllers\Admin\NotificationController;
+use App\Http\Controllers\Admin\PlanoController;
+use App\Http\Controllers\Admin\ClientePlanoController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -102,6 +104,25 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
         Route::get('/configuracoes/qr-code', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.qr-code');
         Route::post('/configuracoes/pair', [ConfiguracaoController::class, 'pairBot'])->name('configuracoes.pair');
+
+        Route::resource('planos', PlanoController::class)->names([
+            'index' => 'planos.index',
+            'create' => 'planos.create',
+            'store' => 'planos.store',
+            'show' => 'planos.show',
+            'edit' => 'planos.edit',
+            'update' => 'planos.update',
+            'destroy' => 'planos.destroy',
+        ]);
+
+        Route::prefix('clientes-planos')->name('clientes-planos.')->group(function () {
+            Route::get('/', [ClientePlanoController::class, 'index'])->name('index');
+            Route::post('/', [ClientePlanoController::class, 'store'])->name('store');
+            Route::get('/dashboard', [ClientePlanoController::class, 'dashboard'])->name('dashboard');
+            Route::get('/{clientesPlano}/edit', [ClientePlanoController::class, 'edit'])->name('edit');
+            Route::put('/{clientesPlano}', [ClientePlanoController::class, 'update'])->name('update');
+            Route::delete('/{clientesPlano}', [ClientePlanoController::class, 'destroy'])->name('destroy');
+        });
     });
 
     Route::get('/notificacoes', [NotificationController::class, 'index'])->name('notificacoes.index');

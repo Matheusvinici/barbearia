@@ -21,4 +21,14 @@ class Cliente extends Model
     {
         return $this->hasMany(Agendamento::class);
     }
+
+    public function planos()
+    {
+        return $this->hasMany(ClientePlano::class);
+    }
+
+    public function planoAtivo()
+    {
+        return $this->hasOne(ClientePlano::class)->where('ativo', true);
+    }
 }

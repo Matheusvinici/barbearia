@@ -15,6 +15,19 @@
             <tr><th>Email:</th><td>{{ $cliente->email ?? '-' }}</td></tr>
             <tr><th>Observações:</th><td>{{ $cliente->observacoes ?? '-' }}</td></tr>
         </table>
+
+        @if($cliente->planos->where('ativo', true)->count())
+        <hr>
+        <h6>Plano Ativo</h6>
+        @foreach($cliente->planos->where('ativo', true) as $cp)
+        <div class="alert alert-info">
+            <strong>{{ $cp->plano->nome }}</strong> - R$ {{ number_format($cp->plano->valor, 2, ',', '.') }}<br>
+            <small>Início: {{ $cp->data_inicio->format('d/m/Y') }}</small>
+            @if($cp->data_fim) <small>| Fim: {{ $cp->data_fim->format('d/m/Y') }}</small> @endif
+        </div>
+        @endforeach
+        @endif
+
         <hr>
         <h6>Histórico de Agendamentos</h6>
         <table class="table table-sm">

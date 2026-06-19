@@ -11,6 +11,7 @@ use App\Models\BloqueioAgenda;
 use App\Models\Configuracao;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
+use App\Models\ClientePlanoUso;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -82,7 +83,9 @@ class AgendamentoController extends Controller
 
     public function show(Agendamento $agendamento)
     {
-        $agendamento->load(['barbeiro', 'cliente', 'servicos']);
+        $agendamento->load(['barbeiro', 'cliente', 'servicos', 'cliente.planos' => function ($q) {
+            $q->where('ativo', true)->with('plano.quotas');
+        }, 'planoUso']);
         return view('admin.agendamentos.show', compact('agendamento'));
     }
 
@@ -135,6 +138,7 @@ class AgendamentoController extends Controller
 
         if ($data['status'] === 'realizado' && $oldStatus !== 'realizado') {
             $this->registrarNoCaixa($agendamento);
+            $this->registrarUsoPlano($agendamento);
         }
 
         return redirect()->route('admin.agendamentos.index', ['data' => $agendamento->data->format('Y-m-d')])
@@ -210,6 +214,22 @@ class AgendamentoController extends Controller
         }
 
         return response()->json($horarios);
+    }
+
+    private function registrarUsoPlano(Agendamento $ag)
+    {
+        $ag->load('cliente.planos', 'servicos');
+        $cp = $ag->cliente?->planos?->where('ativo', true)->first();
+        if (!$cp) return;
+
+        foreach ($ag->servicos as $servico) {
+            ClientePlanoUso::create([
+                'cliente_plano_id' => $cp->id,
+                'agendamento_id' => $ag->id,
+                'servico_id' => $servico->id,
+                'usado_em' => now(),
+            ]);
+        }
     }
 
     private function registrarNoCaixa(Agendamento $agendamento)

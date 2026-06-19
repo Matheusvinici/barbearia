@@ -28,11 +28,38 @@
             </a>
         </li>
 
-        <li class="nav-item {{ request()->is('admin/clientes*') ? 'menu-open' : '' }}">
-            <a href="{{ route('admin.clientes.index') }}" class="nav-link {{ request()->is('admin/clientes*') ? 'active' : '' }}">
+        <li class="nav-item {{ request()->is('admin/clientes*') && !request()->is('admin/clientes-planos*') ? 'menu-open' : '' }}">
+            <a href="{{ route('admin.clientes.index') }}" class="nav-link {{ request()->is('admin/clientes*') && !request()->is('admin/clientes-planos*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-users"></i>
                 <p>Clientes</p>
             </a>
+        </li>
+
+        <li class="nav-item has-treeview {{ request()->is('admin/planos*', 'admin/clientes-planos*') ? 'menu-open' : '' }}">
+            <a href="#" class="nav-link {{ request()->is('admin/planos*', 'admin/clientes-planos*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-shopping-basket"></i>
+                <p>Planos <i class="fas fa-angle-left right"></i></p>
+            </a>
+            <ul class="nav nav-treeview">
+                <li class="nav-item">
+                    <a href="{{ route('admin.planos.index') }}" class="nav-link {{ request()->is('admin/planos*') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Gerenciar Planos</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.clientes-planos.index') }}" class="nav-link {{ request()->is('admin/clientes-planos*') && !request()->is('admin/clientes-planos/dashboard') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Vincular Clientes</p>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="{{ route('admin.clientes-planos.dashboard') }}" class="nav-link {{ request()->is('admin/clientes-planos/dashboard*') ? 'active' : '' }}">
+                        <i class="far fa-circle nav-icon"></i>
+                        <p>Dashboard de Cotas</p>
+                    </a>
+                </li>
+            </ul>
         </li>
 
         <li class="nav-item {{ request()->is('admin/bloqueios*') ? 'menu-open' : '' }}">

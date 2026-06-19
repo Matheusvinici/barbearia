@@ -8,9 +8,10 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background-color: #f8f9fa; height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .login-card { border: none; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); width: 100%; max-width: 400px; overflow: hidden; }
-        .login-header { background: #ffffff; padding: 2rem 2rem 1rem; text-align: center; border-bottom: 1px solid #f1f3f5; }
+        body { background-color: #f8f9fa; height: 100vh; display: flex; align-items: center; justify-content: center; background-image: url('{{ asset("images/frenteBarbearia.jpg") }}'); background-size: cover; background-position: center; background-attachment: fixed; }
+        body::before { content: ''; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 0; }
+        .login-card { border: none; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); width: 100%; max-width: 400px; overflow: hidden; position: relative; z-index: 1; }
+        .login-header { background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); padding: 2rem 2rem 1rem; text-align: center; border-bottom: 1px solid #f1f3f5; }
         .login-header h4 { margin: 0; font-weight: 600; color: #212529; letter-spacing: -0.3px; }
         .login-header p { margin: 4px 0 0; color: #868e96; font-size: 0.85rem; }
         .login-header i { color: #212529; }
@@ -21,7 +22,7 @@
 <body>
     <div class="login-card">
         <div class="login-header">
-            <i class="fas fa-cut mb-3" style="font-size: 3rem;"></i>
+            <img src="{{ asset('images/logo.jpg') }}" alt="Logo" style="max-width:60%;height:auto;max-height:80px;margin-bottom:0.75rem;">
             <h4>Santa Barba</h4>
             <p>@yield('subtitle', 'Administração')</p>
         </div>

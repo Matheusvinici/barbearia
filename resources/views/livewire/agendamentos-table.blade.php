@@ -34,6 +34,7 @@
                         <th>Status</th>
                         <th>Valor</th>
                         <th>Pagamento</th>
+                        <th>Plano</th>
                         <th>Ações</th>
                     </tr>
                 </thead>
@@ -73,6 +74,21 @@
                             </select>
                         </td>
                         <td>
+                            @php
+                                $cp = $ag->cliente?->planos?->first();
+                            @endphp
+                            @if($cp)
+                                <small class="d-block">{{ $cp->plano->nome }}</small>
+                                @if($ag->dentro_da_cota)
+                                    <span class="badge bg-success" style="font-size:10px">Dentro da cota</span>
+                                @else
+                                    <span class="badge bg-danger" style="font-size:10px">Cota excedida</span>
+                                @endif
+                            @else
+                                <small class="text-muted">—</small>
+                            @endif
+                        </td>
+                        <td>
                             <div class="d-flex gap-1">
                                 <a href="{{ route('admin.agendamentos.show', $ag) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
                                 <a href="{{ route('admin.agendamentos.edit', $ag) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
@@ -81,7 +97,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="8" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
                     @endforelse
                 </tbody>
             </table>

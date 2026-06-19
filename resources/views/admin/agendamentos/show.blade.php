@@ -33,6 +33,20 @@
                     </td></tr>
                     <tr><th>Total:</th><td><strong>R$ {{ number_format($agendamento->total ?? 0, 2, ',', '.') }}</strong></td></tr>
                     <tr><th>Origem:</th><td><span class="badge bg-{{ $agendamento->origem == 'bot' ? 'success' : 'secondary' }}">{{ $agendamento->origem }}</span></td></tr>
+                    @php $cpInfo = $agendamento->plano_info; @endphp
+                    @if($cpInfo)
+                    <tr>
+                        <th>Plano:</th>
+                        <td>
+                            {{ $cpInfo->plano->nome }}
+                            @if($agendamento->dentro_da_cota)
+                                <span class="badge bg-success">Dentro da cota</span>
+                            @else
+                                <span class="badge bg-danger">Cota excedida</span>
+                            @endif
+                        </td>
+                    </tr>
+                    @endif
                 </table>
             </div>
         </div>

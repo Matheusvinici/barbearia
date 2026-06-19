@@ -6,6 +6,7 @@ use App\Models\Agendamento;
 use App\Models\Barbeiro;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
+use App\Models\ClientePlanoUso;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -32,6 +33,7 @@ class AgendamentosTable extends Component
 
         if ($status === 'realizado' && $oldStatus !== 'realizado') {
             $this->registrarNoCaixa($ag);
+            $this->registrarUsoPlano($ag);
         }
 
         $this->dispatch('status-updated', id: $id, status: $status);
@@ -48,7 +50,9 @@ class AgendamentosTable extends Component
 
     public function render()
     {
-        $query = Agendamento::with(['barbeiro', 'cliente', 'servicos'])
+        $query = Agendamento::with(['barbeiro', 'cliente', 'servicos', 'cliente.planos' => function ($q) {
+            $q->where('ativo', true)->with('plano.quotas');
+        }, 'planoUso'])
             ->whereDate('data', $this->data);
 
         if ($this->barbeiroId) {
@@ -59,6 +63,22 @@ class AgendamentosTable extends Component
         $barbeiros = Barbeiro::where('ativo', true)->get();
 
         return view('livewire.agendamentos-table', compact('agendamentos', 'barbeiros'));
+    }
+
+    private function registrarUsoPlano(Agendamento $ag)
+    {
+        $ag->load('cliente.planos', 'servicos');
+        $cp = $ag->cliente?->planos?->where('ativo', true)->first();
+        if (!$cp) return;
+
+        foreach ($ag->servicos as $servico) {
+            ClientePlanoUso::create([
+                'cliente_plano_id' => $cp->id,
+                'agendamento_id' => $ag->id,
+                'servico_id' => $servico->id,
+                'usado_em' => now(),
+            ]);
+        }
     }
 
     private function registrarNoCaixa(Agendamento $agendamento)

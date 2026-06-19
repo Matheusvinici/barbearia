@@ -35,7 +35,7 @@ class ClienteController extends Controller
 
     public function show(Cliente $cliente)
     {
-        $cliente->load('agendamentos.barbeiro', 'agendamentos.servicos');
+        $cliente->load('agendamentos.barbeiro', 'agendamentos.servicos', 'planos.plano', 'planos.usos');
         return view('admin.clientes.show', compact('cliente'));
     }
 

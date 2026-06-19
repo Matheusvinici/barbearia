@@ -56,4 +56,47 @@ class Agendamento extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function planoUso()
+    {
+        return $this->hasOne(ClientePlanoUso::class);
+    }
+
+    public function getPlanoInfoAttribute()
+    {
+        if (!$this->cliente) {
+            return null;
+        }
+        if ($this->cliente->relationLoaded('planos')) {
+            $cp = $this->cliente->planos->where('ativo', true)->first();
+        } else {
+            $cp = $this->cliente->planoAtivo;
+        }
+        return $cp;
+    }
+
+    public function getDentroDaCotaAttribute()
+    {
+        $cp = $this->plano_info;
+        if (!$cp) {
+            return false;
+        }
+
+        $servicoIds = $this->servicos->pluck('id');
+
+        foreach ($servicoIds as $servicoId) {
+            $quota = $cp->plano->quotas->where('servico_id', $servicoId)->first();
+            if ($quota) {
+                $usosCount = $cp->usos()
+                    ->where('servico_id', $servicoId)
+                    ->where('id', '!=', $this->planoUso?->id)
+                    ->count();
+                if ($usosCount >= $quota->quantidade) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 }

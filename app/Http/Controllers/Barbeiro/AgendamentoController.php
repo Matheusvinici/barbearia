@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
+use App\Models\ClientePlanoUso;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -58,6 +59,7 @@ class AgendamentoController extends Controller
         $agendamento->update(['status' => 'realizado']);
 
         $this->registrarNoCaixa($agendamento);
+        $this->registrarUsoPlano($agendamento);
 
         return redirect()->back()->with('success', 'Serviço marcado como realizado!');
     }
@@ -73,6 +75,22 @@ class AgendamentoController extends Controller
         $agendamento->update(['status' => 'cancelado']);
 
         return redirect()->back()->with('success', 'Agendamento cancelado.');
+    }
+
+    private function registrarUsoPlano(Agendamento $ag)
+    {
+        $ag->load('cliente.planos', 'servicos');
+        $cp = $ag->cliente?->planos?->where('ativo', true)->first();
+        if (!$cp) return;
+
+        foreach ($ag->servicos as $servico) {
+            ClientePlanoUso::create([
+                'cliente_plano_id' => $cp->id,
+                'agendamento_id' => $ag->id,
+                'servico_id' => $servico->id,
+                'usado_em' => now(),
+            ]);
+        }
     }
 
     private function registrarNoCaixa(Agendamento $agendamento)
