@@ -3,7 +3,7 @@
     $novo = old('novo', session('novo', false));
 @endphp
 
-<x-guest-layout>
+@extends('layouts.guest')
 @section('title', 'Agendar')
 @section('subtitle', 'Agende seu horário')
 
@@ -11,6 +11,7 @@
     <a href="{{ route('login') }}" class="text-muted small me-3"><i class="fas fa-user-shield"></i> Administração</a>
 @stop
 
+@section('content')
 <form method="POST" action="/entrar">
     @csrf
 
@@ -46,5 +47,4 @@
     <a href="#" class="small" onclick="event.preventDefault();document.getElementById('nome-field').style.display='';document.querySelector('[name=nome]').required=true;this.closest('div').remove()">Criar cadastro</a>
 </div>
 @endif
-
-</x-guest-layout>
+@stop
