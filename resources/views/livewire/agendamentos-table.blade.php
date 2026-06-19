@@ -96,6 +96,9 @@
                 badge.className = `badge-status status-${status}`;
                 badge.textContent = status.charAt(0).toUpperCase() + status.slice(1);
             }
+            if (status === 'realizado') {
+                Swal.fire('Realizado!', 'Valor registrado no caixa.', 'success');
+            }
         });
         Livewire.on('pagamento-updated', function () {
             Swal.fire('Pagamento atualizado!', '', 'success');
