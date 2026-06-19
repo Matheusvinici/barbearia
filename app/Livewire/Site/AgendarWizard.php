@@ -66,6 +66,11 @@ class AgendarWizard extends Component
     {
         $this->servico_id = $id;
         $this->servico = Servico::find($id);
+        $this->data = null;
+        $this->hora = null;
+        $this->horarios = null;
+        $this->carregarDias();
+        $this->step = 3;
     }
 
     public function selectDia($data)

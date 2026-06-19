@@ -7,7 +7,7 @@
                 <tr><th>Barbeiro:</th><td>{{ $agendamento->barbeiro->nome }}</td></tr>
                 <tr><th>Serviço:</th><td>{{ $agendamento->servicos->first()->nome ?? '-' }}</td></tr>
                 <tr><th>Data:</th><td>{{ \Carbon\Carbon::parse($agendamento->data)->format('d/m/Y') }}</td></tr>
-                <tr><th>Horário:</th><td>{{ substr($agendamento->hora_inicio, 0, 5) }}</td></tr>
+                <tr><th>Horário:</th><td>{{ $agendamento->hora_inicio->format('H:i') }}</td></tr>
                 <tr><th>Valor:</th><td>R$ {{ number_format($agendamento->total, 2, ',', '.') }}</td></tr>
             </table>
             <div class="alert alert-info py-2 small">Você receberá um lembrete 1h antes no WhatsApp.</div>
@@ -72,11 +72,6 @@
                 </div>
                 @endforeach
             </div>
-            @if($servico_id)
-            <button class="btn btn-primary w-100 mt-3" wire:click="selectDia({{ $dias ? 'null' : '' }})">
-                <i class="bi bi-calendar"></i> Escolher Data
-            </button>
-            @endif
         </div>
         @endif
 
@@ -88,6 +83,7 @@
                 <h5 class="mb-0"><i class="bi bi-calendar-week"></i> Escolha o Dia</h5>
             </div>
 
+            @if($dias && count($dias))
             <div class="d-flex gap-2 overflow-auto pb-2" style="-webkit-overflow-scrolling:touch">
                 @foreach($dias as $d)
                 <button class="btn text-center flex-shrink-0 {{ $data == $d['data'] ? 'btn-dark' : 'btn-outline-dark' }}"
@@ -98,16 +94,19 @@
                 </button>
                 @endforeach
             </div>
+            @else
+            <p class="text-muted small">Nenhum dia disponível para este barbeiro.</p>
+            @endif
 
             @if($data)
             <hr>
-            <h6 class="mb-2"><i class="bi bi-clock"></i> Horários</h6>
+            <h6 class="mb-2"><i class="bi bi-clock"></i> Horários Disponíveis</h6>
             @if($horarios && count($horarios))
             <div class="d-flex flex-wrap gap-2">
                 @foreach($horarios as $h)
                 <button class="btn btn-sm {{ $hora == $h ? 'btn-dark' : 'btn-outline-dark' }}"
                         wire:click="selectHora('{{ $h }}')">
-                    {{ substr($h, 0, 5) }}
+                    {{ $h }}
                 </button>
                 @endforeach
             </div>
@@ -117,7 +116,7 @@
 
             @if($hora)
             <button class="btn btn-primary w-100 mt-3" wire:click="$set('step',4)">
-                <i class="bi bi-check-lg"></i> Confirmar
+                <i class="bi bi-check-lg"></i> Confirmar Agendamento
             </button>
             @endif
             @endif
@@ -133,7 +132,7 @@
                 <tr><th>Barbeiro:</th><td>{{ \App\Models\Barbeiro::find($barbeiro_id)->nome }}</td></tr>
                 <tr><th>Serviço:</th><td>{{ $servico->nome }} - R$ {{ number_format($servico->preco, 2, ',', '.') }}</td></tr>
                 <tr><th>Data:</th><td>{{ \Carbon\Carbon::parse($data)->format('d/m/Y') }}</td></tr>
-                <tr><th>Horário:</th><td>{{ substr($hora, 0, 5) }}</td></tr>
+                <tr><th>Horário:</th><td>{{ $hora }}</td></tr>
             </table>
             <div class="d-flex gap-2">
                 <button class="btn btn-outline-secondary flex-fill" wire:click="voltar">
