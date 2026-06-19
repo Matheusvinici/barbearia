@@ -39,7 +39,7 @@ class AgendarWizard extends Component
 
         if (!$this->cliente) {
             $this->redirect(route('site.login'));
-            return;
+
         }
 
         $this->barbeiros = Barbeiro::where('ativo', true)->get();

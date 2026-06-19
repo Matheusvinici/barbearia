@@ -17,29 +17,26 @@
             display: flex;
             flex-direction: column;
         }
-        .site-header {
-            background: var(--primary);
-            color: #fff;
-            padding: .75rem 1rem;
+        .main-content { flex: 1; padding: 1rem; display: flex; flex-direction: column; }
+        .main-content > .container { max-width: 400px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
+        .footer-bar {
+            background: #fff;
+            border-top: 1px solid #eee;
+            padding: .6rem .5rem;
             text-align: center;
+            font-size: .8rem;
             flex-shrink: 0;
+            position: sticky;
+            bottom: 0;
         }
-        .site-header h1 { font-size: 1.2rem; margin: 0; font-weight: 700; }
-        .main-content {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1.5rem;
-        }
-        .main-content > .container { max-width: 400px; width: 100%; }
+        .footer-bar a { color: #666; text-decoration: none; margin: 0 .5rem; }
+        .footer-bar a:hover { color: var(--accent); }
         .step-card {
             background: #fff;
             border-radius: 16px;
             box-shadow: 0 2px 12px rgba(0,0,0,.08);
             padding: 1.5rem;
             margin-bottom: 1rem;
-            position: relative;
         }
         .step-card h5 { font-weight: 600; margin-bottom: 1rem; }
         .btn-primary { background: var(--accent); border-color: var(--accent); }
@@ -48,44 +45,22 @@
         .service-card:hover { border-color: var(--accent); }
         .service-card.selected { border-color: var(--accent); background: #fff5f5; }
         .service-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
-        .footer {
-            background: var(--primary);
-            color: rgba(255,255,255,.7);
-            padding: .75rem 1rem;
-            text-align: center;
-            font-size: .8rem;
-            flex-shrink: 0;
-        }
-        .footer a { color: rgba(255,255,255,.5); text-decoration: none; }
-        .footer a:hover { color: #fff; }
-        .step-indicator { display: flex; justify-content: center; gap: .5rem; margin-bottom: 1.5rem; }
-        .step-dot { width: 12px; height: 12px; border-radius: 50%; background: #dee2e6; }
-        .step-dot.active { background: var(--accent); }
-        .step-dot.done { background: #28a745; }
-        .phone-input { font-size: 1.2rem; text-align: center; letter-spacing: 2px; }
     </style>
 </head>
 <body>
-    <header class="site-header">
-        <h1><i class="bi bi-scissors"></i> Barbearia</h1>
-    </header>
-
     <div class="main-content">
         <div class="container">
             @yield('content')
         </div>
     </div>
 
-    <footer class="footer">
-        <div class="d-flex justify-content-center gap-3 flex-wrap">
-            <a href="{{ route('site.login') }}">Agendar</a>
-            <span class="text-secondary">|</span>
-            <a href="{{ route('login') }}">Administração</a>
-            <span class="text-secondary">|</span>
-            <a href="{{ route('barbeiro.login') }}">Barbeiros</a>
-        </div>
-        <div class="mt-1">&copy; {{ date('Y') }} Barbearia</div>
-    </footer>
+    <div class="footer-bar">
+        <a href="{{ route('site.agendar') }}">Agendar</a>
+        <span class="text-secondary">|</span>
+        <a href="{{ route('login') }}">Administração</a>
+        <span class="text-secondary">|</span>
+        <a href="{{ route('barbeiro.login') }}">Barbeiros</a>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     @livewireScripts

@@ -23,12 +23,13 @@
         <div class="login-header">
             <i class="fas fa-cut mb-3" style="font-size: 3rem;"></i>
             <h4>Barbearia</h4>
-            <p>Administração</p>
+            <p>@yield('subtitle', 'Administração')</p>
         </div>
         <div class="card-body p-4 bg-white" style="border-radius: 0 0 15px 15px;">
             @yield('content')
         </div>
         <div class="card-footer text-center py-3 bg-white" style="border-radius: 0 0 15px 15px; border-top: none;">
+            @yield('footer-links')
             <a href="{{ route('barbeiro.login') }}" class="text-muted small"><i class="fas fa-user-tie"></i> Área do Barbeiro</a>
         </div>
     </div>

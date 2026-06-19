@@ -17,12 +17,15 @@ use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
 
-Route::get('/', fn () => redirect()->route('site.login'));
+use App\Http\Controllers\Site\AuthController;
+
+Route::get('/', [AuthController::class, 'showLoginForm'])->name('site.login');
+Route::post('/entrar', [AuthController::class, 'login'])->name('site.login.store');
 
 Route::prefix('site')->name('site.')->group(function () {
-    Route::get('/login', \App\Livewire\Site\LoginCliente::class)->name('login');
     Route::get('/agendar', \App\Livewire\Site\AgendarWizard::class)->name('agendar');
     Route::get('/meus-agendamentos', \App\Livewire\Site\MeusAgendamentos::class)->name('meus-agendamentos');
+    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
 Route::middleware(['auth'])->group(function () {
