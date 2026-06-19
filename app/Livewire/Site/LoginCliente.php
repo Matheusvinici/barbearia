@@ -14,8 +14,8 @@ class LoginCliente extends Component
 
     public function mount()
     {
-        if (session('cliente_id')) {
-            $this->redirect(route('site.agendar'));
+        if (session('cliente_id') && Cliente::find(session('cliente_id'))) {
+            return redirect()->to(route('site.agendar'));
         }
     }
 
@@ -34,7 +34,7 @@ class LoginCliente extends Component
 
         if ($cliente) {
             session(['cliente_id' => $cliente->id, 'cliente_nome' => $cliente->nome]);
-            $this->redirect(route('site.agendar'));
+            return redirect()->to(route('site.agendar'));
         } else {
             $this->step = 'register';
         }
@@ -57,7 +57,7 @@ class LoginCliente extends Component
         ]);
 
         session(['cliente_id' => $cliente->id, 'cliente_nome' => $cliente->nome]);
-        $this->redirect(route('site.agendar'));
+        return redirect()->to(route('site.agendar'));
     }
 
     public function render()

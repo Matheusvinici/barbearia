@@ -51,7 +51,7 @@
     <footer class="footer">
         <div class="container">
             <div class="d-flex justify-content-center gap-3 flex-wrap">
-                <a href="{{ route('site.login') }}">Agendar</a>
+                <a href="{{ route('site.agendar') }}">Agendar</a>
                 <span class="text-secondary">|</span>
                 <a href="{{ route('login') }}">Administração</a>
                 <span class="text-secondary">|</span>

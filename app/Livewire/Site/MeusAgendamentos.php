@@ -14,15 +14,11 @@ class MeusAgendamentos extends Component
     public function mount()
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
-            $this->redirect(route('site.login'), navigate: true);
-            return;
-        }
 
-        $this->cliente = Cliente::find($clienteId);
+        $this->cliente = $clienteId ? Cliente::find($clienteId) : null;
+
         if (!$this->cliente) {
-            $this->redirect(route('site.login'), navigate: true);
-            return;
+            return redirect()->to(route('site.login'));
         }
 
         $this->agendamentos = Agendamento::where('cliente_id', $clienteId)

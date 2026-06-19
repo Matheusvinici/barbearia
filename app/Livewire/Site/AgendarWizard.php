@@ -35,15 +35,11 @@ class AgendarWizard extends Component
     public function mount()
     {
         $clienteId = session('cliente_id');
-        if (!$clienteId) {
-            $this->redirect(route('site.login'));
-            return;
-        }
 
-        $this->cliente = Cliente::find($clienteId);
+        $this->cliente = $clienteId ? Cliente::find($clienteId) : null;
+
         if (!$this->cliente) {
-            $this->redirect(route('site.login'));
-            return;
+            return redirect()->to(route('site.login'));
         }
 
         $this->barbeiros = Barbeiro::where('ativo', true)->get();
