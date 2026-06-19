@@ -36,13 +36,13 @@ class AgendarWizard extends Component
     {
         $clienteId = session('cliente_id');
         if (!$clienteId) {
-            $this->redirect(route('site.login'), navigate: true);
+            $this->redirect(route('site.login'));
             return;
         }
 
         $this->cliente = Cliente::find($clienteId);
         if (!$this->cliente) {
-            $this->redirect(route('site.login'), navigate: true);
+            $this->redirect(route('site.login'));
             return;
         }
 

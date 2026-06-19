@@ -12,6 +12,13 @@ class LoginCliente extends Component
     public $nome = '';
     public $error = '';
 
+    public function mount()
+    {
+        if (session('cliente_id')) {
+            $this->redirect(route('site.agendar'));
+        }
+    }
+
     public function buscar()
     {
         $this->error = '';
@@ -27,7 +34,7 @@ class LoginCliente extends Component
 
         if ($cliente) {
             session(['cliente_id' => $cliente->id, 'cliente_nome' => $cliente->nome]);
-            $this->redirect(route('site.agendar'), navigate: true);
+            $this->redirect(route('site.agendar'));
         } else {
             $this->step = 'register';
         }
@@ -50,7 +57,7 @@ class LoginCliente extends Component
         ]);
 
         session(['cliente_id' => $cliente->id, 'cliente_nome' => $cliente->nome]);
-        $this->redirect(route('site.agendar'), navigate: true);
+        $this->redirect(route('site.agendar'));
     }
 
     public function render()
