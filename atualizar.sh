@@ -18,7 +18,7 @@ git push -u origin $current_branch
 
 if [[ $current_branch == "main" ]]; then
     echo "🚀 Enviado para o GitHub! Iniciando deploy no servidor..."
-    ssh -p 65002 u809852588@82.180.153.119 "cd domains/marimatheus.shop/public_html && ./deploy.sh"
+    ssh -p 65002 u809852588@82.180.153.119 "cd domains/sbsantabarba.shop/public_html && ./deploy.sh"
 else
     echo "Você está em uma branch de desenvolvimento, não será feito o deploy no servidor."
 fi
