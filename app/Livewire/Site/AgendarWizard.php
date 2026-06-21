@@ -153,8 +153,16 @@ class AgendarWizard extends Component
 
     private function carregarDias()
     {
-        $diasFuncionamento = Configuracao::get('dias_funcionamento', '1,2,3,4,5,6');
-        $diasArray = array_map('intval', explode(',', $diasFuncionamento));
+        $barbeiro = Barbeiro::with('horarios')->find($this->barbeiro_id);
+        $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
+
+        if ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
+            $diasArray = $horariosBarbeiro->pluck('dia_semana')->unique()->values()->toArray();
+        } else {
+            $diasFuncionamento = Configuracao::get('dias_funcionamento', '1,2,3,4,5,6');
+            $diasArray = array_map('intval', explode(',', $diasFuncionamento));
+        }
+
         $dias = [];
         $hoje = Carbon::today();
         Carbon::setLocale('pt_BR');
@@ -190,11 +198,15 @@ class AgendarWizard extends Component
 
         $diaSemana = Carbon::parse($this->data)->dayOfWeek;
         $barbeiro = Barbeiro::with('horarios')->find($this->barbeiro_id);
-        $horarioBarbeiro = $barbeiro?->horarios->where('dia_semana', $diaSemana)->where('ativo', true)->first();
+        $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
+        $horarioBarbeiro = $horariosBarbeiro?->where('dia_semana', $diaSemana)->first();
 
         if ($horarioBarbeiro) {
             $abertura = $horarioBarbeiro->hora_inicio;
             $fechamento = $horarioBarbeiro->hora_fim;
+        } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
+            $this->horarios = [];
+            return;
         } else {
             $abertura = Configuracao::get('horario_abertura', '08:00');
             $fechamento = Configuracao::get('horario_fechamento', '18:00');
@@ -252,11 +264,14 @@ class AgendarWizard extends Component
 
         $diaSemana = Carbon::parse($data)->dayOfWeek;
         $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
-        $horarioBarbeiro = $barbeiro?->horarios->where('dia_semana', $diaSemana)->where('ativo', true)->first();
+        $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
+        $horarioBarbeiro = $horariosBarbeiro?->where('dia_semana', $diaSemana)->first();
 
         if ($horarioBarbeiro) {
             $abertura = $horarioBarbeiro->hora_inicio;
             $fechamento = $horarioBarbeiro->hora_fim;
+        } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
+            return false;
         } else {
             $abertura = Configuracao::get('horario_abertura', '08:00');
             $fechamento = Configuracao::get('horario_fechamento', '18:00');
