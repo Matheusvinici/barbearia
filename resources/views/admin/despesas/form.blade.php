@@ -31,6 +31,17 @@
                     </select>
                 </div>
                 <div class="col-md-4 mb-3">
+                    <label>Barbearia</label>
+                    <select name="barbearia_id" class="form-control">
+                        <option value="">Geral (todas)</option>
+                        @foreach($barbearias as $b)
+                        <option value="{{ $b->id }}" {{ old('barbearia_id', $edit ? $despesa->barbearia_id : '') == $b->id ? 'selected' : '' }}>
+                            {{ $b->nome }} {!! $b->parent_id ? '(Filial)' : '(Matriz)' !!}
+                        </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4 mb-3">
                     <label>Data de Vencimento</label>
                     <input type="date" name="data_vencimento" class="form-control" value="{{ old('data_vencimento', $edit ? $despesa->data_vencimento->format('Y-m-d') : '') }}" required>
                 </div>

@@ -26,6 +26,7 @@ class ClientePlanoController extends Controller
             'plano_id' => 'required|exists:planos,id',
             'data_inicio' => 'required|date',
             'data_fim' => 'nullable|date|after_or_equal:data_inicio',
+            'cpf' => 'nullable|string|max:14',
             'observacoes' => 'nullable|string',
         ]);
 
@@ -47,6 +48,7 @@ class ClientePlanoController extends Controller
             'plano_id' => 'required|exists:planos,id',
             'data_inicio' => 'required|date',
             'data_fim' => 'nullable|date|after_or_equal:data_inicio',
+            'cpf' => 'nullable|string|max:14',
             'ativo' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);
@@ -94,6 +96,7 @@ class ClientePlanoController extends Controller
                 'plano' => $cp->plano,
                 'data_inicio' => $cp->data_inicio,
                 'data_fim' => $cp->data_fim,
+                'cpf' => $cp->cpf,
                 'quotas' => $quotas,
                 'total_utilizada' => $totalUsos,
                 'total_contratada' => $totalQuotas,

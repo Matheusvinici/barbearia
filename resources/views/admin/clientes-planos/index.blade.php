@@ -26,7 +26,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-2 mb-3">
                     <label>Plano</label>
                     <select name="plano_id" class="form-control" required>
                         <option value="">Selecione...</option>
@@ -43,14 +43,18 @@
                     <label>Data Fim</label>
                     <input type="date" name="data_fim" class="form-control">
                 </div>
-                <div class="col-md-1 mb-3 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-link"></i></button>
-                </div>
             </div>
             <div class="row">
-                <div class="col-md-12 mb-3">
+                <div class="col-md-3 mb-3">
+                    <label>CPF</label>
+                    <input type="text" name="cpf" class="form-control" placeholder="000.000.000-00">
+                </div>
+                <div class="col-md-7 mb-3">
                     <label>Observações</label>
                     <textarea name="observacoes" class="form-control" rows="1"></textarea>
+                </div>
+                <div class="col-md-2 mb-3 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-link"></i></button>
                 </div>
             </div>
         </form>
@@ -63,12 +67,13 @@
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead><tr><th>Cliente</th><th>Telefone</th><th>Plano</th><th>Início</th><th>Fim</th><th>Ativo</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Cliente</th><th>Telefone</th><th>CPF</th><th>Plano</th><th>Início</th><th>Fim</th><th>Ativo</th><th>Ações</th></tr></thead>
             <tbody>
                 @foreach($vinculos as $v)
                 <tr>
                     <td>{{ $v->cliente->nome }}</td>
                     <td>{{ $v->cliente->telefone }}</td>
+                    <td>{{ $v->cpf ?? '-' }}</td>
                     <td>{{ $v->plano->nome }}</td>
                     <td>{{ $v->data_inicio->format('d/m/Y') }}</td>
                     <td>{{ $v->data_fim ? $v->data_fim->format('d/m/Y') : '-' }}</td>

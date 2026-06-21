@@ -19,6 +19,7 @@ class Despesa extends Model
         'pago',
         'observacoes',
         'user_id',
+        'barbearia_id',
     ];
 
     protected function casts(): array
@@ -34,5 +35,10 @@ class Despesa extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function barbearia()
+    {
+        return $this->belongsTo(Barbearia::class);
     }
 }

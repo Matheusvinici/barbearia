@@ -10,6 +10,7 @@ class Agendamento extends Model
     use HasFactory;
 
     protected $fillable = [
+        'barbearia_id',
         'barbeiro_id',
         'cliente_id',
         'data',
@@ -19,6 +20,7 @@ class Agendamento extends Model
         'total',
         'forma_pagamento',
         'observacoes',
+        'usar_plano',
         'created_by',
         'origem',
     ];
@@ -43,6 +45,11 @@ class Agendamento extends Model
     public function cliente()
     {
         return $this->belongsTo(Cliente::class);
+    }
+
+    public function barbearia()
+    {
+        return $this->belongsTo(Barbearia::class);
     }
 
     public function servicos()

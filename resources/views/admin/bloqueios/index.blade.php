@@ -8,15 +8,21 @@
         <div class="card">
             <div class="card-header"><h5>Novo Bloqueio</h5></div>
             <div class="card-body">
-                <form action="{{ route('admin.bloqueios.store') }}" method="POST">
+                <form action="{{ route('admin.bloqueios.store') }}" method="POST" id="formBloqueio">
                     @csrf
                     <div class="mb-3">
-                        <label>Barbeiro</label>
-                        <select name="barbeiro_id" class="form-control" required>
+                        <label>Barbearia</label>
+                        <select name="barbearia_id" class="form-control" id="barbeariaSelect">
                             <option value="">Selecione...</option>
-                            @foreach($barbeiros as $b)
+                            @foreach($barbearias as $b)
                             <option value="{{ $b->id }}">{{ $b->nome }}</option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Barbeiro</label>
+                        <select name="barbeiro_id" class="form-control" id="barbeiroSelect" required>
+                            <option value="">Selecione a barbearia primeiro</option>
                         </select>
                     </div>
                     <div class="mb-3">
@@ -48,14 +54,25 @@
     </div>
     <div class="col-md-8">
         <div class="card">
-            <div class="card-header"><h5>Bloqueios Ativos</h5></div>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Bloqueios Ativos</h5>
+                <form method="GET" class="d-flex gap-2 align-items-center">
+                    <select name="barbearia_id" class="form-control form-control-sm" style="width:auto" onchange="this.form.submit()">
+                        <option value="">Todas as barbearias</option>
+                        @foreach($barbearias as $b)
+                        <option value="{{ $b->id }}" {{ $barbeariaId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+                        @endforeach
+                    </select>
+                </form>
+            </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
-                    <thead><tr><th>Data</th><th>Barbeiro</th><th>Horário</th><th>Motivo</th><th>Recorrente</th><th>Ações</th></tr></thead>
+                    <thead><tr><th>Data</th><th>Barbearia</th><th>Barbeiro</th><th>Horário</th><th>Motivo</th><th>Recorrente</th><th>Ações</th></tr></thead>
                     <tbody>
                         @forelse($bloqueios as $bl)
                         <tr>
                             <td>{{ $bl->data->format('d/m/Y') }}</td>
+                            <td>{{ $bl->barbearia?->nome ?? '-' }}</td>
                             <td>{{ $bl->barbeiro->nome }}</td>
                             <td>{{ $bl->hora_inicio->format('H:i') }} - {{ $bl->hora_fim->format('H:i') }}</td>
                             <td>{{ $bl->motivo ?? '-' }}</td>
@@ -63,7 +80,7 @@
                             <td><button onclick="confirmarExclusao('{{ route('admin.bloqueios.destroy', $bl) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button></td>
                         </tr>
                         @empty
-                        <tr><td colspan="6" class="text-center text-muted py-3">Nenhum bloqueio cadastrado</td></tr>
+                        <tr><td colspan="7" class="text-center text-muted py-3">Nenhum bloqueio cadastrado</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -74,6 +91,24 @@
 </div>
 
 @push('scripts')
+<script>
+const barbeiros = {
+    @foreach($barbearias as $b)
+    {{ $b->id }}: {!! json_encode(App\Models\Barbeiro::where('ativo', true)->where('barbearia_id', $b->id)->orderBy('nome')->get()->map(fn($bb) => ['id' => $bb->id, 'nome' => $bb->nome])) !!},
+    @endforeach
+};
+
+$('#barbeariaSelect').change(function() {
+    const id = $(this).val();
+    const sel = $('#barbeiroSelect');
+    sel.html('<option value="">Selecione...</option>');
+    if (id && barbeiros[id]) {
+        barbeiros[id].forEach(function(b) {
+            sel.append(`<option value="${b.id}">${b.nome}</option>`);
+        });
+    }
+});
+</script>
 <script>
 function confirmarExclusao(url) {
     Swal.fire({ title: 'Remover bloqueio?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Cancelar', confirmButtonText: 'Remover' })

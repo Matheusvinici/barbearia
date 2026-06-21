@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Barbearia;
 use App\Models\Despesa;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
@@ -13,13 +14,14 @@ class DespesaController extends Controller
 {
     public function index()
     {
-        $despesas = Despesa::orderBy('data_vencimento', 'desc')->paginate(15);
+        $despesas = Despesa::with('barbearia')->orderBy('data_vencimento', 'desc')->paginate(15);
         return view('admin.despesas.index', compact('despesas'));
     }
 
     public function create()
     {
-        return view('admin.despesas.form', ['edit' => false]);
+        $barbearias = Barbearia::orderBy('nome')->get();
+        return view('admin.despesas.form', ['edit' => false, 'barbearias' => $barbearias]);
     }
 
     public function store(Request $request)
@@ -31,6 +33,7 @@ class DespesaController extends Controller
             'data_pagamento' => 'nullable|date',
             'categoria' => 'required|string|max:50',
             'forma_pagamento' => 'nullable|string|max:50',
+            'barbearia_id' => 'nullable|exists:barbearias,id',
             'pago' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);
@@ -48,7 +51,8 @@ class DespesaController extends Controller
 
     public function edit(Despesa $despesa)
     {
-        return view('admin.despesas.form', ['edit' => true, 'despesa' => $despesa]);
+        $barbearias = Barbearia::orderBy('nome')->get();
+        return view('admin.despesas.form', ['edit' => true, 'despesa' => $despesa, 'barbearias' => $barbearias]);
     }
 
     public function update(Request $request, Despesa $despesa)
@@ -60,6 +64,7 @@ class DespesaController extends Controller
             'data_pagamento' => 'nullable|date',
             'categoria' => 'required|string|max:50',
             'forma_pagamento' => 'nullable|string|max:50',
+            'barbearia_id' => 'nullable|exists:barbearias,id',
             'pago' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);

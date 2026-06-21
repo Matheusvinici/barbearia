@@ -15,6 +15,8 @@ use App\Http\Controllers\Admin\ConfiguracaoController;
 use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Admin\PlanoController;
 use App\Http\Controllers\Admin\ClientePlanoController;
+use App\Http\Controllers\Admin\BarbeariaController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -92,8 +94,11 @@ Route::middleware(['auth'])->group(function () {
 
         Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.index');
         Route::get('/caixa/{caixa}', [CaixaController::class, 'show'])->name('caixa.show');
+        Route::get('/caixa/{caixa}/edit', [CaixaController::class, 'edit'])->name('caixa.edit');
+        Route::put('/caixa/{caixa}', [CaixaController::class, 'update'])->name('caixa.update');
         Route::post('/caixa/abrir', [CaixaController::class, 'abrir'])->name('caixa.abrir');
         Route::post('/caixa/{caixa}/fechar', [CaixaController::class, 'fechar'])->name('caixa.fechar');
+        Route::post('/caixa/{caixa}/reabrir', [CaixaController::class, 'reabrir'])->name('caixa.reabrir');
 
         Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');
         Route::get('/relatorios/faturamento', [RelatorioController::class, 'faturamento'])->name('relatorios.faturamento');
@@ -104,6 +109,23 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
         Route::get('/configuracoes/qr-code', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.qr-code');
         Route::post('/configuracoes/pair', [ConfiguracaoController::class, 'pairBot'])->name('configuracoes.pair');
+
+        Route::resource('barbearias', BarbeariaController::class)->names([
+            'index' => 'barbearias.index',
+            'create' => 'barbearias.create',
+            'store' => 'barbearias.store',
+            'edit' => 'barbearias.edit',
+            'update' => 'barbearias.update',
+            'destroy' => 'barbearias.destroy',
+        ]);
+
+        Route::prefix('roles')->name('roles.')->group(function () {
+            Route::get('/', [RoleController::class, 'index'])->name('index');
+            Route::post('/', [RoleController::class, 'store'])->name('store');
+            Route::get('/{role}/edit', [RoleController::class, 'edit'])->name('edit');
+            Route::put('/{role}', [RoleController::class, 'update'])->name('update');
+            Route::delete('/{role}', [RoleController::class, 'destroy'])->name('destroy');
+        });
 
         Route::resource('planos', PlanoController::class)->names([
             'index' => 'planos.index',

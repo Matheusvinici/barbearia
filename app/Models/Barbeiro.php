@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class Barbeiro extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
         'nome',
@@ -17,6 +18,7 @@ class Barbeiro extends Authenticatable
         'telefone',
         'foto',
         'comissao_percentual',
+        'barbearia_id',
         'ativo',
     ];
 
@@ -35,6 +37,8 @@ class Barbeiro extends Authenticatable
         ];
     }
 
+    protected $guard_name = 'barbeiro';
+
     public function agendamentos()
     {
         return $this->hasMany(Agendamento::class);
@@ -43,5 +47,15 @@ class Barbeiro extends Authenticatable
     public function bloqueios()
     {
         return $this->hasMany(BloqueioAgenda::class);
+    }
+
+    public function barbearia()
+    {
+        return $this->belongsTo(Barbearia::class);
+    }
+
+    public function horarios()
+    {
+        return $this->hasMany(BarbeiroHorario::class);
     }
 }

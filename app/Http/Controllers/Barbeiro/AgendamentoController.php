@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Barbeiro;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
+use App\Models\Barbearia;
+use App\Models\Barbeiro;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
 use App\Models\ClientePlanoUso;
@@ -17,9 +19,24 @@ class AgendamentoController extends Controller
     {
         $barbeiro = Auth::guard('barbeiro')->user();
 
-        $agendamentos = Agendamento::where('barbeiro_id', $barbeiro->id)
-            ->whereDate('data', '>=', Carbon::today()->subDay())
-            ->with('cliente', 'servicos')
+        $query = Agendamento::with('cliente', 'servicos', 'barbearia');
+
+        if ($barbeiro->hasRole('proprietario')) {
+            $barbearias = Barbearia::whereHas('barbeiros', function ($q) use ($barbeiro) {
+                $q->where('barbeiros.id', $barbeiro->id);
+            })->orWhereIn('id', function ($q) use ($barbeiro) {
+                $q->select('parent_id')->from('barbearias')
+                  ->whereIn('id', function ($q2) use ($barbeiro) {
+                      $q2->select('barbearia_id')->from('barbeiros')->where('id', $barbeiro->id);
+                  });
+            })->pluck('id');
+
+            $query->whereIn('barbearia_id', $barbearias);
+        } else {
+            $query->where('barbeiro_id', $barbeiro->id);
+        }
+
+        $agendamentos = $query->whereDate('data', '>=', Carbon::today()->subDay())
             ->orderBy('data')
             ->orderBy('hora_inicio')
             ->paginate(20);
@@ -31,7 +48,7 @@ class AgendamentoController extends Controller
     {
         $barbeiro = Auth::guard('barbeiro')->user();
 
-        if ($agendamento->barbeiro_id !== $barbeiro->id) {
+        if (!$barbeiro->hasRole('proprietario') && $agendamento->barbeiro_id !== $barbeiro->id) {
             return redirect()->back()->with('error', 'Este agendamento não pertence a você.');
         }
 
@@ -48,7 +65,7 @@ class AgendamentoController extends Controller
     {
         $barbeiro = Auth::guard('barbeiro')->user();
 
-        if ($agendamento->barbeiro_id !== $barbeiro->id) {
+        if (!$barbeiro->hasRole('proprietario') && $agendamento->barbeiro_id !== $barbeiro->id) {
             return redirect()->back()->with('error', 'Este agendamento não pertence a você.');
         }
 
@@ -68,7 +85,7 @@ class AgendamentoController extends Controller
     {
         $barbeiro = Auth::guard('barbeiro')->user();
 
-        if ($agendamento->barbeiro_id !== $barbeiro->id) {
+        if (!$barbeiro->hasRole('proprietario') && $agendamento->barbeiro_id !== $barbeiro->id) {
             return redirect()->back()->with('error', 'Este agendamento não pertence a você.');
         }
 

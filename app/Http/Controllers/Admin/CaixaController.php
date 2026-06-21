@@ -25,6 +25,33 @@ class CaixaController extends Controller
         return view('admin.caixa.show', compact('caixa'));
     }
 
+    public function edit(Caixa $caixa)
+    {
+        $caixa->load(['movimentacoes', 'usuarioAbertura', 'usuarioFechamento']);
+        return view('admin.caixa.edit', compact('caixa'));
+    }
+
+    public function update(Request $request, Caixa $caixa)
+    {
+        $request->validate([
+            'saldo_inicial' => 'required|numeric|min:0',
+            'total_entradas' => 'required|numeric|min:0',
+            'total_saidas' => 'required|numeric|min:0',
+            'saldo_final' => 'required|numeric',
+            'observacoes' => 'nullable|string',
+        ]);
+
+        $caixa->update([
+            'saldo_inicial' => $request->saldo_inicial,
+            'total_entradas' => $request->total_entradas,
+            'total_saidas' => $request->total_saidas,
+            'saldo_final' => $request->saldo_final,
+            'observacoes' => $request->observacoes,
+        ]);
+
+        return redirect()->route('admin.caixa.index')->with('success', 'Caixa atualizado com sucesso!');
+    }
+
     public function abrir(Request $request)
     {
         $request->validate([
@@ -34,7 +61,7 @@ class CaixaController extends Controller
 
         $existing = Caixa::whereDate('data', $request->data)->first();
         if ($existing) {
-            return redirect()->back()->with('error', 'Caixa já aberto para esta data.');
+            return redirect()->back()->with('error', 'Caixa já aberto para esta data. Caso queira ajustar valores, edite o caixa diretamente.');
         }
 
         Caixa::create([
@@ -62,5 +89,19 @@ class CaixaController extends Controller
         ]);
 
         return redirect()->route('admin.caixa.index')->with('success', 'Caixa fechado com sucesso!');
+    }
+
+    public function reabrir(Caixa $caixa)
+    {
+        if (!$caixa->fechado) {
+            return redirect()->back()->with('error', 'Caixa já está aberto.');
+        }
+
+        $caixa->update([
+            'fechado' => false,
+            'user_id_fechamento' => null,
+        ]);
+
+        return redirect()->route('admin.caixa.index')->with('success', 'Caixa reaberto com sucesso!');
     }
 }

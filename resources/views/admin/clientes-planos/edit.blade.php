@@ -36,7 +36,11 @@
                         <option value="0" {{ !$vinculo->ativo ? 'selected' : '' }}>Não</option>
                     </select>
                 </div>
-                <div class="col-md-12 mb-3">
+                <div class="col-md-6 mb-3">
+                    <label>CPF</label>
+                    <input type="text" name="cpf" class="form-control" value="{{ $vinculo->cpf }}" placeholder="000.000.000-00">
+                </div>
+                <div class="col-md-6 mb-3">
                     <label>Observações</label>
                     <textarea name="observacoes" class="form-control" rows="2">{{ $vinculo->observacoes }}</textarea>
                 </div>

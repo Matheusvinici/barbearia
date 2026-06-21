@@ -5,6 +5,14 @@
                 <label class="mb-0">Data:</label>
                 <input type="date" name="data" class="form-control form-control-sm" style="width:auto"
                        value="{{ $data }}" wire:change="$set('data', $event.target.value)">
+                <label class="mb-0">Barbearia:</label>
+                <select name="barbearia_id" class="form-control form-control-sm" style="width:auto"
+                        wire:change="$set('barbeariaId', $event.target.value)">
+                    <option value="">Todas</option>
+                    @foreach($barbearias as $b)
+                    <option value="{{ $b->id }}" {{ $barbeariaId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+                    @endforeach
+                </select>
                 <label class="mb-0">Barbeiro:</label>
                 <select name="barbeiro_id" class="form-control form-control-sm" style="width:auto"
                         wire:change="$set('barbeiroId', $event.target.value)">
@@ -13,7 +21,7 @@
                     <option value="{{ $b->id }}" {{ $barbeiroId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
                     @endforeach
                 </select>
-                <a href="{{ route('admin.agendamentos.index', ['data' => $data, 'barbeiro_id' => $barbeiroId]) }}" class="btn btn-sm btn-info">
+                <a href="{{ route('admin.agendamentos.index', ['data' => $data, 'barbeiro_id' => $barbeiroId, 'barbearia_id' => $barbeariaId]) }}" class="btn btn-sm btn-info">
                     <i class="fas fa-search"></i>
                 </a>
             </form>
@@ -29,6 +37,7 @@
                     <tr>
                         <th>Hora</th>
                         <th>Cliente</th>
+                        <th>Barbearia</th>
                         <th>Barbeiro</th>
                         <th>Serviços</th>
                         <th>Status</th>
@@ -43,6 +52,7 @@
                     <tr wire:key="ag-{{ $ag->id }}">
                         <td>{{ $ag->hora_inicio->format('H:i') }}</td>
                         <td>{{ $ag->cliente->nome }}<br><small class="text-muted">{{ $ag->cliente->telefone }}</small></td>
+                        <td>{{ $ag->barbearia?->nome ?? '-' }}</td>
                         <td>{{ $ag->barbeiro->nome }}</td>
                         <td>{{ $ag->servicos->pluck('nome')->implode(', ') }}</td>
                         <td>
@@ -77,13 +87,16 @@
                             @php
                                 $cp = $ag->cliente?->planos?->first();
                             @endphp
-                            @if($cp)
+                            @if($cp && $ag->usar_plano)
                                 <small class="d-block">{{ $cp->plano->nome }}</small>
                                 @if($ag->dentro_da_cota)
                                     <span class="badge bg-success" style="font-size:10px">Dentro da cota</span>
                                 @else
                                     <span class="badge bg-danger" style="font-size:10px">Cota excedida</span>
                                 @endif
+                            @elseif($cp)
+                                <small class="d-block">{{ $cp->plano->nome }}</small>
+                                <span class="badge bg-warning" style="font-size:10px">Sem uso do plano</span>
                             @else
                                 <small class="text-muted">—</small>
                             @endif
@@ -97,7 +110,7 @@
                         </td>
                     </tr>
                     @empty
-                    <tr><td colspan="9" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
+                    <tr><td colspan="10" class="text-center text-muted py-4">Nenhum agendamento para esta data</td></tr>
                     @endforelse
                 </tbody>
             </table>

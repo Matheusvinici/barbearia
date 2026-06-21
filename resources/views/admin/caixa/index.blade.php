@@ -39,10 +39,18 @@
                             <td><strong>R$ {{ number_format($c->saldo_final, 2, ',', '.') }}</strong></td>
                             <td>{!! $c->fechado ? '<span class="badge bg-secondary">Fechado</span>' : '<span class="badge bg-success">Aberto</span>' !!}</td>
                             <td>
-                                <a href="{{ route('admin.caixa.show', $c) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
-                                @if(!$c->fechado)
-                                <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalFechar{{ $c->id }}"><i class="fas fa-lock"></i></button>
-                                @endif
+                                <div class="d-flex gap-1">
+                                    <a href="{{ route('admin.caixa.show', $c) }}" class="btn btn-sm btn-info" title="Ver"><i class="fas fa-eye"></i></a>
+                                    <a href="{{ route('admin.caixa.edit', $c) }}" class="btn btn-sm btn-primary" title="Editar valores"><i class="fas fa-edit"></i></a>
+                                    @if(!$c->fechado)
+                                    <button class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modalFechar{{ $c->id }}" title="Fechar"><i class="fas fa-lock"></i></button>
+                                    @else
+                                    <form action="{{ route('admin.caixa.reabrir', $c) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <button class="btn btn-sm btn-info" title="Reabrir" onclick="return confirm('Reabrir caixa?')"><i class="fas fa-unlock"></i></button>
+                                    </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @if(!$c->fechado)
@@ -54,7 +62,7 @@
                                         <div class="modal-header"><h5>Fechar Caixa - {{ $c->data->format('d/m/Y') }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
                                         <div class="modal-body">
                                             <div class="mb-3">
-                                                <label>Saldo Calculado (entradas - saídas)</label>
+                                                <label>Saldo Calculado (inicial + entradas - saídas)</label>
                                                 <input type="text" class="form-control" value="R$ {{ number_format($c->saldo_inicial + $c->total_entradas - $c->total_saidas, 2, ',', '.') }}" disabled>
                                             </div>
                                             <div class="mb-3">

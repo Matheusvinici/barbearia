@@ -4,6 +4,7 @@
             <div style="font-size:4rem;color:#28a745"><i class="bi bi-check-circle-fill"></i></div>
             <h4 class="mt-2">Agendamento Confirmado!</h4>
             <table class="table table-borderless text-start small">
+                <tr><th>Barbearia:</th><td>{{ $agendamento->barbearia?->nome ?? '-' }}</td></tr>
                 <tr><th>Barbeiro:</th><td>{{ $agendamento->barbeiro->nome }}</td></tr>
                 <tr><th>Serviço:</th><td>{{ $agendamento->servicos->first()->nome ?? '-' }}</td></tr>
                 <tr><th>Data:</th><td>{{ \Carbon\Carbon::parse($agendamento->data)->format('d/m/Y') }}</td></tr>
@@ -20,15 +21,40 @@
         </div>
     @else
         <div class="step-indicator">
-            @foreach(range(1,4) as $s)
+            @foreach(range(1,5) as $s)
             <div class="step-dot {{ $step >= $s ? ($step > $s ? 'done' : 'active') : '' }}"></div>
             @endforeach
         </div>
 
-        {{-- STEP 1: Barbeiro --}}
+        {{-- STEP 1: Barbearia --}}
         @if($step == 1)
         <div class="step-card">
-            <h5><i class="bi bi-person-badge"></i> Escolha o Barbeiro</h5>
+            <h5><i class="bi bi-shop"></i> Escolha a Barbearia</h5>
+            <div class="d-flex flex-column gap-2">
+                @foreach($barbearias as $b)
+                <button class="btn btn-outline-dark text-start d-flex align-items-center gap-2 p-3 rounded-3
+                    {{ $barbearia_id == $b->id ? 'btn-dark text-white' : '' }}"
+                    wire:click="selectBarbearia({{ $b->id }})">
+                    <i class="bi bi-building fs-4"></i>
+                    <div>
+                        <strong>{{ $b->nome }}</strong>
+                        @if($b->bairro || $b->cidade)
+                        <br><small>{{ $b->bairro }}{{ $b->bairro && $b->cidade ? ' - ' : '' }}{{ $b->cidade }}</small>
+                        @endif
+                    </div>
+                </button>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- STEP 2: Barbeiro --}}
+        @if($step == 2)
+        <div class="step-card">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
+                <h5 class="mb-0"><i class="bi bi-person-badge"></i> Escolha o Barbeiro</h5>
+            </div>
             <div class="d-flex flex-column gap-2">
                 @foreach($barbeiros as $b)
                 <button class="btn btn-outline-dark text-start d-flex align-items-center gap-2 p-3 rounded-3
@@ -44,8 +70,8 @@
         </div>
         @endif
 
-        {{-- STEP 2: Serviço --}}
-        @if($step == 2)
+        {{-- STEP 3: Serviço --}}
+        @if($step == 3)
         <div class="step-card">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
@@ -75,8 +101,8 @@
         </div>
         @endif
 
-        {{-- STEP 3: Data e Hora --}}
-        @if($step == 3)
+        {{-- STEP 4: Data e Hora --}}
+        @if($step == 4)
         <div class="step-card">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
@@ -115,7 +141,7 @@
             @endif
 
             @if($hora)
-            <button class="btn btn-primary w-100 mt-3" wire:click="$set('step',4)">
+            <button class="btn btn-primary w-100 mt-3" wire:click="$set('step',5)">
                 <i class="bi bi-check-lg"></i> Confirmar Agendamento
             </button>
             @endif
@@ -123,12 +149,13 @@
         </div>
         @endif
 
-        {{-- STEP 4: Confirmar --}}
-        @if($step == 4)
+        {{-- STEP 5: Confirmar --}}
+        @if($step == 5)
         <div class="step-card">
             <h5><i class="bi bi-check-circle"></i> Confirmar Agendamento</h5>
             <table class="table table-borderless small">
                 <tr><th>Cliente:</th><td>{{ $cliente->nome }}</td></tr>
+                <tr><th>Barbearia:</th><td>{{ \App\Models\Barbearia::find($barbearia_id)?->nome ?? '-' }}</td></tr>
                 <tr><th>Barbeiro:</th><td>{{ \App\Models\Barbeiro::find($barbeiro_id)->nome }}</td></tr>
                 <tr><th>Serviço:</th><td>{{ $servico->nome }} - R$ {{ number_format($servico->preco, 2, ',', '.') }}</td></tr>
                 <tr><th>Data:</th><td>{{ \Carbon\Carbon::parse($data)->format('d/m/Y') }}</td></tr>

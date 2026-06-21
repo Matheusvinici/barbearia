@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
+use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\Cliente;
 use App\Models\Servico;
@@ -22,9 +23,14 @@ class AgendamentoController extends Controller
     {
         $data = request('data', Carbon::today()->format('Y-m-d'));
         $barbeiroId = request('barbeiro_id');
+        $barbeariaId = request('barbearia_id');
 
         $query = Agendamento::with(['barbeiro', 'cliente', 'servicos'])
             ->whereDate('data', $data);
+
+        if ($barbeariaId) {
+            $query->where('barbearia_id', $barbeariaId);
+        }
 
         if ($barbeiroId) {
             $query->where('barbeiro_id', $barbeiroId);
@@ -33,21 +39,24 @@ class AgendamentoController extends Controller
         $agendamentos = $query->orderBy('hora_inicio')->get();
         $barbeiros = Barbeiro::where('ativo', true)->get();
         $servicos = Servico::where('ativo', true)->get();
+        $barbearias = Barbearia::orderBy('nome')->get();
 
         return view('admin.agendamentos.index', compact(
-            'agendamentos', 'barbeiros', 'servicos', 'data', 'barbeiroId'
+            'agendamentos', 'barbeiros', 'servicos', 'barbearias', 'data', 'barbeiroId', 'barbeariaId'
         ));
     }
 
     public function store(Request $request)
     {
         $data = $request->validate([
+            'barbearia_id' => 'nullable|exists:barbearias,id',
             'barbeiro_id' => 'required|exists:barbeiros,id',
             'cliente_id' => 'required|exists:clientes,id',
             'servico_ids' => 'required|array',
             'servico_ids.*' => 'exists:servicos,id',
             'data' => 'required|date',
             'hora_inicio' => 'required',
+            'usar_plano' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);
 
@@ -59,6 +68,7 @@ class AgendamentoController extends Controller
         $horaFim = $horaInicio->copy()->addMinutes($totalMinutos);
 
         $agendamento = Agendamento::create([
+            'barbearia_id' => $data['barbearia_id'] ?? null,
             'barbeiro_id' => $data['barbeiro_id'],
             'cliente_id' => $data['cliente_id'],
             'data' => $data['data'],
@@ -66,6 +76,7 @@ class AgendamentoController extends Controller
             'hora_fim' => $horaFim->format('H:i'),
             'status' => 'pendente',
             'total' => $totalValor,
+            'usar_plano' => $request->boolean('usar_plano'),
             'observacoes' => $data['observacoes'] ?? null,
             'created_by' => Auth::guard('web')->id(),
             'origem' => 'admin',
@@ -107,6 +118,7 @@ class AgendamentoController extends Controller
             'servico_ids' => 'required|array',
             'servico_ids.*' => 'exists:servicos,id',
             'status' => 'required|in:pendente,confirmado,realizado,cancelado,ausente',
+            'usar_plano' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);
 
@@ -126,6 +138,7 @@ class AgendamentoController extends Controller
             'hora_fim' => $horaFim->format('H:i'),
             'status' => $data['status'],
             'total' => $totalValor,
+            'usar_plano' => $request->boolean('usar_plano'),
             'observacoes' => $data['observacoes'] ?? null,
         ]);
 
@@ -138,7 +151,9 @@ class AgendamentoController extends Controller
 
         if ($data['status'] === 'realizado' && $oldStatus !== 'realizado') {
             $this->registrarNoCaixa($agendamento);
-            $this->registrarUsoPlano($agendamento);
+            if ($agendamento->usar_plano) {
+                $this->registrarUsoPlano($agendamento);
+            }
         }
 
         return redirect()->route('admin.agendamentos.index', ['data' => $agendamento->data->format('Y-m-d')])
@@ -161,6 +176,7 @@ class AgendamentoController extends Controller
 
         $data = $request->data;
         $barbeiroId = $request->barbeiro_id;
+        $diaSemana = Carbon::parse($data)->dayOfWeek;
 
         $agendamentos = Agendamento::where('barbeiro_id', $barbeiroId)
             ->whereDate('data', $data)
@@ -171,8 +187,17 @@ class AgendamentoController extends Controller
             ->whereDate('data', $data)
             ->get(['hora_inicio', 'hora_fim']);
 
-        $abertura = Configuracao::get('horario_abertura', '08:00');
-        $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
+        $horarioBarbeiro = $barbeiro?->horarios->where('dia_semana', $diaSemana)->where('ativo', true)->first();
+
+        if ($horarioBarbeiro) {
+            $abertura = $horarioBarbeiro->hora_inicio;
+            $fechamento = $horarioBarbeiro->hora_fim;
+        } else {
+            $abertura = Configuracao::get('horario_abertura', '08:00');
+            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        }
+
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $horarios = [];

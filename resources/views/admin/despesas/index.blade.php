@@ -10,11 +10,12 @@
     </div>
     <div class="card-body p-0">
         <table class="table table-hover mb-0">
-            <thead><tr><th>Descrição</th><th>Valor</th><th>Vencimento</th><th>Pagamento</th><th>Categoria</th><th>Pago</th><th>Ações</th></tr></thead>
+            <thead><tr><th>Descrição</th><th>Barbearia</th><th>Valor</th><th>Vencimento</th><th>Pagamento</th><th>Categoria</th><th>Pago</th><th>Ações</th></tr></thead>
             <tbody>
                 @foreach($despesas as $d)
                 <tr class="{{ !$d->pago && $d->data_vencimento < now() ? 'table-danger' : '' }}">
                     <td>{{ $d->descricao }}</td>
+                    <td>{{ $d->barbearia?->nome ?? 'Geral' }}</td>
                     <td>R$ {{ number_format($d->valor, 2, ',', '.') }}</td>
                     <td>{{ $d->data_vencimento->format('d/m/Y') }}</td>
                     <td>{{ $d->data_pagamento ? $d->data_pagamento->format('d/m/Y') : '-' }}</td>

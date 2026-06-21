@@ -5,39 +5,28 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class BloqueioAgenda extends Model
+class BarbeiroHorario extends Model
 {
     use HasFactory;
 
-    protected $table = 'bloqueio_agendas';
-
     protected $fillable = [
-        'barbearia_id',
         'barbeiro_id',
-        'data',
+        'dia_semana',
+        'periodo',
         'hora_inicio',
         'hora_fim',
-        'motivo',
-        'recorrente',
+        'ativo',
     ];
 
     protected function casts(): array
     {
         return [
-            'data' => 'date',
-            'hora_inicio' => 'datetime:H:i',
-            'hora_fim' => 'datetime:H:i',
-            'recorrente' => 'boolean',
+            'ativo' => 'boolean',
         ];
     }
 
     public function barbeiro()
     {
         return $this->belongsTo(Barbeiro::class);
-    }
-
-    public function barbearia()
-    {
-        return $this->belongsTo(Barbearia::class);
     }
 }

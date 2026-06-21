@@ -4,9 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Agendamento;
+use App\Models\Barbearia;
+use App\Models\Barbeiro;
 use App\Models\Despesa;
 use App\Models\Caixa;
-use App\Models\Barbeiro;
 use App\Models\Servico;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -23,12 +24,23 @@ class RelatorioController extends Controller
     {
         $dataInicio = $request->get('data_inicio', Carbon::now()->startOfMonth()->format('Y-m-d'));
         $dataFim = $request->get('data_fim', Carbon::now()->format('Y-m-d'));
+        $barbeariaId = $request->get('barbearia_id');
+        $barbeiroId = $request->get('barbeiro_id');
 
-        $agendamentos = Agendamento::where('status', 'realizado')
+        $query = Agendamento::where('status', 'realizado')
             ->whereDate('data', '>=', $dataInicio)
             ->whereDate('data', '<=', $dataFim)
-            ->with('barbeiro')
-            ->get();
+            ->with('barbeiro');
+
+        if ($barbeariaId) {
+            $query->where('barbearia_id', $barbeariaId);
+        }
+
+        if ($barbeiroId) {
+            $query->where('barbeiro_id', $barbeiroId);
+        }
+
+        $agendamentos = $query->get();
 
         $totalFaturamento = $agendamentos->sum('total');
         $porBarbeiro = $agendamentos->groupBy('barbeiro.nome')->map(function ($items) {
@@ -49,8 +61,13 @@ class RelatorioController extends Controller
             ->whereDate('data', '<=', $dataFim)
             ->get();
 
+        $barbearias = Barbearia::orderBy('nome')->get();
+        $barbeiros = Barbeiro::where('ativo', true)->get();
+
         return view('admin.relatorios.faturamento', compact(
-            'dataInicio', 'dataFim', 'totalFaturamento', 'porBarbeiro', 'despesas', 'lucroLiquido', 'caixas'
+            'dataInicio', 'dataFim', 'totalFaturamento', 'porBarbeiro',
+            'despesas', 'lucroLiquido', 'caixas', 'barbearias', 'barbeiros',
+            'barbeariaId', 'barbeiroId'
         ));
     }
 

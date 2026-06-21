@@ -10,6 +10,20 @@
             <input type="date" name="data_inicio" class="form-control form-control-sm" value="{{ $dataInicio }}" style="width:auto">
             <label>Até:</label>
             <input type="date" name="data_fim" class="form-control form-control-sm" value="{{ $dataFim }}" style="width:auto">
+            <label>Barbearia:</label>
+            <select name="barbearia_id" class="form-control form-control-sm" style="width:auto">
+                <option value="">Todas</option>
+                @foreach($barbearias as $b)
+                <option value="{{ $b->id }}" {{ $barbeariaId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+                @endforeach
+            </select>
+            <label>Barbeiro:</label>
+            <select name="barbeiro_id" class="form-control form-control-sm" style="width:auto">
+                <option value="">Todos</option>
+                @foreach($barbeiros as $b)
+                <option value="{{ $b->id }}" {{ $barbeiroId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+                @endforeach
+            </select>
             <button type="submit" class="btn btn-sm btn-info"><i class="fas fa-search"></i> Filtrar</button>
             <a href="{{ route('admin.relatorios.faturamento-pdf', ['data_inicio' => $dataInicio, 'data_fim' => $dataFim]) }}" class="btn btn-sm btn-danger"><i class="fas fa-file-pdf"></i> PDF</a>
         </form>
@@ -88,4 +102,4 @@
         </div>
     </div>
 </div>
-@endsection
+@endSection

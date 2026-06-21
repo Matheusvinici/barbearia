@@ -17,6 +17,8 @@
                     <th>Nome</th>
                     <th>Email</th>
                     <th>Telefone</th>
+                    <th>Barbearia</th>
+                    <th>Papéis</th>
                     <th>Comissão</th>
                     <th>Ativo</th>
                     <th>Ações</th>
@@ -28,6 +30,15 @@
                     <td>{{ $b->nome }}</td>
                     <td>{{ $b->email }}</td>
                     <td>{{ $b->telefone }}</td>
+                    <td>{{ $b->barbearia?->nome ?? '-' }}</td>
+                    <td>
+                        @foreach($b->roles as $r)
+                        <span class="badge bg-info">{{ ucfirst($r->name) }}</span>
+                        @endforeach
+                        @if($b->roles->isEmpty())
+                        <small class="text-muted">-</small>
+                        @endif
+                    </td>
                     <td>{{ $b->comissao_percentual }}%</td>
                     <td>{!! $b->ativo ? '<span class="badge bg-success">Sim</span>' : '<span class="badge bg-danger">Não</span>' !!}</td>
                     <td>

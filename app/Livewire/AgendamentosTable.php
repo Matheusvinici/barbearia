@@ -3,6 +3,7 @@
 namespace App\Livewire;
 
 use App\Models\Agendamento;
+use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
@@ -15,11 +16,13 @@ class AgendamentosTable extends Component
 {
     public $data;
     public $barbeiroId;
+    public $barbeariaId;
 
     public function mount()
     {
         $this->data = request('data', Carbon::today()->format('Y-m-d'));
         $this->barbeiroId = request('barbeiro_id');
+        $this->barbeariaId = request('barbearia_id');
     }
 
     public function atualizarStatus($id, $status)
@@ -33,7 +36,9 @@ class AgendamentosTable extends Component
 
         if ($status === 'realizado' && $oldStatus !== 'realizado') {
             $this->registrarNoCaixa($ag);
-            $this->registrarUsoPlano($ag);
+            if ($ag->usar_plano) {
+                $this->registrarUsoPlano($ag);
+            }
         }
 
         $this->dispatch('status-updated', id: $id, status: $status);
@@ -55,14 +60,19 @@ class AgendamentosTable extends Component
         }, 'planoUso'])
             ->whereDate('data', $this->data);
 
+        if ($this->barbeariaId) {
+            $query->where('barbearia_id', $this->barbeariaId);
+        }
+
         if ($this->barbeiroId) {
             $query->where('barbeiro_id', $this->barbeiroId);
         }
 
         $agendamentos = $query->orderBy('hora_inicio')->get();
         $barbeiros = Barbeiro::where('ativo', true)->get();
+        $barbearias = Barbearia::orderBy('nome')->get();
 
-        return view('livewire.agendamentos-table', compact('agendamentos', 'barbeiros'));
+        return view('livewire.agendamentos-table', compact('agendamentos', 'barbeiros', 'barbearias'));
     }
 
     private function registrarUsoPlano(Agendamento $ag)

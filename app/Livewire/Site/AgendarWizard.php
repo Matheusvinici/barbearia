@@ -3,6 +3,7 @@
 namespace App\Livewire\Site;
 
 use App\Models\Agendamento;
+use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\BloqueioAgenda;
 use App\Models\Cliente;
@@ -18,12 +19,14 @@ class AgendarWizard extends Component
     public $step = 1;
     public $cliente;
 
+    public $barbearia_id;
     public $barbeiro_id;
     public $servico_id;
     public $servico;
     public $data;
     public $hora;
 
+    public $barbearias;
     public $barbeiros;
     public $servicos;
     public $dias;
@@ -39,11 +42,31 @@ class AgendarWizard extends Component
 
         if (!$this->cliente) {
             $this->redirect(route('site.login'));
-
         }
 
-        $this->barbeiros = Barbeiro::where('ativo', true)->get();
+        $this->barbearias = Barbearia::whereHas('barbeiros', function ($q) {
+            $q->where('ativo', true);
+        })->orWhereDoesntHave('barbeiros')->orderBy('nome')->get();
+
         $this->servicos = Servico::where('ativo', true)->get();
+    }
+
+    public function selectBarbearia($id)
+    {
+        $this->barbearia_id = $id;
+        $this->barbeiro_id = null;
+        $this->servico_id = null;
+        $this->servico = null;
+        $this->data = null;
+        $this->hora = null;
+        $this->horarios = null;
+        $this->dias = null;
+
+        $this->barbeiros = Barbeiro::where('ativo', true)
+            ->where('barbearia_id', $id)
+            ->get();
+
+        $this->step = 2;
     }
 
     public function selectBarbeiro($id)
@@ -55,7 +78,7 @@ class AgendarWizard extends Component
         $this->hora = null;
         $this->horarios = null;
         $this->carregarDias();
-        $this->step = 2;
+        $this->step = 3;
     }
 
     public function selectServico($id)
@@ -66,7 +89,7 @@ class AgendarWizard extends Component
         $this->hora = null;
         $this->horarios = null;
         $this->carregarDias();
-        $this->step = 3;
+        $this->step = 4;
     }
 
     public function selectDia($data)
@@ -74,13 +97,13 @@ class AgendarWizard extends Component
         $this->data = $data;
         $this->hora = null;
         $this->carregarHorarios();
-        $this->step = 3;
+        $this->step = 4;
     }
 
     public function selectHora($hora)
     {
         $this->hora = $hora;
-        $this->step = 4;
+        $this->step = 5;
     }
 
     public function voltar()
@@ -95,6 +118,7 @@ class AgendarWizard extends Component
         $horaFim = $horaInicio->copy()->addMinutes($this->servico->duracao_minutos);
 
         $ag = Agendamento::create([
+            'barbearia_id' => $this->barbearia_id,
             'barbeiro_id' => $this->barbeiro_id,
             'cliente_id' => $this->cliente->id,
             'data' => $this->data,
@@ -120,7 +144,7 @@ class AgendarWizard extends Component
 
     public function novoAgendamento()
     {
-        $this->resetExcept(['cliente', 'barbeiros', 'servicos']);
+        $this->resetExcept(['cliente', 'barbearias', 'servicos']);
         $this->step = 1;
     }
 
@@ -161,8 +185,18 @@ class AgendarWizard extends Component
             ->whereDate('data', $this->data)
             ->get(['hora_inicio', 'hora_fim']);
 
-        $abertura = Configuracao::get('horario_abertura', '08:00');
-        $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        $diaSemana = Carbon::parse($this->data)->dayOfWeek;
+        $barbeiro = Barbeiro::with('horarios')->find($this->barbeiro_id);
+        $horarioBarbeiro = $barbeiro?->horarios->where('dia_semana', $diaSemana)->where('ativo', true)->first();
+
+        if ($horarioBarbeiro) {
+            $abertura = $horarioBarbeiro->hora_inicio;
+            $fechamento = $horarioBarbeiro->hora_fim;
+        } else {
+            $abertura = Configuracao::get('horario_abertura', '08:00');
+            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        }
+
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $horarios = [];
@@ -213,8 +247,18 @@ class AgendarWizard extends Component
             ->whereDate('data', $data)
             ->count();
 
-        $abertura = Configuracao::get('horario_abertura', '08:00');
-        $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        $diaSemana = Carbon::parse($data)->dayOfWeek;
+        $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
+        $horarioBarbeiro = $barbeiro?->horarios->where('dia_semana', $diaSemana)->where('ativo', true)->first();
+
+        if ($horarioBarbeiro) {
+            $abertura = $horarioBarbeiro->hora_inicio;
+            $fechamento = $horarioBarbeiro->hora_fim;
+        } else {
+            $abertura = Configuracao::get('horario_abertura', '08:00');
+            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        }
+
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $totalSlots = 0;

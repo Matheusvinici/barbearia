@@ -19,6 +19,15 @@
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
+                            <label>Barbearia</label>
+                            <select name="barbearia_id" class="form-control" id="barbeariaSelect">
+                                <option value="">Selecione...</option>
+                                @foreach($barbearias as $b)
+                                <option value="{{ $b->id }}">{{ $b->nome }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
                             <label>Cliente</label>
                             @livewire('admin.buscar-cliente')
                         </div>
@@ -49,6 +58,14 @@
                                     </label>
                                 </div>
                                 @endforeach
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="form-check mt-4">
+                                <input class="form-check-input" type="checkbox" name="usar_plano" value="1" id="usarPlano">
+                                <label class="form-check-label" for="usarPlano">
+                                    Usar cota do plano
+                                </label>
                             </div>
                         </div>
                         <div class="col-md-12 mb-3">

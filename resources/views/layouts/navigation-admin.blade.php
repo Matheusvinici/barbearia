@@ -14,6 +14,13 @@
             </a>
         </li>
 
+        <li class="nav-item {{ request()->is('admin/barbearias*') ? 'menu-open' : '' }}">
+            <a href="{{ route('admin.barbearias.index') }}" class="nav-link {{ request()->is('admin/barbearias*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-store"></i>
+                <p>Barbearias</p>
+            </a>
+        </li>
+
         <li class="nav-item {{ request()->is('admin/barbeiros*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.barbeiros.index') }}" class="nav-link {{ request()->is('admin/barbeiros*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-user-tie"></i>
@@ -94,6 +101,15 @@
                     </a>
                 </li>
             </ul>
+        </li>
+
+        <li class="nav-item nav-header">ACESSO</li>
+
+        <li class="nav-item {{ request()->is('admin/roles*') ? 'menu-open' : '' }}">
+            <a href="{{ route('admin.roles.index') }}" class="nav-link {{ request()->is('admin/roles*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-shield-alt"></i>
+                <p>Papéis e Permissões</p>
+            </a>
         </li>
 
         <li class="nav-item {{ request()->is('admin/configuracoes*') ? 'menu-open' : '' }}">
