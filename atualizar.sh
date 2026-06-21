@@ -18,7 +18,7 @@ git push -u origin $current_branch
 
 if [[ $current_branch == "main" ]]; then
     echo "🚀 Enviado para o GitHub! Iniciando deploy no servidor..."
-    ssh -p 65002 u809852588@82.180.153.119 "cd domains/sbsantabarba.shop/public_html && git pull origin $current_branch && composer install --no-dev --optimize-autoloader && php artisan migrate --force && php artisan config:cache"
+    ssh -p 65002 u809852588@82.180.153.119 "cd domains/sbsantabarba.shop/public_html && git pull origin $current_branch && composer install --no-dev --optimize-autoloader && php artisan migrate --force && php artisan db:seed --class=PermissionSeeder --force && php artisan config:cache"
 else
     echo "Você está em uma branch de desenvolvimento, não será feito o deploy no servidor."
 fi
