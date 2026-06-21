@@ -19,7 +19,9 @@ const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.json());
 
-const sessions = {};
+let sock = null;
+let authState = null;
+let currentQR = null;
 
 const STEPS = {
     INIT: 'init',
@@ -50,51 +52,62 @@ async function startBot() {
     const { version } = await fetchLatestBaileysVersion();
     const { state, saveCreds } = await useMultiFileAuthState('auth_baileys');
 
-    const sock = makeWASocket({
+    authState = state;
+
+    const newSock = makeWASocket({
         version,
         auth: state,
         printQRInTerminal: false,
         logger: pino({ level: 'warn' }),
         browser: ['Barbearia Bot', 'Chrome', '136.0.7103.92'],
-        markOnlineOnConnect: false,
+        markOnlineOnConnect: true,
         connectTimeoutMs: 60000,
         syncFullHistory: false,
         fireInitQueries: false,
+        keepAliveIntervalMs: 30000,
+        retryRequestOnFail: true,
+        shouldIgnoreJid: (jid) => jid.includes('@lid') || jid.includes('@newsletter'),
     });
 
-    sock.ev.on('creds.update', saveCreds);
+    sock = newSock;
 
-    sock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
-        if (qr) {
+    newSock.ev.on('creds.update', saveCreds);
+
+    newSock.ev.on('connection.update', ({ connection, lastDisconnect, qr }) => {
+        if (qr && qr !== currentQR) {
+            currentQR = qr;
             QRTerminal.generate(qr, { small: true });
             qrcode.toFile('/tmp/whatsapp-qr.png', qr, { type: 'png', width: 512 }, () => {
-                console.log('\n📱 QR code saved as /tmp/whatsapp-qr.png');
+                console.log('\n📱 QR code saved');
             });
             qrcode.toFile('../public/storage/bot-qr.png', qr, { type: 'png', width: 512 }, () => {
-                console.log('📱 QR also saved for Laravel admin');
+                console.log('📱 QR saved for admin');
             });
         }
         if (connection === 'open') {
+            currentQR = null;
             console.log('WhatsApp Bot is ready!');
         }
         if (connection === 'close') {
-            const shouldReconnect =
-                lastDisconnect?.error?.output?.statusCode !== DisconnectReason.loggedOut;
-            if (shouldReconnect) {
-                const hasSession = state.creds?.registered;
-                const delay = hasSession ? 1000 : 30000;
-                console.log(`Disconnected, reconnecting in ${delay/1000}s...`);
-                setTimeout(() => startBot(), delay);
+            const statusCode = lastDisconnect?.error?.output?.statusCode;
+            const reason = lastDisconnect?.error?.data?.reason || lastDisconnect?.error?.message || 'unknown';
+            console.log(`Disconnected. Status: ${statusCode}, Reason: ${reason}`);
+
+            const hasSession = state.creds?.registered || !!state.creds?.me;
+            const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
+
+            if (shouldReconnect && hasSession) {
+                console.log('Reconnecting in 5s...');
+                setTimeout(() => startBot(), 5000);
+            } else if (shouldReconnect && !hasSession) {
+                console.log('Waiting for QR scan. Server will keep running.');
             } else {
-                console.log('Logged out. Delete auth_baileys folder and restart.');
+                console.log('Logged out. Delete auth_baileys folder and re-scan QR.');
             }
         }
     });
 
-    global.sock = sock;
-    global.authState = state;
-
-    sock.ev.on('messages.upsert', async ({ messages }) => {
+    newSock.ev.on('messages.upsert', async ({ messages }) => {
         try {
             const msg = messages[0];
             if (!msg || msg.key.fromMe) return;
@@ -117,7 +130,7 @@ async function startBot() {
 
             if (input === '0') {
                 delete sessions[from];
-                await sock.sendMessage(from, {
+                await newSock.sendMessage(from, {
                     text: '✅ Atendimento encerrado. Mande qualquer mensagem quando quiser voltar.',
                 });
                 return;
@@ -126,15 +139,15 @@ async function startBot() {
             if (input.toLowerCase() === 'voltar') {
                 if (session.step === STEPS.NAME || session.step === STEPS.BARBER) {
                     delete sessions[from];
-                    await handleInit(sock, from, {});
+                    await handleInit(newSock, from, {});
                     return;
                 }
                 const prev = { day: STEPS.BARBER, time: STEPS.DAY, service: STEPS.TIME };
                 session.step = prev[session.step] || STEPS.INIT;
                 const redo = {
-                    [STEPS.BARBER]: () => showBarbers(sock, from, session),
-                    [STEPS.DAY]: () => showDays(sock, from, session),
-                    [STEPS.TIME]: () => showTimes(sock, from, session),
+                    [STEPS.BARBER]: () => showBarbers(newSock, from, session),
+                    [STEPS.DAY]: () => showDays(newSock, from, session),
+                    [STEPS.TIME]: () => showTimes(newSock, from, session),
                 };
                 if (redo[session.step]) await redo[session.step]();
                 return;
@@ -142,31 +155,31 @@ async function startBot() {
 
             switch (session.step) {
                 case STEPS.INIT:
-                    await handleInit(sock, from, session);
+                    await handleInit(newSock, from, session);
                     break;
                 case STEPS.NAME:
-                    await handleName(sock, from, input, session);
+                    await handleName(newSock, from, input, session);
                     break;
                 case STEPS.BARBER:
-                    await handleBarber(sock, from, input, session);
+                    await handleBarber(newSock, from, input, session);
                     break;
                 case STEPS.DAY:
-                    await handleDay(sock, from, input, session);
+                    await handleDay(newSock, from, input, session);
                     break;
                 case STEPS.TIME:
-                    await handleTime(sock, from, input, session);
+                    await handleTime(newSock, from, input, session);
                     break;
                 case STEPS.SERVICE:
-                    await handleService(sock, from, input, session);
+                    await handleService(newSock, from, input, session);
                     break;
                 case STEPS.CONFIRM:
-                    await handleConfirm(sock, from, input, session);
+                    await handleConfirm(newSock, from, input, session);
                     break;
             }
         } catch (err) {
             console.error('Error processing message:', err.message);
             try {
-                await msg?.key?.remoteJid && sock.sendMessage(msg.key.remoteJid, {
+                await msg?.key?.remoteJid && newSock.sendMessage(msg.key.remoteJid, {
                     text: '❌ Ocorreu um erro. Tente novamente.',
                 });
             } catch (_) {}
@@ -174,27 +187,24 @@ async function startBot() {
     });
 }
 
+const sessions = {};
+
 async function showBarbers(sock, from, session) {
     try {
         const { data } = await axios.get(`${APP_URL}/api/bot/barbeiros`);
         if (!data.length) {
-            await sock.sendMessage(from, {
-                text: 'Desculpe, não temos barbeiros disponíveis no momento.',
-            });
+            await sock.sendMessage(from, { text: 'Desculpe, não temos barbeiros disponíveis no momento.' });
             return false;
         }
         session.barbers = data;
         session.step = STEPS.BARBER;
-
         const items = data.map((b) => ({ label: `👨‍🦰 ${b.nome}`, id: b.id }));
         const msg = formatMenu('🪒 Selecione o Barbeiro', items, 'Responda com o número desejado:');
         await sock.sendMessage(from, { text: msg });
         return true;
     } catch (err) {
         console.error('Error showBarbers:', err.message);
-        await sock.sendMessage(from, {
-            text: 'Desculpe, ocorreu um erro. Tente novamente mais tarde.',
-        });
+        await sock.sendMessage(from, { text: 'Desculpe, ocorreu um erro. Tente novamente mais tarde.' });
         return false;
     }
 }
@@ -205,14 +215,11 @@ async function showDays(sock, from, session) {
             params: { barbeiro_id: session.barber.id },
         });
         if (!data.length) {
-            await sock.sendMessage(from, {
-                text: '😕 Não há dias disponíveis para este barbeiro.',
-            });
+            await sock.sendMessage(from, { text: '😕 Não há dias disponíveis para este barbeiro.' });
             return false;
         }
         session.dias = data;
         session.step = STEPS.DAY;
-
         const items = data.map((d) => ({ label: `📅 ${d.label}`, id: d.data }));
         const msg = formatMenu(`📅 Dias - ${session.barber.nome}`, items, 'Responda com o número desejado:');
         await sock.sendMessage(from, { text: msg });
@@ -230,14 +237,11 @@ async function showTimes(sock, from, session) {
             params: { barbeiro_id: session.barber.id, data: session.dia.data },
         });
         if (!data.length) {
-            await sock.sendMessage(from, {
-                text: '😕 Não há horários disponíveis para esta data.',
-            });
+            await sock.sendMessage(from, { text: '😕 Não há horários disponíveis para esta data.' });
             return false;
         }
         session.horarios = data;
         session.step = STEPS.TIME;
-
         const items = data.map((h) => ({ label: `🕐 ${h}`, id: h }));
         const msg = formatMenu('🕐 Horários Disponíveis', items, `Data: *${session.dia.label}*\n\nResponda com o número desejado:`);
         await sock.sendMessage(from, { text: msg });
@@ -253,18 +257,12 @@ async function showServices(sock, from, session) {
     try {
         const { data } = await axios.get(`${APP_URL}/api/bot/servicos`);
         if (!data.length) {
-            await sock.sendMessage(from, {
-                text: '😕 Não há serviços disponíveis no momento.',
-            });
+            await sock.sendMessage(from, { text: '😕 Não há serviços disponíveis no momento.' });
             return false;
         }
         session.servicos = data;
         session.step = STEPS.SERVICE;
-
-        const items = data.map((s) => ({
-            label: `💈 ${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}`,
-            id: s.id,
-        }));
+        const items = data.map((s) => ({ label: `💈 ${s.nome} - R$ ${parseFloat(s.preco).toFixed(2)}`, id: s.id }));
         const msg = formatMenu('💈 Selecione o Serviço', items, 'Responda com o número desejado:');
         await sock.sendMessage(from, { text: msg });
         return true;
@@ -290,10 +288,8 @@ function getSelectedRaw(items, input) {
 async function handleInit(sock, from, session) {
     delete sessions[from];
     sessions[from] = { step: STEPS.INIT };
-
     const telefone = from.replace('@s.whatsapp.net', '').replace('@lid', '');
     sessions[from].telefone = telefone;
-
     try {
         const { data } = await axios.get(`${APP_URL}/api/bot/cliente/${telefone}`);
         if (data.exists) {
@@ -301,16 +297,12 @@ async function handleInit(sock, from, session) {
             await showBarbers(sock, from, sessions[from]);
         } else {
             sessions[from].step = STEPS.NAME;
-            await sock.sendMessage(from, {
-                text: '✂️ *Bem-vindo à Barbearia!*\n\nAntes de agendar, preciso saber seu nome.\n\nDigite seu *nome completo* abaixo:',
-            });
+            await sock.sendMessage(from, { text: '✂️ *Bem-vindo à Barbearia!*\n\nAntes de agendar, preciso saber seu nome.\n\nDigite seu *nome completo* abaixo:' });
         }
     } catch (err) {
         console.error('Error checking client:', err.message);
         sessions[from].step = STEPS.NAME;
-        await sock.sendMessage(from, {
-            text: '✂️ *Bem-vindo à Barbearia!*\n\nDigite seu *nome completo* para começarmos:',
-        });
+        await sock.sendMessage(from, { text: '✂️ *Bem-vindo à Barbearia!*\n\nDigite seu *nome completo* para começarmos:' });
     }
 }
 
@@ -362,9 +354,7 @@ async function handleService(sock, from, input, session) {
     }
     session.servico = sel.item;
     session.step = STEPS.CONFIRM;
-
     const msg = `✅ *Confirme seu agendamento:*\n\n👨‍🦰 *Barbeiro:* ${session.barber.nome}\n📅 *Data:* ${session.dia.label}\n🕐 *Horário:* ${session.hora}\n💈 *Serviço:* ${session.servico.nome}\n💰 *Valor:* R$ ${parseFloat(session.servico.preco).toFixed(2)}\n\n*1* - ✅ Confirmar\n*2* - 🔙 Voltar\n*0* - ❌ Sair`;
-
     await sock.sendMessage(from, { text: msg });
 }
 
@@ -381,26 +371,20 @@ async function handleConfirm(sock, from, input, session) {
                 cliente_telefone: telefone,
                 whatsapp_id: telefone,
             };
-
             const { data } = await axios.post(`${APP_URL}/api/bot/agendar`, payload);
-
             if (data.success) {
                 await sock.sendMessage(from, {
                     text: `🎉 *Agendamento confirmado!*\n\n📅 *Data:* ${data.data}\n🕐 *Horário:* ${data.hora}\n👨‍🦰 *Barbeiro:* ${data.barbeiro}\n💈 *Serviço:* ${data.servico}\n💰 *Valor:* R$ ${parseFloat(data.preco).toFixed(2)}\n\n🕐 Enviaremos um lembrete 1h antes!\n\nDigite *1* para novo agendamento ou *0* para sair.`,
                 });
                 delete sessions[from];
             } else {
-                await sock.sendMessage(from, {
-                    text: '❌ Erro ao confirmar agendamento. Tente novamente.',
-                });
+                await sock.sendMessage(from, { text: '❌ Erro ao confirmar agendamento. Tente novamente.' });
                 session.step = STEPS.SERVICE;
                 await showServices(sock, from, session);
             }
         } catch (err) {
             console.error('Error creating appointment:', err.response?.data || err.message);
-            await sock.sendMessage(from, {
-                text: '❌ Erro ao confirmar agendamento. Tente novamente.',
-            });
+            await sock.sendMessage(from, { text: '❌ Erro ao confirmar agendamento. Tente novamente.' });
             session.step = STEPS.SERVICE;
             await showServices(sock, from, session);
         }
@@ -412,26 +396,20 @@ async function handleConfirm(sock, from, input, session) {
         sessions[from] = { step: STEPS.INIT };
         await showBarbers(sock, from, sessions[from]);
     } else {
-        await sock.sendMessage(from, {
-            text: 'Responda com *1* para confirmar, *2* para voltar ou *0* para sair.',
-        });
+        await sock.sendMessage(from, { text: 'Responda com *1* para confirmar, *2* para voltar ou *0* para sair.' });
     }
 }
 
 setInterval(async () => {
     try {
         const { data } = await axios.get(`${APP_URL}/api/bot/lembretes`);
-        if (!data.length) return;
-
-        const sock = global.sock;
-        if (!sock) return;
-
+        if (!data.length || !sock) return;
         for (const ag of data) {
             const numero = ag.cliente_telefone.replace(/\D/g, '');
             const chatId = `${numero}@s.whatsapp.net`;
             const msg = `✂️ *Lembrete de Agendamento*\n\nOlá *${ag.cliente_nome}*! Lembramos que você tem um horário marcado hoje às *${ag.hora}* com *${ag.barbeiro_nome}*.\n\nServiço: ${ag.servicos}\n\nTe esperamos! 🫡`;
             await sock.sendMessage(chatId, { text: msg });
-            console.log(`Reminder sent to ${ag.cliente_nome} (${ag.cliente_telefone})`);
+            console.log(`Reminder sent to ${ag.cliente_nome}`);
         }
     } catch (err) {
         // silent
@@ -439,8 +417,7 @@ setInterval(async () => {
 }, 60000);
 
 app.get('/health', (req, res) => {
-    const sock = global.sock;
-    const state = global.authState;
+    const state = authState;
     const authed = state?.creds?.registered === true || !!state?.creds?.me;
     const me = state?.creds?.me;
     res.json({
@@ -456,26 +433,26 @@ app.post('/pair', express.json(), async (req, res) => {
     try {
         const { phone } = req.body;
         if (!phone) return res.status(400).json({ error: 'Phone number required' });
-
-        const sock = global.sock;
         if (!sock) return res.status(503).json({ error: 'Bot not ready' });
-
         const cleaned = phone.replace(/\D/g, '');
         const pairingCode = await sock.requestPairingCode(cleaned);
-
-        res.json({
-            success: true,
-            pairing_code: pairingCode,
-            message: `Código de pareamento: ${pairingCode}`,
-        });
+        res.json({ success: true, pairing_code: pairingCode, message: `Código de pareamento: ${pairingCode}` });
     } catch (err) {
         console.error('Pairing error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Bot server running on port ${PORT}`);
+app.get('/qr', (req, res) => {
+    const qrPath = '/tmp/whatsapp-qr.png';
+    if (require('fs').existsSync(qrPath)) {
+        res.sendFile(qrPath);
+    } else {
+        res.status(404).json({ error: 'QR not available' });
+    }
 });
 
-startBot();
+app.listen(PORT, () => {
+    console.log(`Bot server running on port ${PORT}`);
+    startBot();
+});

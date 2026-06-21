@@ -85,7 +85,7 @@
                     <hr>
                     <strong>QR Code para conectar:</strong>
                     <div class="mt-2">
-                        <img src="{{ route('admin.configuracoes.qr-code') }}?t={{ time() }}" class="img-fluid" style="max-width:250px;border:2px solid #ddd;border-radius:8px;padding:8px;background:#fff" alt="QR Code WhatsApp">
+                        <img src="http://localhost:3000/qr?t={{ time() }}" class="img-fluid" style="max-width:250px;border:2px solid #ddd;border-radius:8px;padding:8px;background:#fff" alt="QR Code WhatsApp">
                     </div>
                     <small class="text-muted">📱 Abra o WhatsApp no celular → Dispositivos Conectados → Conectar → Escaneie este QR</small>
                     <hr>
