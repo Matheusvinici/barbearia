@@ -228,11 +228,15 @@
 $(document).ready(function() {
     let idsConhecidos = {};
     let primeiraCarga = true;
+    let ultimoSom = 0;
     let somTocando = false;
     let audioCtx = null;
 
     function tocarAlarme() {
         if (somTocando) return;
+        const agora = Date.now();
+        if (agora - ultimoSom < 60000) return;
+        ultimoSom = agora;
         somTocando = true;
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -262,6 +266,7 @@ $(document).ready(function() {
             data.notificacoes.forEach(function(n) {
                 if (!n.id) return;
                 if (!primeiraCarga && !n.lida && n.title && n.title.includes('Novo agendamento') && !idsConhecidos[n.id]) {
+                    idsConhecidos[n.id] = true;
                     tocarAlarme();
                 }
                 idsConhecidos[n.id] = true;
