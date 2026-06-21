@@ -22,6 +22,7 @@ class NotificationController extends Controller
                 'color' => $data['color'] ?? '#6c757d',
                 'ago' => $n->created_at->diffForHumans(),
                 'lida' => !is_null($n->read_at),
+                'created_at' => $n->created_at->toIso8601String(),
             ];
         });
 

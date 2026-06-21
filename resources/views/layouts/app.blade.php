@@ -226,17 +226,16 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
-    let idsConhecidos = {};
+    let idsVistos = {};
     let primeiraCarga = true;
-    let ultimoSom = 0;
+    let ultimoSomMs = 0;
     let somTocando = false;
     let audioCtx = null;
 
     function tocarAlarme() {
-        if (somTocando) return;
         const agora = Date.now();
-        if (agora - ultimoSom < 60000) return;
-        ultimoSom = agora;
+        if (somTocando || agora - ultimoSomMs < 300000) return;
+        ultimoSomMs = agora;
         somTocando = true;
         try {
             audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -265,11 +264,11 @@ $(document).ready(function() {
 
             data.notificacoes.forEach(function(n) {
                 if (!n.id) return;
-                if (!primeiraCarga && !n.lida && n.title && n.title.includes('Novo agendamento') && !idsConhecidos[n.id]) {
-                    idsConhecidos[n.id] = true;
+                if (!primeiraCarga && !n.lida && n.title && n.title.includes('Novo agendamento') && !idsVistos[n.id]) {
+                    idsVistos[n.id] = true;
                     tocarAlarme();
                 }
-                idsConhecidos[n.id] = true;
+                idsVistos[n.id] = true;
             });
             primeiraCarga = false;
 

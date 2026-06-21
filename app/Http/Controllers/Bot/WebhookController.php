@@ -48,8 +48,21 @@ class WebhookController extends Controller
             ->whereDate('data', $data)
             ->get(['hora_inicio', 'hora_fim']);
 
-        $abertura = Configuracao::get('horario_abertura', '08:00');
-        $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        $diaSemana = Carbon::parse($request->data)->dayOfWeek;
+        $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
+        $horarioBarbeiro = $barbeiro?->horarios
+            ->where('dia_semana', $diaSemana)
+            ->where('ativo', true)
+            ->first();
+
+        if ($horarioBarbeiro) {
+            $abertura = $horarioBarbeiro->hora_inicio;
+            $fechamento = $horarioBarbeiro->hora_fim;
+        } else {
+            $abertura = Configuracao::get('horario_abertura', '08:00');
+            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        }
+
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $horarios = [];
@@ -316,8 +329,21 @@ class WebhookController extends Controller
             ->whereDate('data', $data)
             ->count();
 
-        $abertura = Configuracao::get('horario_abertura', '08:00');
-        $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        $diaSemana = Carbon::parse($data)->dayOfWeek;
+        $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
+        $horarioBarbeiro = $barbeiro?->horarios
+            ->where('dia_semana', $diaSemana)
+            ->where('ativo', true)
+            ->first();
+
+        if ($horarioBarbeiro) {
+            $abertura = $horarioBarbeiro->hora_inicio;
+            $fechamento = $horarioBarbeiro->hora_fim;
+        } else {
+            $abertura = Configuracao::get('horario_abertura', '08:00');
+            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+        }
+
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $totalSlots = 0;
