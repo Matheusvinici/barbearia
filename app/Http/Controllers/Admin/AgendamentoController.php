@@ -16,6 +16,8 @@ use App\Models\ClientePlanoUso;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\NovoAgendamentoBot;
 
 class AgendamentoController extends Controller
 {
@@ -87,6 +89,14 @@ class AgendamentoController extends Controller
                 'preco_praticado' => $servico->preco,
             ]);
         }
+
+        try {
+            $adminUsers = \App\Models\User::all();
+            Notification::send($adminUsers, new NovoAgendamentoBot($agendamento));
+            if ($agendamento->barbeiro) {
+                $agendamento->barbeiro->notify(new NovoAgendamentoBot($agendamento));
+            }
+        } catch (\Exception $e) {}
 
         return redirect()->route('admin.agendamentos.index', ['data' => $data['data']])
             ->with('success', 'Agendamento criado com sucesso!');

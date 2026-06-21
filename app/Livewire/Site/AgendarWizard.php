@@ -136,6 +136,9 @@ class AgendarWizard extends Component
         try {
             $adminUsers = \App\Models\User::all();
             Notification::send($adminUsers, new NovoAgendamentoBot($ag));
+            if ($ag->barbeiro) {
+                $ag->barbeiro->notify(new NovoAgendamentoBot($ag));
+            }
         } catch (\Exception $e) {}
 
         $this->agendamento = $ag;

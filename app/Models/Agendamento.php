@@ -23,6 +23,10 @@ class Agendamento extends Model
         'usar_plano',
         'created_by',
         'origem',
+        'barber_notified_at',
+        'lembrete_1h_at',
+        'lembrete_30min_at',
+        'lembrete_15min_at',
     ];
 
     protected function casts(): array

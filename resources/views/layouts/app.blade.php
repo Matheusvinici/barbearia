@@ -226,10 +226,42 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
+    let ultimasNaoLidas = 0;
+    let somTocando = false;
+    let audioCtx = null;
+
+    function tocarAlarme() {
+        if (somTocando) return;
+        somTocando = true;
+        try {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.frequency.value = 800;
+            osc.type = 'sine';
+            gain.gain.value = 0.3;
+            osc.start();
+            setTimeout(() => {
+                osc.stop();
+                audioCtx.close();
+                somTocando = false;
+            }, 5000);
+        } catch (e) {
+            somTocando = false;
+        }
+    }
+
     function carregarNotificacoes() {
         @auth
         $.get('/notificacoes', function(data) {
-            $('#notif-count').text(data.nao_lidas);
+            const naoLidas = data.nao_lidas;
+            $('#notif-count').text(naoLidas);
+            if (naoLidas > ultimasNaoLidas) {
+                tocarAlarme();
+            }
+            ultimasNaoLidas = naoLidas;
             let html = '';
             if (data.notificacoes.length === 0) {
                 html = '<div class="text-center py-2 text-muted small">Nenhuma notificação</div>';
@@ -255,7 +287,7 @@ $(document).ready(function() {
     }
 
     carregarNotificacoes();
-    setInterval(carregarNotificacoes, 30000);
+    setInterval(carregarNotificacoes, 15000);
 
     $(document).on('click', '.text-mar-all', function(e) {
         e.preventDefault();

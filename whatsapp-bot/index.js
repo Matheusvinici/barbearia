@@ -407,14 +407,44 @@ setInterval(async () => {
         for (const ag of data) {
             const numero = ag.cliente_telefone.replace(/\D/g, '');
             const chatId = `${numero}@s.whatsapp.net`;
-            const msg = `✂️ *Lembrete de Agendamento*\n\nOlá *${ag.cliente_nome}*! Lembramos que você tem um horário marcado hoje às *${ag.hora}* com *${ag.barbeiro_nome}*.\n\nServiço: ${ag.servicos}\n\nTe esperamos! 🫡`;
+            const mensagens = {
+                '1h': `✂️ *Lembrete de Agendamento*\n\nOlá *${ag.cliente_nome}*! Faltam aproximadamente *1 hora* para o seu horário hoje às *${ag.hora}* com *${ag.barbeiro_nome}*.\n\nServiço: ${ag.servicos}\n\nTe esperamos! 🫡`,
+                '30min': `⏰ *Lembrete de Agendamento*\n\nOlá *${ag.cliente_nome}*! Faltam *30 minutos* para o seu horário hoje às *${ag.hora}* com *${ag.barbeiro_nome}*.\n\nServiço: ${ag.servicos}\n\nJá estamos te esperando! 🫡`,
+                '15min': `🔔 *Lembrete de Agendamento*\n\nOlá *${ag.cliente_nome}*! Faltam *15 minutos* para o seu horário hoje às *${ag.hora}* com *${ag.barbeiro_nome}*.\n\nServiço: ${ag.servicos}\n\nChegando! 🚀`,
+            };
+            const msg = mensagens[ag.tipo] || mensagens['1h'];
             await sock.sendMessage(chatId, { text: msg });
-            console.log(`Reminder sent to ${ag.cliente_nome}`);
+            await axios.post(`${APP_URL}/api/bot/marcar-lembrete-enviado`, {
+                agendamento_id: ag.id,
+                tipo: ag.tipo,
+            });
+            console.log(`Lembrete ${ag.tipo} enviado para ${ag.cliente_nome}`);
         }
     } catch (err) {
         // silent
     }
 }, 60000);
+
+setInterval(async () => {
+    try {
+        const { data } = await axios.get(`${APP_URL}/api/bot/novos-agendamentos`);
+        if (!data.length || !sock) return;
+        for (const ag of data) {
+            const numero = ag.barbeiro_telefone?.replace(/\D/g, '');
+            if (!numero) continue;
+            const chatId = `${numero}@s.whatsapp.net`;
+            const origem = ag.origem === 'site' ? 'Site' : ag.origem === 'bot' ? 'WhatsApp' : ag.origem;
+            const msg = `🆕 *Novo Agendamento!*\n\n👤 *Cliente:* ${ag.cliente_nome}\n💈 *Serviço:* ${ag.servicos}\n📅 *Data:* ${ag.data}\n🕐 *Horário:* ${ag.hora}\n📱 *Origem:* ${origem}`;
+            await sock.sendMessage(chatId, { text: msg });
+            await axios.post(`${APP_URL}/api/bot/marcar-notificado-barbeiro`, {
+                agendamento_id: ag.id,
+            });
+            console.log(`Notificação de novo agendamento enviada para ${ag.barbeiro_nome}`);
+        }
+    } catch (err) {
+        // silent
+    }
+}, 15000);
 
 app.get('/health', (req, res) => {
     const state = authState;

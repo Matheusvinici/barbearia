@@ -11,4 +11,7 @@ Route::prefix('bot')->group(function () {
     Route::post('/agendar', [WebhookController::class, 'agendar']);
     Route::get('/lembretes', [WebhookController::class, 'lembretes']);
     Route::get('/cliente/{whatsapp}', [WebhookController::class, 'verificarCliente']);
+    Route::get('/novos-agendamentos', [WebhookController::class, 'novosAgendamentos']);
+    Route::post('/marcar-notificado-barbeiro', [WebhookController::class, 'marcarNotificadoBarbeiro']);
+    Route::post('/marcar-lembrete-enviado', [WebhookController::class, 'marcarLembreteEnviado']);
 });

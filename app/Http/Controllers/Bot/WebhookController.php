@@ -169,6 +169,9 @@ class WebhookController extends Controller
         try {
             $adminUsers = \App\Models\User::all();
             Notification::send($adminUsers, new NovoAgendamentoBot($agendamento));
+            if ($agendamento->barbeiro) {
+                $agendamento->barbeiro->notify(new NovoAgendamentoBot($agendamento));
+            }
         } catch (\Exception $e) {
         }
 
@@ -187,26 +190,106 @@ class WebhookController extends Controller
     public function lembretes(Request $request)
     {
         $agora = Carbon::now();
-        $daqui1h = $agora->copy()->addHour();
+        $hoje = $agora->format('Y-m-d');
+        $horaAtual = $agora->format('H:i:s');
 
-        $agendamentos = Agendamento::whereDate('data', $agora->format('Y-m-d'))
+        $agendamentos = Agendamento::whereDate('data', $hoje)
             ->whereIn('status', ['pendente', 'confirmado'])
-            ->whereTime('hora_inicio', '>=', $agora->format('H:i:s'))
-            ->whereTime('hora_inicio', '<=', $daqui1h->format('H:i:s'))
             ->with('cliente', 'barbeiro', 'servicos')
+            ->get();
+
+        $result = [];
+
+        foreach ($agendamentos as $ag) {
+            $horaInicio = $ag->hora_inicio instanceof Carbon
+                ? $ag->hora_inicio->format('H:i')
+                : $ag->hora_inicio;
+
+            $horaInicioCarbon = Carbon::parse($hoje . ' ' . $horaInicio);
+            $diffMinutos = $agora->diffInMinutes($horaInicioCarbon, false);
+
+            if ($diffMinutos < 0) continue;
+
+            $entry = [
+                'id' => $ag->id,
+                'cliente_nome' => $ag->cliente->nome,
+                'cliente_telefone' => $ag->cliente->telefone,
+                'barbeiro_nome' => $ag->barbeiro->nome,
+                'data' => $ag->data->format('Y-m-d'),
+                'hora' => $horaInicio,
+                'servicos' => $ag->servicos->pluck('nome')->implode(', '),
+            ];
+
+            if ($diffMinutos <= 65 && $diffMinutos >= 55 && !$ag->lembrete_1h_at) {
+                $entry['tipo'] = '1h';
+                $result[] = $entry;
+            } elseif ($diffMinutos <= 35 && $diffMinutos >= 25 && !$ag->lembrete_30min_at) {
+                $entry['tipo'] = '30min';
+                $result[] = $entry;
+            } elseif ($diffMinutos <= 20 && $diffMinutos >= 10 && !$ag->lembrete_15min_at) {
+                $entry['tipo'] = '15min';
+                $result[] = $entry;
+            }
+        }
+
+        return response()->json($result);
+    }
+
+    public function novosAgendamentos()
+    {
+        $agora = Carbon::now();
+        $poucosMinutosAtras = $agora->copy()->subMinutes(5);
+
+        $agendamentos = Agendamento::where('created_at', '>=', $poucosMinutosAtras)
+            ->whereNull('barber_notified_at')
+            ->with(['cliente', 'barbeiro', 'servicos'])
             ->get();
 
         return response()->json($agendamentos->map(function ($ag) {
             return [
                 'id' => $ag->id,
                 'cliente_nome' => $ag->cliente->nome,
-                'cliente_telefone' => $ag->cliente->telefone,
                 'barbeiro_nome' => $ag->barbeiro->nome,
+                'barbeiro_telefone' => $ag->barbeiro->telefone,
                 'data' => $ag->data->format('Y-m-d'),
-                'hora' => $ag->hora_inicio,
+                'hora' => $ag->hora_inicio instanceof Carbon
+                    ? $ag->hora_inicio->format('H:i')
+                    : $ag->hora_inicio,
                 'servicos' => $ag->servicos->pluck('nome')->implode(', '),
+                'origem' => $ag->origem,
             ];
         }));
+    }
+
+    public function marcarNotificadoBarbeiro(Request $request)
+    {
+        $request->validate(['agendamento_id' => 'required|exists:agendamentos,id']);
+
+        Agendamento::where('id', $request->agendamento_id)
+            ->whereNull('barber_notified_at')
+            ->update(['barber_notified_at' => now()]);
+
+        return response()->json(['success' => true]);
+    }
+
+    public function marcarLembreteEnviado(Request $request)
+    {
+        $request->validate([
+            'agendamento_id' => 'required|exists:agendamentos,id',
+            'tipo' => 'required|in:1h,30min,15min',
+        ]);
+
+        $coluna = match ($request->tipo) {
+            '1h' => 'lembrete_1h_at',
+            '30min' => 'lembrete_30min_at',
+            '15min' => 'lembrete_15min_at',
+        };
+
+        Agendamento::where('id', $request->agendamento_id)
+            ->whereNull($coluna)
+            ->update([$coluna => now()]);
+
+        return response()->json(['success' => true]);
     }
 
     public function verificarCliente($whatsappId)
