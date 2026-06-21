@@ -226,7 +226,8 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
-    let primeiroCarregamento = true;
+    let idsConhecidos = {};
+    let primeiraCarga = true;
     let somTocando = false;
     let audioCtx = null;
 
@@ -256,18 +257,16 @@ $(document).ready(function() {
     function carregarNotificacoes() {
         @auth
         $.get('/notificacoes', function(data) {
-            const naoLidas = data.nao_lidas;
-            $('#notif-count').text(naoLidas);
+            $('#notif-count').text(data.nao_lidas);
 
-            if (!primeiroCarregamento) {
-                const temNovoAgendamento = data.notificacoes.some(function(n) {
-                    return !n.lida && n.title && n.title.includes('Novo agendamento');
-                });
-                if (temNovoAgendamento) {
+            data.notificacoes.forEach(function(n) {
+                if (!n.id) return;
+                if (!primeiraCarga && !n.lida && n.title && n.title.includes('Novo agendamento') && !idsConhecidos[n.id]) {
                     tocarAlarme();
                 }
-            }
-            primeiroCarregamento = false;
+                idsConhecidos[n.id] = true;
+            });
+            primeiraCarga = false;
 
             let html = '';
             if (data.notificacoes.length === 0) {
