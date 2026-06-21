@@ -226,7 +226,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(document).ready(function() {
-    let ultimasNaoLidas = 0;
+    let primeiroCarregamento = true;
     let somTocando = false;
     let audioCtx = null;
 
@@ -258,10 +258,17 @@ $(document).ready(function() {
         $.get('/notificacoes', function(data) {
             const naoLidas = data.nao_lidas;
             $('#notif-count').text(naoLidas);
-            if (naoLidas > ultimasNaoLidas) {
-                tocarAlarme();
+
+            if (!primeiroCarregamento) {
+                const temNovoAgendamento = data.notificacoes.some(function(n) {
+                    return !n.lida && n.title && n.title.includes('Novo agendamento');
+                });
+                if (temNovoAgendamento) {
+                    tocarAlarme();
+                }
             }
-            ultimasNaoLidas = naoLidas;
+            primeiroCarregamento = false;
+
             let html = '';
             if (data.notificacoes.length === 0) {
                 html = '<div class="text-center py-2 text-muted small">Nenhuma notificação</div>';
