@@ -50,52 +50,58 @@ class WebhookController extends Controller
 
         $diaSemana = Carbon::parse($request->data)->dayOfWeek;
         $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
-        $horarioBarbeiro = $barbeiro?->horarios
-            ->where('dia_semana', $diaSemana)
-            ->where('ativo', true)
-            ->first();
+        $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
+        $periodos = $horariosBarbeiro?->where('dia_semana', $diaSemana);
 
-        if ($horarioBarbeiro) {
-            $abertura = $horarioBarbeiro->hora_inicio;
-            $fechamento = $horarioBarbeiro->hora_fim;
+        $faixas = [];
+        if ($periodos && $periodos->isNotEmpty()) {
+            foreach ($periodos as $p) {
+                $faixas[] = ['inicio' => $p->hora_inicio, 'fim' => $p->hora_fim];
+            }
+        } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
+            return response()->json([]);
         } else {
-            $abertura = Configuracao::get('horario_abertura', '08:00');
-            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+            $faixas[] = [
+                'inicio' => Configuracao::get('horario_abertura', '08:00'),
+                'fim' => Configuracao::get('horario_fechamento', '18:00'),
+            ];
         }
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $horarios = [];
-        $inicio = Carbon::parse($data . ' ' . $abertura);
-        $fim = Carbon::parse($data . ' ' . $fechamento);
+        foreach ($faixas as $faixa) {
+            $inicio = Carbon::parse($data . ' ' . $faixa['inicio']);
+            $fim = Carbon::parse($data . ' ' . $faixa['fim']);
 
-        while ($inicio < $fim) {
-            $fimSlot = $inicio->copy()->addMinutes($intervalo);
-            $disponivel = true;
+            while ($inicio < $fim) {
+                $fimSlot = $inicio->copy()->addMinutes($intervalo);
+                $disponivel = true;
 
-            foreach ($agendamentos as $ag) {
-                $agInicio = Carbon::parse($data . ' ' . $ag->hora_inicio->format('H:i'));
-                $agFim = Carbon::parse($data . ' ' . $ag->hora_fim->format('H:i'));
-                if ($inicio < $agFim && $fimSlot > $agInicio) {
-                    $disponivel = false;
-                    break;
+                foreach ($agendamentos as $ag) {
+                    $agInicio = Carbon::parse($data . ' ' . $ag->hora_inicio->format('H:i'));
+                    $agFim = Carbon::parse($data . ' ' . $ag->hora_fim->format('H:i'));
+                    if ($inicio < $agFim && $fimSlot > $agInicio) {
+                        $disponivel = false;
+                        break;
+                    }
                 }
-            }
 
-            foreach ($bloqueios as $bl) {
-                $blInicio = Carbon::parse($data . ' ' . $bl->hora_inicio->format('H:i'));
-                $blFim = Carbon::parse($data . ' ' . $bl->hora_fim->format('H:i'));
-                if ($inicio < $blFim && $fimSlot > $blInicio) {
-                    $disponivel = false;
-                    break;
+                foreach ($bloqueios as $bl) {
+                    $blInicio = Carbon::parse($data . ' ' . $bl->hora_inicio->format('H:i'));
+                    $blFim = Carbon::parse($data . ' ' . $bl->hora_fim->format('H:i'));
+                    if ($inicio < $blFim && $fimSlot > $blInicio) {
+                        $disponivel = false;
+                        break;
+                    }
                 }
-            }
 
-            if ($disponivel) {
-                $horarios[] = $inicio->format('H:i');
-            }
+                if ($disponivel) {
+                    $horarios[] = $inicio->format('H:i');
+                }
 
-            $inicio->addMinutes($intervalo);
+                $inicio->addMinutes($intervalo);
+            }
         }
 
         return response()->json($horarios);
@@ -331,28 +337,33 @@ class WebhookController extends Controller
 
         $diaSemana = Carbon::parse($data)->dayOfWeek;
         $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
-        $horarioBarbeiro = $barbeiro?->horarios
-            ->where('dia_semana', $diaSemana)
-            ->where('ativo', true)
-            ->first();
+        $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
+        $periodos = $horariosBarbeiro?->where('dia_semana', $diaSemana);
 
-        if ($horarioBarbeiro) {
-            $abertura = $horarioBarbeiro->hora_inicio;
-            $fechamento = $horarioBarbeiro->hora_fim;
+        $faixas = [];
+        if ($periodos && $periodos->isNotEmpty()) {
+            foreach ($periodos as $p) {
+                $faixas[] = ['inicio' => $p->hora_inicio, 'fim' => $p->hora_fim];
+            }
+        } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
+            return false;
         } else {
-            $abertura = Configuracao::get('horario_abertura', '08:00');
-            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+            $faixas[] = [
+                'inicio' => Configuracao::get('horario_abertura', '08:00'),
+                'fim' => Configuracao::get('horario_fechamento', '18:00'),
+            ];
         }
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $totalSlots = 0;
-        $inicio = Carbon::parse($data . ' ' . $abertura);
-        $fim = Carbon::parse($data . ' ' . $fechamento);
-
-        while ($inicio < $fim) {
-            $totalSlots++;
-            $inicio->addMinutes($intervalo);
+        foreach ($faixas as $faixa) {
+            $inicio = Carbon::parse($data . ' ' . $faixa['inicio']);
+            $fim = Carbon::parse($data . ' ' . $faixa['fim']);
+            while ($inicio < $fim) {
+                $totalSlots++;
+                $inicio->addMinutes($intervalo);
+            }
         }
 
         $slotsOcupados = $agendamentos + $bloqueios;

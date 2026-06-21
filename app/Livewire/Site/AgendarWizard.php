@@ -199,53 +199,58 @@ class AgendarWizard extends Component
         $diaSemana = Carbon::parse($this->data)->dayOfWeek;
         $barbeiro = Barbeiro::with('horarios')->find($this->barbeiro_id);
         $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
-        $horarioBarbeiro = $horariosBarbeiro?->where('dia_semana', $diaSemana)->first();
+        $periodos = $horariosBarbeiro?->where('dia_semana', $diaSemana);
 
-        if ($horarioBarbeiro) {
-            $abertura = $horarioBarbeiro->hora_inicio;
-            $fechamento = $horarioBarbeiro->hora_fim;
+        $faixas = [];
+        if ($periodos && $periodos->isNotEmpty()) {
+            foreach ($periodos as $p) {
+                $faixas[] = ['inicio' => $p->hora_inicio, 'fim' => $p->hora_fim];
+            }
         } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
             $this->horarios = [];
             return;
         } else {
             $abertura = Configuracao::get('horario_abertura', '08:00');
             $fechamento = Configuracao::get('horario_fechamento', '18:00');
+            $faixas[] = ['inicio' => $abertura, 'fim' => $fechamento];
         }
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
-
         $horarios = [];
-        $inicio = Carbon::parse($this->data . ' ' . $abertura);
-        $fim = Carbon::parse($this->data . ' ' . $fechamento);
 
-        while ($inicio < $fim) {
-            $fimSlot = $inicio->copy()->addMinutes($intervalo);
-            $disponivel = true;
+        foreach ($faixas as $faixa) {
+            $inicio = Carbon::parse($this->data . ' ' . $faixa['inicio']);
+            $fim = Carbon::parse($this->data . ' ' . $faixa['fim']);
 
-            foreach ($agendamentos as $ag) {
-                $hi = $ag->hora_inicio instanceof \Carbon\Carbon ? $ag->hora_inicio->format('H:i') : $ag->hora_inicio;
-                $hf = $ag->hora_fim instanceof \Carbon\Carbon ? $ag->hora_fim->format('H:i') : $ag->hora_fim;
-                $agInicio = Carbon::parse($this->data . ' ' . $hi);
-                $agFim = Carbon::parse($this->data . ' ' . $hf);
-                if ($inicio < $agFim && $fimSlot > $agInicio) {
-                    $disponivel = false;
-                    break;
+            while ($inicio < $fim) {
+                $fimSlot = $inicio->copy()->addMinutes($intervalo);
+                $disponivel = true;
+
+                foreach ($agendamentos as $ag) {
+                    $hi = $ag->hora_inicio instanceof \Carbon\Carbon ? $ag->hora_inicio->format('H:i') : $ag->hora_inicio;
+                    $hf = $ag->hora_fim instanceof \Carbon\Carbon ? $ag->hora_fim->format('H:i') : $ag->hora_fim;
+                    $agInicio = Carbon::parse($this->data . ' ' . $hi);
+                    $agFim = Carbon::parse($this->data . ' ' . $hf);
+                    if ($inicio < $agFim && $fimSlot > $agInicio) {
+                        $disponivel = false;
+                        break;
+                    }
                 }
-            }
-            foreach ($bloqueios as $bl) {
-                $hi = $bl->hora_inicio instanceof \Carbon\Carbon ? $bl->hora_inicio->format('H:i') : $bl->hora_inicio;
-                $hf = $bl->hora_fim instanceof \Carbon\Carbon ? $bl->hora_fim->format('H:i') : $bl->hora_fim;
-                $blInicio = Carbon::parse($this->data . ' ' . $hi);
-                $blFim = Carbon::parse($this->data . ' ' . $hf);
-                if ($inicio < $blFim && $fimSlot > $blInicio) {
-                    $disponivel = false;
-                    break;
+                foreach ($bloqueios as $bl) {
+                    $hi = $bl->hora_inicio instanceof \Carbon\Carbon ? $bl->hora_inicio->format('H:i') : $bl->hora_inicio;
+                    $hf = $bl->hora_fim instanceof \Carbon\Carbon ? $bl->hora_fim->format('H:i') : $bl->hora_fim;
+                    $blInicio = Carbon::parse($this->data . ' ' . $hi);
+                    $blFim = Carbon::parse($this->data . ' ' . $hf);
+                    if ($inicio < $blFim && $fimSlot > $blInicio) {
+                        $disponivel = false;
+                        break;
+                    }
                 }
+                if ($disponivel) {
+                    $horarios[] = $inicio->format('H:i');
+                }
+                $inicio->addMinutes($intervalo);
             }
-            if ($disponivel) {
-                $horarios[] = $inicio->format('H:i');
-            }
-            $inicio->addMinutes($intervalo);
         }
 
         $this->horarios = $horarios;
@@ -265,26 +270,31 @@ class AgendarWizard extends Component
         $diaSemana = Carbon::parse($data)->dayOfWeek;
         $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
         $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
-        $horarioBarbeiro = $horariosBarbeiro?->where('dia_semana', $diaSemana)->first();
+        $periodos = $horariosBarbeiro?->where('dia_semana', $diaSemana);
 
-        if ($horarioBarbeiro) {
-            $abertura = $horarioBarbeiro->hora_inicio;
-            $fechamento = $horarioBarbeiro->hora_fim;
+        $faixas = [];
+        if ($periodos && $periodos->isNotEmpty()) {
+            foreach ($periodos as $p) {
+                $faixas[] = ['inicio' => $p->hora_inicio, 'fim' => $p->hora_fim];
+            }
         } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
             return false;
         } else {
             $abertura = Configuracao::get('horario_abertura', '08:00');
             $fechamento = Configuracao::get('horario_fechamento', '18:00');
+            $faixas[] = ['inicio' => $abertura, 'fim' => $fechamento];
         }
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
         $totalSlots = 0;
-        $inicio = Carbon::parse($data . ' ' . $abertura);
-        $fim = Carbon::parse($data . ' ' . $fechamento);
-        while ($inicio < $fim) {
-            $totalSlots++;
-            $inicio->addMinutes($intervalo);
+        foreach ($faixas as $faixa) {
+            $inicio = Carbon::parse($data . ' ' . $faixa['inicio']);
+            $fim = Carbon::parse($data . ' ' . $faixa['fim']);
+            while ($inicio < $fim) {
+                $totalSlots++;
+                $inicio->addMinutes($intervalo);
+            }
         }
 
         return ($agendamentos + $bloqueios) < $totalSlots;
