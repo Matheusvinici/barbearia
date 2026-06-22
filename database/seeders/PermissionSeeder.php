@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
             'agendamento.confirmar', 'agendamento.realizar', 'agendamento.cancelar',
             'plano.view', 'plano.create', 'plano.edit', 'plano.delete',
             'relatorio.view', 'relatorio.faturamento',
+            'role.view', 'role.create', 'role.edit', 'role.delete',
             'configuracao.edit',
             'despesa.view', 'despesa.create', 'despesa.edit', 'despesa.delete',
             'caixa.view', 'caixa.abrir', 'caixa.fechar',
@@ -38,14 +39,20 @@ class PermissionSeeder extends Seeder
             $user->assignRole('admin');
         }
 
-        // Barbeiro guard permissions (same set)
+        // Proprietario - same full access as admin, on web guard
+        $proprietario = Role::firstOrCreate(['name' => 'proprietario', 'guard_name' => 'web']);
+        $proprietario->syncPermissions(Permission::where('guard_name', 'web')->get());
+
+        // Remove old proprietario from barbeiro guard if it exists
+        $oldProprietario = Role::where('name', 'proprietario')->where('guard_name', 'barbeiro')->first();
+        if ($oldProprietario) {
+            $oldProprietario->delete();
+        }
+
+        // Barbeiro guard permissions (subset for employees)
         foreach ($allPermissions as $perm) {
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'barbeiro']);
         }
-
-        // Proprietario - can do everything on barbeiro guard
-        $proprietario = Role::firstOrCreate(['name' => 'proprietario', 'guard_name' => 'barbeiro']);
-        $proprietario->syncPermissions(Permission::where('guard_name', 'barbeiro')->get());
 
         // Funcionario - limited to own appointments
         $funcionario = Role::firstOrCreate(['name' => 'funcionario', 'guard_name' => 'barbeiro']);

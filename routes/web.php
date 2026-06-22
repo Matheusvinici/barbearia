@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\PlanoController;
 use App\Http\Controllers\Admin\ClientePlanoController;
 use App\Http\Controllers\Admin\BarbeariaController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -119,7 +120,17 @@ Route::middleware(['auth'])->group(function () {
             'destroy' => 'barbearias.destroy',
         ]);
 
-        Route::prefix('roles')->name('roles.')->group(function () {
+        Route::resource('users', UserController::class)->names([
+            'index' => 'users.index',
+            'create' => 'users.create',
+            'store' => 'users.store',
+            'show' => 'users.show',
+            'edit' => 'users.edit',
+            'update' => 'users.update',
+            'destroy' => 'users.destroy',
+        ])->middleware('can:role.view');
+
+        Route::prefix('roles')->name('roles.')->middleware('can:role.view')->group(function () {
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::post('/', [RoleController::class, 'store'])->name('store');
             Route::get('/{role}/edit', [RoleController::class, 'edit'])->name('edit');

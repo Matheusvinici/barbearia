@@ -62,6 +62,18 @@
                         @endforelse
                     </div>
                 </div>
+
+                @if(!$edit)
+                <div class="col-md-12 mb-3">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="criar_como_admin" id="criarComoAdmin" value="1">
+                        <label class="form-check-label" for="criarComoAdmin">
+                            Criar também como usuário administrativo
+                            <small class="text-muted d-block">O barbeiro poderá acessar o painel admin com o papel de proprietário</small>
+                        </label>
+                    </div>
+                </div>
+                @endif
             </div>
 
             <hr>

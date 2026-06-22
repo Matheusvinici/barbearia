@@ -7,41 +7,52 @@
             </a>
         </li>
 
+        @can('agendamento.view')
         <li class="nav-item {{ request()->is('admin/agendamentos*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.agendamentos.index') }}" class="nav-link {{ request()->is('admin/agendamentos*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-calendar-check"></i>
                 <p>Agendamentos</p>
             </a>
         </li>
+        @endcan
 
+        @can('barbearia.view')
         <li class="nav-item {{ request()->is('admin/barbearias*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.barbearias.index') }}" class="nav-link {{ request()->is('admin/barbearias*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-store"></i>
                 <p>Barbearias</p>
             </a>
         </li>
+        @endcan
 
+        @can('barbeiro.view')
         <li class="nav-item {{ request()->is('admin/barbeiros*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.barbeiros.index') }}" class="nav-link {{ request()->is('admin/barbeiros*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-user-tie"></i>
                 <p>Barbeiros</p>
             </a>
         </li>
+        @endcan
 
+        @can('servico.view')
         <li class="nav-item {{ request()->is('admin/servicos*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.servicos.index') }}" class="nav-link {{ request()->is('admin/servicos*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-cut"></i>
                 <p>Serviços</p>
             </a>
         </li>
+        @endcan
 
+        @can('cliente.view')
         <li class="nav-item {{ request()->is('admin/clientes*') && !request()->is('admin/clientes-planos*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.clientes.index') }}" class="nav-link {{ request()->is('admin/clientes*') && !request()->is('admin/clientes-planos*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-users"></i>
                 <p>Clientes</p>
             </a>
         </li>
+        @endcan
 
+        @can('plano.view')
         <li class="nav-item has-treeview {{ request()->is('admin/planos*', 'admin/clientes-planos*') ? 'menu-open' : '' }}">
             <a href="#" class="nav-link {{ request()->is('admin/planos*', 'admin/clientes-planos*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-shopping-basket"></i>
@@ -68,14 +79,18 @@
                 </li>
             </ul>
         </li>
+        @endcan
 
+        @can('agendamento.view')
         <li class="nav-item {{ request()->is('admin/bloqueios*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.bloqueios.index') }}" class="nav-link {{ request()->is('admin/bloqueios*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-ban"></i>
                 <p>Bloqueio de Agenda</p>
             </a>
         </li>
+        @endcan
 
+        @can('despesa.view')
         <li class="nav-item has-treeview {{ request()->is('admin/despesas*', 'admin/caixa*', 'admin/relatorios*') ? 'menu-open' : '' }}">
             <a href="#" class="nav-link {{ request()->is('admin/despesas*', 'admin/caixa*', 'admin/relatorios*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-dollar-sign"></i>
@@ -102,8 +117,18 @@
                 </li>
             </ul>
         </li>
+        @endcan
 
+        @canany(['role.view', 'configuracao.edit'])
         <li class="nav-item nav-header">ACESSO</li>
+
+        @can('role.view')
+        <li class="nav-item {{ request()->is('admin/users*') ? 'menu-open' : '' }}">
+            <a href="{{ route('admin.users.index') }}" class="nav-link {{ request()->is('admin/users*') ? 'active' : '' }}">
+                <i class="nav-icon fas fa-user-shield"></i>
+                <p>Usuários</p>
+            </a>
+        </li>
 
         <li class="nav-item {{ request()->is('admin/roles*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.roles.index') }}" class="nav-link {{ request()->is('admin/roles*') ? 'active' : '' }}">
@@ -111,12 +136,16 @@
                 <p>Papéis e Permissões</p>
             </a>
         </li>
+        @endcan
 
+        @can('configuracao.edit')
         <li class="nav-item {{ request()->is('admin/configuracoes*') ? 'menu-open' : '' }}">
             <a href="{{ route('admin.configuracoes.index') }}" class="nav-link {{ request()->is('admin/configuracoes*') ? 'active' : '' }}">
                 <i class="nav-icon fas fa-cog"></i>
                 <p>Configurações</p>
             </a>
         </li>
+        @endcan
+        @endcanany
     </ul>
 </nav>

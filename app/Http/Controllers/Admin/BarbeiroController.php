@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\BarbeiroHorario;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -47,6 +48,7 @@ class BarbeiroController extends Controller
             'horarios' => 'nullable|array',
             'roles' => 'nullable|array',
             'roles.*' => 'exists:roles,id',
+            'criar_como_admin' => 'nullable|boolean',
         ]);
 
         $data['password'] = Hash::make($data['password']);
@@ -68,6 +70,21 @@ class BarbeiroController extends Controller
                         'hora_fim' => $horario['hora_fim'],
                         'ativo' => true,
                     ]);
+                }
+            }
+        }
+
+        if ($request->criar_como_admin) {
+            $existingUser = User::where('email', $request->email)->first();
+            if (!$existingUser) {
+                $user = User::create([
+                    'name' => $request->nome,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                ]);
+                $proprietarioRole = Role::where('name', 'proprietario')->where('guard_name', 'web')->first();
+                if ($proprietarioRole) {
+                    $user->assignRole($proprietarioRole);
                 }
             }
         }
