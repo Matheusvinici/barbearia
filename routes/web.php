@@ -33,7 +33,7 @@ Route::prefix('site')->name('site.')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 });
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth:web,barbeiro'])->group(function () {
     Route::get('/home', [HomeController::class, 'index'])->name('home');
     Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
 
@@ -81,9 +81,9 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/agendamentos/horarios/disponiveis', [AgendamentoController::class, 'horariosDisponiveis'])->name('agendamentos.horarios');
 
 
-        Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
-        Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
-        Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
+        Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index')->middleware('can:bloqueio.view');
+        Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store')->middleware('can:bloqueio.create');
+        Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy')->middleware('can:bloqueio.delete');
 
         Route::get('/despesas', [DespesaController::class, 'index'])->name('despesas.index');
         Route::get('/despesas/create', [DespesaController::class, 'create'])->name('despesas.create');

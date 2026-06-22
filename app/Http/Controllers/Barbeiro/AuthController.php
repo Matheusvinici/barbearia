@@ -22,7 +22,7 @@ class AuthController extends Controller
 
         if (Auth::guard('barbeiro')->attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
-            return redirect()->intended(route('barbeiro.dashboard'));
+            return redirect()->to(route('barbeiro.dashboard'));
         }
 
         return back()->withErrors([

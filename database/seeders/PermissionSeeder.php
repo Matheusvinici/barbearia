@@ -20,6 +20,7 @@ class PermissionSeeder extends Seeder
             'agendamento.confirmar', 'agendamento.realizar', 'agendamento.cancelar',
             'plano.view', 'plano.create', 'plano.edit', 'plano.delete',
             'relatorio.view', 'relatorio.faturamento',
+            'bloqueio.view', 'bloqueio.create', 'bloqueio.delete',
             'role.view', 'role.create', 'role.edit', 'role.delete',
             'configuracao.edit',
             'despesa.view', 'despesa.create', 'despesa.edit', 'despesa.delete',

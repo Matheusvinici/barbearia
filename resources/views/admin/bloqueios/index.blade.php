@@ -10,6 +10,12 @@
             <div class="card-body">
                 <form action="{{ route('admin.bloqueios.store') }}" method="POST" id="formBloqueio">
                     @csrf
+                    @if($isBarbeiro)
+                    <div class="alert alert-info py-2 mb-3">
+                        <i class="fas fa-info-circle"></i> Você está bloqueando sua própria agenda.
+                    </div>
+                    <input type="hidden" name="barbeiro_id" value="{{ $barbeiro->id }}">
+                    @else
                     <div class="mb-3">
                         <label>Barbearia</label>
                         <select name="barbearia_id" class="form-control" id="barbeariaSelect">
@@ -25,6 +31,7 @@
                             <option value="">Selecione a barbearia primeiro</option>
                         </select>
                     </div>
+                    @endif
                     <div class="mb-3">
                         <label>Data</label>
                         <input type="date" name="data" class="form-control" required>
@@ -56,6 +63,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Bloqueios Ativos</h5>
+                @if(!$isBarbeiro)
                 <form method="GET" class="d-flex gap-2 align-items-center">
                     <select name="barbearia_id" class="form-control form-control-sm" style="width:auto" onchange="this.form.submit()">
                         <option value="">Todas as barbearias</option>
@@ -64,6 +72,7 @@
                         @endforeach
                     </select>
                 </form>
+                @endif
             </div>
             <div class="card-body p-0">
                 <table class="table table-hover mb-0">
@@ -91,6 +100,7 @@
 </div>
 
 @push('scripts')
+@if(!$isBarbeiro)
 <script>
 const barbeiros = {
     @foreach($barbearias as $b)
@@ -109,6 +119,7 @@ $('#barbeariaSelect').change(function() {
     }
 });
 </script>
+@endif
 <script>
 function confirmarExclusao(url) {
     Swal.fire({ title: 'Remover bloqueio?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Cancelar', confirmButtonText: 'Remover' })

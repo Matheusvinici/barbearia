@@ -179,11 +179,7 @@
             </a>
         </div>
         <div class="sidebar">
-            @if (Auth::guard('web')->check())
-                @include('layouts.navigation-admin')
-            @elseif (Auth::guard('barbeiro')->check())
-                @include('layouts.navigation-barbeiro')
-            @endif
+            @include('layouts.navigation')
         </div>
     </aside>
 
@@ -196,7 +192,7 @@
                     </div>
                     <div class="col-sm-6">
                         <ol class="breadcrumb float-sm-right">
-                            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Home</a></li>
+                            <li class="breadcrumb-item"><a href="{{ Auth::guard('web')->check() ? route('admin.dashboard') : route('barbeiro.dashboard') }}">Home</a></li>
                             <li class="breadcrumb-item active">@yield('breadcrumb', '')</li>
                         </ol>
                     </div>
