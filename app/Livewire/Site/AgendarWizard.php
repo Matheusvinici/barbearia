@@ -218,11 +218,18 @@ class AgendarWizard extends Component
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
         $horarios = [];
 
+        $agora = Carbon::now();
+        $hoje = $agora->format('Y-m-d');
+
         foreach ($faixas as $faixa) {
             $inicio = Carbon::parse($this->data . ' ' . $faixa['inicio']);
             $fim = Carbon::parse($this->data . ' ' . $faixa['fim']);
 
             while ($inicio < $fim) {
+                if ($this->data === $hoje && $inicio <= $agora) {
+                    $inicio->addMinutes($intervalo);
+                    continue;
+                }
                 $fimSlot = $inicio->copy()->addMinutes($intervalo);
                 $disponivel = true;
 

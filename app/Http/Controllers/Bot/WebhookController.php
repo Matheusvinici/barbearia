@@ -69,12 +69,19 @@ class WebhookController extends Controller
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
 
+        $agora = Carbon::now();
+        $hoje = $agora->format('Y-m-d');
+
         $horarios = [];
         foreach ($faixas as $faixa) {
             $inicio = Carbon::parse($data . ' ' . $faixa['inicio']);
             $fim = Carbon::parse($data . ' ' . $faixa['fim']);
 
             while ($inicio < $fim) {
+                if ($data === $hoje && $inicio <= $agora) {
+                    $inicio->addMinutes($intervalo);
+                    continue;
+                }
                 $fimSlot = $inicio->copy()->addMinutes($intervalo);
                 $disponivel = true;
 
