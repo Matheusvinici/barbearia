@@ -34,20 +34,28 @@ class BarbeiroController extends Controller
             3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'
         ];
         $roles = Role::where('guard_name', 'barbeiro')->orderBy('name')->get();
+        $users = User::where(function ($q) {
+            if ($this->isTenantContext()) {
+                $ids = $this->tenantIds();
+                $q->whereHas('ownedBarbearias', function ($q2) use ($ids) {
+                    $q2->whereIn('id', $ids);
+                });
+            }
+        })->orderBy('name')->get();
         return view('admin.barbeiros.form', [
             'edit' => false,
             'barbearias' => $barbearias,
             'diasSemana' => $diasSemana,
             'roles' => $roles,
+            'users' => $users,
         ]);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $rules = [
+            'user_id' => 'nullable|exists:users,id',
             'nome' => 'required|string|max:255',
-            'email' => 'required|email|unique:barbeiros,email',
-            'password' => 'required|min:6',
             'telefone' => 'nullable|string|max:20',
             'comissao_percentual' => 'required|numeric|min:0|max:100',
             'barbearia_id' => 'nullable|exists:barbearias,id',
@@ -60,9 +68,30 @@ class BarbeiroController extends Controller
             'especialidades' => 'nullable|string|max:500',
             'barbearias' => 'nullable|array',
             'barbearias.*' => 'exists:barbearias,id',
-        ]);
+        ];
 
-        $data['password'] = Hash::make($data['password']);
+        if ($request->user_id) {
+            $user = User::find($request->user_id);
+            if (!$user) {
+                return back()->withErrors(['user_id' => 'Usuário não encontrado.'])->withInput();
+            }
+            $existing = Barbeiro::where('email', $user->email)->first();
+            if ($existing && $existing->user_id && $existing->user_id != $request->user_id) {
+                return back()->withErrors(['email' => 'Este e-mail já está em uso por outro barbeiro.'])->withInput();
+            }
+            $rules['email'] = 'required|email';
+            $data = $request->validate($rules);
+            $data['email'] = $user->email;
+            $data['nome'] = $user->name;
+            $data['password'] = Hash::make(uniqid());
+            $barbeiro = $existing;
+        } else {
+            $rules['email'] = 'required|email|unique:barbeiros,email';
+            $rules['password'] = 'required|min:6';
+            $data = $request->validate($rules);
+            $data['password'] = Hash::make($data['password']);
+            $barbeiro = null;
+        }
 
         if ($this->isTenantContext()) {
             $allowedIds = $this->tenantIds();
@@ -71,13 +100,29 @@ class BarbeiroController extends Controller
                 if (!empty($invalid)) {
                     return back()->withErrors(['barbearias' => 'Barbearia inválida.'])->withInput();
                 }
+                if (empty($data['barbearia_id'])) {
+                    $data['barbearia_id'] = $data['barbearias'][0];
+                }
+            } elseif (empty($data['barbearia_id'])) {
+                $data['barbearia_id'] = $this->getTenant()->id;
             }
-            if ($data['barbearia_id'] && !in_array($data['barbearia_id'], $allowedIds)) {
+            if (!empty($data['barbearia_id']) && !in_array($data['barbearia_id'], $allowedIds)) {
                 return back()->withErrors(['barbearia_id' => 'Barbearia inválida.'])->withInput();
             }
         }
 
-        $barbeiro = Barbeiro::create($data);
+        try {
+            if ($barbeiro) {
+                $barbeiro->update($data);
+            } else {
+                $barbeiro = Barbeiro::create($data);
+            }
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ($e->getCode() == 23000) {
+                return back()->withErrors(['email' => 'Este e-mail já está cadastrado para outro barbeiro.'])->withInput();
+            }
+            throw $e;
+        }
 
         if ($request->filled('barbearias')) {
             $barbeiro->barbearias()->sync($request->barbearias);
@@ -88,6 +133,9 @@ class BarbeiroController extends Controller
         }
 
         if ($request->horarios) {
+            if ($barbeiro->horarios()->exists()) {
+                $barbeiro->horarios()->delete();
+            }
             foreach ($request->horarios as $horario) {
                 if (!empty($horario['hora_inicio']) && !empty($horario['hora_fim'])) {
                     BarbeiroHorario::create([
@@ -140,6 +188,14 @@ class BarbeiroController extends Controller
         ];
         $roles = Role::where('guard_name', 'barbeiro')->orderBy('name')->get();
         $userExists = User::where('email', $barbeiro->email)->exists();
+        $users = User::where(function ($q) {
+            if ($this->isTenantContext()) {
+                $ids = $this->tenantIds();
+                $q->whereHas('ownedBarbearias', function ($q2) use ($ids) {
+                    $q2->whereIn('id', $ids);
+                });
+            }
+        })->orderBy('name')->get();
         return view('admin.barbeiros.form', [
             'edit' => true,
             'barbeiro' => $barbeiro,
@@ -147,6 +203,7 @@ class BarbeiroController extends Controller
             'diasSemana' => $diasSemana,
             'roles' => $roles,
             'userExists' => $userExists,
+            'users' => $users,
         ]);
     }
 
@@ -154,10 +211,8 @@ class BarbeiroController extends Controller
     {
         $barbeiro = Barbeiro::findOrFail($id);
 
-        $data = $request->validate([
-            'nome' => 'required|string|max:255',
-            'email' => 'required|email|unique:barbeiros,email,' . $barbeiro->id,
-            'password' => 'nullable|min:6',
+        $rules = [
+            'user_id' => 'nullable|exists:users,id',
             'telefone' => 'nullable|string|max:20',
             'comissao_percentual' => 'required|numeric|min:0|max:100',
             'barbearia_id' => 'nullable|exists:barbearias,id',
@@ -169,12 +224,27 @@ class BarbeiroController extends Controller
             'especialidades' => 'nullable|string|max:500',
             'barbearias' => 'nullable|array',
             'barbearias.*' => 'exists:barbearias,id',
-        ]);
+        ];
 
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($data['password']);
+        if ($request->user_id) {
+            $user = User::find($request->user_id);
+            if (!$user) {
+                return back()->withErrors(['user_id' => 'Usuário não encontrado.'])->withInput();
+            }
+            $rules['email'] = 'required|email';
+            $data = $request->validate($rules);
+            $data['email'] = $user->email;
+            $data['nome'] = $user->name;
         } else {
-            unset($data['password']);
+            $rules['nome'] = 'required|string|max:255';
+            $rules['email'] = 'required|email|unique:barbeiros,email,' . $barbeiro->id;
+            $rules['password'] = 'nullable|min:6';
+            $data = $request->validate($rules);
+            if ($request->filled('password')) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
         }
 
         $barbeiro->update($data);

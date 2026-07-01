@@ -33,6 +33,11 @@ class User extends Authenticatable
         ];
     }
 
+    public function barbeiro()
+    {
+        return $this->hasOne(Barbeiro::class, 'user_id');
+    }
+
     public function ownedBarbearias()
     {
         return $this->hasMany(Barbearia::class, 'owner_id');

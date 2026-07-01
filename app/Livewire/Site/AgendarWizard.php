@@ -261,9 +261,9 @@ class AgendarWizard extends Component
             if ($this->temHorariosDisponiveis($this->barbeiro_id, $data->format('Y-m-d'))) {
                 $dias[] = [
                     'data' => $data->format('Y-m-d'),
-                    'label' => $data->isoFormat('dddd'),
-                    'dia' => $data->isoFormat('dddd'),
-                    'mes' => $data->isoFormat('MMM'),
+                    'label' => $data->translatedFormat('l'),
+                    'dia' => $data->translatedFormat('l'),
+                    'mes' => $data->translatedFormat('M'),
                 ];
             }
         }

@@ -71,13 +71,32 @@ body {
 .login-wrapper { display: grid; grid-template-columns: 1.1fr 1fr; min-height: 100vh; }
 .brand-panel {
     position: relative;
-    background: radial-gradient(circle at 80% 0%, var(--accent-glow), transparent 50%), radial-gradient(circle at 0% 100%, rgba(96, 165, 250, 0.05), transparent 50%), linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg) 100%);
+    background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg) 100%);
     padding: 48px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     overflow: hidden;
     border-right: 1px solid var(--border);
+}
+.brand-bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+}
+.brand-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.brand-bg .overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13,13,18,0.92) 0%, rgba(13,13,18,0.6) 50%, rgba(13,13,18,0.88) 100%);
+}
+[data-bs-theme="light"] .brand-bg .overlay {
+    background: linear-gradient(135deg, rgba(246,246,248,0.92) 0%, rgba(246,246,248,0.5) 50%, rgba(246,246,248,0.85) 100%);
 }
 .brand-panel::before {
     content: '';
@@ -90,6 +109,7 @@ body {
     background: radial-gradient(circle, var(--accent-glow), transparent 60%);
     pointer-events: none;
     opacity: 0.6;
+    z-index: 1;
 }
 .brand-panel::after {
     content: '';
@@ -101,6 +121,7 @@ body {
     border-radius: 50%;
     background: radial-gradient(circle, rgba(96, 165, 250, 0.04), transparent 60%);
     pointer-events: none;
+    z-index: 1;
 }
 .brand-logo {
     display: flex;
@@ -260,7 +281,13 @@ body {
 
 <div class="login-wrapper">
   <aside class="brand-panel">
-    <div class="brand-logo">
+    @if($tenantBg)
+    <div class="brand-bg">
+      <img src="{{ $tenantBg }}" alt="">
+      <div class="overlay"></div>
+    </div>
+    @endif
+    <div class="brand-logo" style="z-index:2;position:relative;">
       @if($tenantLogo)
         <img src="{{ $tenantLogo }}" alt="{{ $tenantName }}" style="max-height:44px;max-width:200px;object-fit:contain;">
       @else
@@ -269,15 +296,10 @@ body {
       @endif
     </div>
     <div class="brand-content">
-      <h1 class="brand-title">Agende seu horário com praticidade.</h1>
-      <p class="brand-subtitle">Escolha o barbeiro, o serviço e o horário ideal. Receba lembretes automáticos e nunca perca seu corte.</p>
-      <div class="feature-list">
-        <div class="feature-item"><div class="feature-ic"><svg class="icon icon-sm"><use href="#i-calendar"/></svg></div><span>Agende online 24 horas por dia</span></div>
-        <div class="feature-item"><div class="feature-ic"><svg class="icon icon-sm"><use href="#i-wallet"/></svg></div><span>Pagamento na barbearia ou online</span></div>
-        <div class="feature-item"><div class="feature-ic"><svg class="icon icon-sm"><use href="#i-chart"/></svg></div><span>Lembretes via WhatsApp</span></div>
-      </div>
+      <h1 class="brand-title">{{ $tenantName }}</h1>
+      <p class="brand-subtitle">Agende seu horário com praticidade. Escolha o barbeiro, o serviço e o horário ideal.</p>
     </div>
-    <div class="brand-footer">
+    <div class="brand-footer" style="z-index:2;position:relative;">
       <svg class="icon icon-sm"><use href="#i-lock"/></svg>
       <span>Conexão criptografada e segura &middot; LGPD</span>
     </div>

@@ -30,6 +30,11 @@ class AgendamentoController extends Controller
         $barbeiroId = request('barbeiro_id');
         $barbeariaId = request('barbearia_id');
 
+        $userBarbeiro = Auth::guard('web')->user()?->barbeiro;
+        if (!$barbeiroId && $userBarbeiro) {
+            $barbeiroId = $userBarbeiro->id;
+        }
+
         $query = Agendamento::with(['barbeiro', 'cliente', 'cliente.planos', 'servicos'])
             ->whereDate('data', $data);
 
@@ -44,9 +49,20 @@ class AgendamentoController extends Controller
         }
 
         $agendamentos = $query->orderBy('hora_inicio')->get();
-        $barbeiros = Barbeiro::where('ativo', true)->get();
+
+        $barbeirosQuery = Barbeiro::where('ativo', true);
+        $barbeariasQuery = Barbearia::orderBy('nome');
+
+        if ($this->isTenantContext()) {
+            $tenantId = $this->tenantId();
+            $treeIds = $this->tenantIds();
+            $barbeirosQuery->whereIn('barbearia_id', $treeIds);
+            $barbeariasQuery->whereIn('id', $treeIds);
+        }
+
+        $barbeiros = $barbeirosQuery->get();
         $servicos = Servico::where('ativo', true)->get();
-        $barbearias = Barbearia::orderBy('nome')->get();
+        $barbearias = $barbeariasQuery->get();
 
         return view('admin.agendamentos.index', compact(
             'agendamentos', 'barbeiros', 'servicos', 'barbearias', 'data', 'barbeiroId', 'barbeariaId'
@@ -116,25 +132,34 @@ class AgendamentoController extends Controller
         return redirect()->to($route)->with('success', 'Agendamento criado com sucesso!');
     }
 
-    public function show(Agendamento $agendamento)
+    public function show(Request $request)
     {
+        $agendamento = $request->route('agendamento');
         $agendamento->load(['barbeiro', 'cliente', 'servicos', 'cliente.planos' => function ($q) {
             $q->where('ativo', true)->with('plano.quotas');
         }, 'planoUso']);
         return view('admin.agendamentos.show', compact('agendamento'));
     }
 
-    public function edit(Agendamento $agendamento)
+    public function edit(Request $request)
     {
+        $agendamento = $request->route('agendamento');
         $agendamento->load('servicos');
-        $barbeiros = Barbeiro::where('ativo', true)->get();
+        $barbeirosQuery = Barbeiro::where('ativo', true);
         $servicos = Servico::where('ativo', true)->get();
+
+        if ($this->isTenantContext()) {
+            $barbeirosQuery->whereIn('barbearia_id', $this->tenantIds());
+        }
+
+        $barbeiros = $barbeirosQuery->get();
 
         return view('admin.agendamentos.form', compact('agendamento', 'barbeiros', 'servicos'));
     }
 
-    public function update(Request $request, Agendamento $agendamento)
+    public function update(Request $request)
     {
+        $agendamento = $request->route('agendamento');
         $data = $request->validate([
             'barbeiro_id' => 'required|exists:barbeiros,id',
             'data' => 'required|date',
@@ -189,8 +214,9 @@ class AgendamentoController extends Controller
         return redirect()->to($route)->with('success', 'Agendamento atualizado com sucesso!');
     }
 
-    public function confirmar(Request $request, Agendamento $agendamento)
+    public function confirmar(Request $request)
     {
+        $agendamento = $request->route('agendamento');
         if ($agendamento->status !== 'pendente') {
             return redirect()->back()->with('error', 'Agendamento não está pendente.');
         }
@@ -199,8 +225,9 @@ class AgendamentoController extends Controller
         return redirect()->back()->with('success', 'Agendamento confirmado com sucesso!');
     }
 
-    public function realizar(Request $request, Agendamento $agendamento)
+    public function realizar(Request $request)
     {
+        $agendamento = $request->route('agendamento');
         if ($agendamento->status !== 'confirmado') {
             return redirect()->back()->with('error', 'Agendamento não está confirmado.');
         }
@@ -213,8 +240,9 @@ class AgendamentoController extends Controller
         return redirect()->back()->with('success', 'Serviço realizado com sucesso!');
     }
 
-    public function destroy(Agendamento $agendamento)
+    public function destroy(Request $request)
     {
+        $agendamento = $request->route('agendamento');
         $agendamento->servicos()->detach();
         $agendamento->delete();
         return response()->json(['success' => true, 'message' => 'Agendamento excluído com sucesso']);

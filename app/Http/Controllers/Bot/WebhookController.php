@@ -141,7 +141,7 @@ class WebhookController extends Controller
             if ($temVaga) {
                 $dias[] = [
                     'data' => $data->format('Y-m-d'),
-                    'label' => $data->isoFormat('dddd, D [de] MMMM'),
+                    'label' => $data->translatedFormat('l, j \d\e F'),
                 ];
             }
         }

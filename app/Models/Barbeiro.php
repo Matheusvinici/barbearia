@@ -12,6 +12,7 @@ class Barbeiro extends Authenticatable
     use HasFactory, Notifiable, HasRoles;
 
     protected $fillable = [
+        'user_id',
         'nome',
         'email',
         'password',
@@ -54,6 +55,11 @@ class Barbeiro extends Authenticatable
     public function barbearia()
     {
         return $this->belongsTo(Barbearia::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 
     public function horarios()

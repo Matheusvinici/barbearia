@@ -14,7 +14,7 @@
     <span class="live-dot"></span>
     <span>Ao vivo</span>
     <span class="pipe">·</span>
-    <span>{{ \Carbon\Carbon::parse($data)->isoFormat('dddd, D [de] MMMM [de] YYYY') }}</span>
+    <span>{{ \Carbon\Carbon::parse($data)->translatedFormat('l, j \d\e F \d\e Y') }}</span>
     <span class="pipe">·</span>
     <span>{{ $agendamentos->count() }} agendamentos hoje</span>
 @endsection
@@ -191,6 +191,10 @@ function getInitials($name) {
 
 @section('content')
 
+@php
+$slug = request()->route('barbearia')?->slug;
+@endphp
+
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
     <defs>
         <symbol id="i-home" viewBox="0 0 24 24" fill="none"><path d="M9.02 2.84L4.04 6.74c-.68.54-1.17 1.71-1.17 2.58v7.04c0 1.83 1.49 3.34 3.32 3.34h11.62c1.83 0 3.32-1.49 3.32-3.33V9.4c0-.93-.53-2.07-1.23-2.6l-5.71-4.04c-1.01-.72-2.55-.69-3.54.06z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.5v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
@@ -269,7 +273,7 @@ function getInitials($name) {
             <div class="panel-title-icon"><svg class="icon"><use href="#i-calendar"/></svg></div>
             <div>
                 <h2 class="panel-title">Lista de agendamentos</h2>
-                <div class="panel-subtitle" id="panelDate">{{ \Carbon\Carbon::parse($data)->isoFormat('D [de] MMMM · dddd') }}</div>
+                <div class="panel-subtitle" id="panelDate">{{ \Carbon\Carbon::parse($data)->translatedFormat('j \d\e F · l') }}</div>
             </div>
         </div>
         <div style="display:flex;align-items:center;gap:6px;">
@@ -288,6 +292,18 @@ function getInitials($name) {
     </div>
 
     <div class="toolbar">
+        <select id="filterBarbeiro" class="form-control" style="width:auto;min-width:160px;height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card-solid);color:var(--text);font-family:inherit;font-size:13px;" onchange="filtrar()">
+            <option value="">Todos os barbeiros</option>
+            @foreach($barbeiros as $b)
+            <option value="{{ $b->id }}" {{ $barbeiroId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+            @endforeach
+        </select>
+        <select id="filterBarbearia" class="form-control" style="width:auto;min-width:160px;height:34px;padding:0 10px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card-solid);color:var(--text);font-family:inherit;font-size:13px;" onchange="filtrar()">
+            <option value="">Todas as unidades</option>
+            @foreach($barbearias as $b)
+            <option value="{{ $b->id }}" {{ $barbeariaId == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+            @endforeach
+        </select>
         <div class="toolbar-spacer"></div>
         <div class="result-count" id="resultCount"><strong>{{ $totalHoje }}</strong> de <strong>{{ $totalHoje }}</strong> resultados</div>
     </div>
@@ -323,7 +339,7 @@ function getInitials($name) {
                 @endphp
                 <tr data-status="{{ $agendamento->status }}">
                     <td data-label="Hora">
-                        <div class="time-cell">{{ $agendamento->hora_inicio }}<span class="duration"><svg class="icon"><use href="#i-clock"/></svg>{{ $durationLabel }}</span></div>
+                        <div class="time-cell">{{ $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio }}<span class="duration"><svg class="icon"><use href="#i-clock"/></svg>{{ $durationLabel }}</span></div>
                     </td>
                     <td data-label="Cliente">
                         <div class="client-cell">
@@ -353,17 +369,26 @@ function getInitials($name) {
                     <td data-label="Valor" class="value-cell">R$ {{ number_format($agendamento->total, 2, ',', '.') }}@if($pagamento !== '—')<span class="badge-c outlined" style="font-size:10px;padding:1px 5px;margin-top:2px;">{{ $pagamento }}</span>@endif</td>
                     <td data-label="Ações">
                         <div class="actions-cell">
+                            @php
+                            $confirmUrl = $slug
+                                ? route('tenant.admin.agendamentos.confirmar', [$slug, $agendamento->id])
+                                : route('admin.agendamentos.confirmar', $agendamento->id);
+                            $realizarUrl = $slug
+                                ? route('tenant.admin.agendamentos.realizar', [$slug, $agendamento->id])
+                                : route('admin.agendamentos.realizar', $agendamento->id);
+                            @endphp
+                            @php $horaAgd = $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio; @endphp
                             @if($agendamento->status === 'pendente')
-                            <button class="action-btn success" title="Confirmar" onclick="abrirModalConfirmar({{ $agendamento->id }}, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $agendamento->hora_inicio }}')">
+                            <button class="action-btn success" title="Confirmar" data-action="{{ $confirmUrl }}" onclick="abrirModalConfirmar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
                                 <svg class="icon icon-sm"><use href="#i-check"/></svg>
                             </button>
                             @endif
                             @if($agendamento->status === 'confirmado')
-                            <button class="action-btn warning" title="Realizar" onclick="abrirModalRealizar({{ $agendamento->id }}, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $agendamento->hora_inicio }}')">
+                            <button class="action-btn warning" title="Realizar" data-action="{{ $realizarUrl }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
                                 <svg class="icon icon-sm"><use href="#i-check-double"/></svg>
                             </button>
                             @endif
-                            <a href="{{ route('admin.agendamentos.edit', $agendamento) }}" class="action-btn" title="Editar">
+                            <a href="{{ $slug ? route('tenant.admin.agendamentos.edit', [$slug, $agendamento]) : route('admin.agendamentos.edit', $agendamento) }}" class="action-btn" title="Editar">
                                 <svg class="icon icon-sm"><use href="#i-edit"/></svg>
                             </a>
                             <a href="tel:{{ $agendamento->cliente->telefone }}" class="action-btn info" title="Ligar" target="_blank">
@@ -372,7 +397,7 @@ function getInitials($name) {
                             <a href="https://wa.me/55{{ preg_replace('/[^0-9]/', '', $agendamento->cliente->telefone) }}" class="action-btn success" title="WhatsApp" target="_blank">
                                 <svg class="icon icon-sm"><use href="#i-message"/></svg>
                             </a>
-                            <button class="action-btn danger" title="Excluir" onclick="confirmarExclusao('{{ route('admin.agendamentos.destroy', $agendamento) }}')">
+                            <button class="action-btn danger" title="Excluir" onclick="confirmarExclusao('{{ $slug ? route('tenant.admin.agendamentos.destroy', [$slug, $agendamento]) : route('admin.agendamentos.destroy', $agendamento) }}')">
                                 <svg class="icon icon-sm"><use href="#i-close"/></svg>
                             </button>
                         </div>
@@ -463,7 +488,7 @@ function getInitials($name) {
 <div class="modal fade" id="modalNovoAgendamento" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="{{ route('admin.agendamentos.store') }}" method="POST">
+            <form action="{{ $slug ? route('tenant.admin.agendamentos.store', $slug) : route('admin.agendamentos.store') }}" method="POST">
                 @csrf
                 <input type="hidden" name="data" value="{{ request('data', now()->format('Y-m-d')) }}">
                 <div class="modal-header">
@@ -489,7 +514,7 @@ function getInitials($name) {
                             <label>Barbeiro</label>
                             <select name="barbeiro_id" class="form-control" id="barbeiroSelect" required>
                                 <option value="">Selecione...</option>
-                                @foreach(App\Models\Barbeiro::where('ativo', true)->get() as $b)
+                                @foreach($barbeiros as $b)
                                 <option value="{{ $b->id }}">{{ $b->nome }}</option>
                                 @endforeach
                             </select>
@@ -503,7 +528,7 @@ function getInitials($name) {
                         <div class="col-md-6 mb-3">
                             <label>Serviços</label>
                             <div class="border rounded p-2" style="max-height:150px;overflow-y:auto">
-                                @foreach(App\Models\Servico::where('ativo', true)->get() as $s)
+                                @foreach($servicos as $s)
                                 <div class="form-check">
                                     <input class="form-check-input" type="checkbox" name="servico_ids[]" value="{{ $s->id }}" id="servico{{ $s->id }}">
                                     <label class="form-check-label small" for="servico{{ $s->id }}">{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}</label>
@@ -564,16 +589,15 @@ function irParaData(data) {
     window.location.search = params.toString();
 }
 
-@php $baseRoute = request()->route('barbearia') ? 'tenant.admin.agendamentos' : 'admin.agendamentos'; $slug = request()->route('barbearia')?->slug; @endphp
-function abrirModalConfirmar(id, nome, hora) {
+function abrirModalConfirmar(btn, nome, hora) {
     document.getElementById('confirmarInfo').textContent = 'Confirmar presença de ' + nome + ' às ' + hora + '?';
-    document.getElementById('formConfirmar').action = '{{ $slug ? "/$slug" : "" }}/admin/agendamentos/' + id + '/confirmar';
+    document.getElementById('formConfirmar').action = btn.dataset.action;
     new bootstrap.Modal(document.getElementById('modalConfirmar')).show();
 }
 
-function abrirModalRealizar(id, nome, hora) {
+function abrirModalRealizar(btn, nome, hora) {
     document.getElementById('realizarInfo').textContent = 'Realizar serviço de ' + nome + ' às ' + hora + '?';
-    document.getElementById('formRealizar').action = '{{ $slug ? "/$slug" : "" }}/admin/agendamentos/' + id + '/realizar';
+    document.getElementById('formRealizar').action = btn.dataset.action;
     new bootstrap.Modal(document.getElementById('modalRealizar')).show();
 }
 
@@ -643,6 +667,15 @@ document.addEventListener('keydown', function(e) {
         document.querySelector('.search-box input').focus();
     }
 });
+
+function filtrar() {
+    const params = new URLSearchParams(window.location.search);
+    const barbeiro = document.getElementById('filterBarbeiro').value;
+    const barbearia = document.getElementById('filterBarbearia').value;
+    if (barbeiro) params.set('barbeiro_id', barbeiro); else params.delete('barbeiro_id');
+    if (barbearia) params.set('barbearia_id', barbearia); else params.delete('barbearia_id');
+    window.location.search = params.toString();
+}
 
 document.getElementById('searchInput')?.addEventListener('input', function() {
     const q = this.value.toLowerCase();

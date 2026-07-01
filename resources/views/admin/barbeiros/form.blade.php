@@ -54,6 +54,18 @@
                 </div>
                 <div class="panel-body">
                     <div class="form-grid">
+                        @if($users->isNotEmpty())
+                        <div class="form-group" style="grid-column:1/-1;">
+                            <label class="form-label">Vincular Usuário Existente</label>
+                            <select name="user_id" class="form-input" id="selectUser" onchange="onSelectUser(this)">
+                                <option value="">— Selecionar usuário —</option>
+                                @foreach($users as $u)
+                                <option value="{{ $u->id }}" data-nome="{{ $u->name }}" data-email="{{ $u->email }}" {{ old('user_id', $edit ? $barbeiro->user_id : '') == $u->id ? 'selected' : '' }}>{{ $u->name }} ({{ $u->email }})</option>
+                                @endforeach
+                            </select>
+                            <div style="margin-top:6px;font-size:12px;color:var(--text-faint);">Ao vincular, nome e e-mail serão preenchidos automaticamente. Útil para proprietário que também atende como barbeiro.</div>
+                        </div>
+                        @endif
                         <div class="form-group">
                             <label class="form-label">Nome Completo *</label>
                             <input type="text" name="nome" class="form-input" value="{{ old('nome', $edit ? $barbeiro->nome : '') }}" placeholder="Ex: Carlos Eduardo Souza" required>
@@ -244,6 +256,27 @@
 
 @push('scripts')
 <script>
+function onSelectUser(el) {
+    var opt = el.options[el.selectedIndex];
+    var nome = opt.getAttribute('data-nome');
+    var email = opt.getAttribute('data-email');
+    var nomeInput = document.querySelector('input[name="nome"]');
+    var emailInput = document.querySelector('input[name="email"]');
+    if (opt.value) {
+        nomeInput.value = nome || '';
+        emailInput.value = email || '';
+        nomeInput.setAttribute('readonly', true);
+        emailInput.setAttribute('readonly', true);
+        nomeInput.style.opacity = '0.7';
+        emailInput.style.opacity = '0.7';
+    } else {
+        nomeInput.removeAttribute('readonly');
+        emailInput.removeAttribute('readonly');
+        nomeInput.style.opacity = '';
+        emailInput.style.opacity = '';
+    }
+}
+
 function toggleTipo() {
     var val = document.getElementById('selectTipo').value;
     document.getElementById('criarAdminContainer').style.display = val === 'proprietario' ? '' : 'none';
