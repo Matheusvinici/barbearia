@@ -13,7 +13,7 @@ use Illuminate\Http\Middleware\SetCacheHeaders;
 use Illuminate\Routing\Middleware\ValidateSignature;
 use Illuminate\Routing\Middleware\ThrottleRequests;
 use App\Http\Middleware\RedirectIfAuthenticated;
-
+use App\Http\Middleware\TenantMiddleware;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
@@ -41,6 +41,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'verified' => EnsureEmailIsVerified::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'tenant' => TenantMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

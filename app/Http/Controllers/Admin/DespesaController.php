@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TenantScoped;
 use App\Models\Barbearia;
 use App\Models\Despesa;
 use App\Models\Caixa;
@@ -12,15 +13,54 @@ use Illuminate\Support\Facades\Auth;
 
 class DespesaController extends Controller
 {
+    use TenantScoped;
+
     public function index()
     {
-        $despesas = Despesa::with('barbearia')->orderBy('data_vencimento', 'desc')->paginate(15);
-        return view('admin.despesas.index', compact('despesas'));
+        $query = Despesa::with('barbearia')->orderBy('data_vencimento', 'desc');
+        $query = $this->applyTenantScope($query);
+
+        $despesas = $query->paginate(15);
+
+        $allQuery = Despesa::query();
+        $allQuery = $this->applyTenantScope($allQuery);
+
+        $totalMes = (clone $allQuery)->whereMonth('data_vencimento', now()->month)
+            ->whereYear('data_vencimento', now()->year)->sum('valor');
+        $qtdMes = (clone $allQuery)->whereMonth('data_vencimento', now()->month)
+            ->whereYear('data_vencimento', now()->year)->count();
+
+        $totalPago = (clone $allQuery)->where('pago', true)->sum('valor');
+        $qtdPago = (clone $allQuery)->where('pago', true)->count();
+
+        $totalPendente = (clone $allQuery)->where('pago', false)->sum('valor');
+        $qtdPendente = (clone $allQuery)->where('pago', false)->count();
+
+        $totalVencido = (clone $allQuery)->where('pago', false)
+            ->where('data_vencimento', '<', now())->sum('valor');
+        $qtdVencido = (clone $allQuery)->where('pago', false)
+            ->where('data_vencimento', '<', now())->count();
+
+        $chartData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $total = (clone $allQuery)->whereMonth('data_vencimento', $date->month)
+                ->whereYear('data_vencimento', $date->year)->sum('valor');
+            $chartData[] = [
+                'label' => $date->format('M'),
+                'total' => (float) $total,
+            ];
+        }
+
+        return view('admin.despesas.index', compact(
+            'despesas', 'totalMes', 'qtdMes', 'totalPago', 'qtdPago',
+            'totalPendente', 'qtdPendente', 'totalVencido', 'qtdVencido', 'chartData'
+        ));
     }
 
     public function create()
     {
-        $barbearias = Barbearia::orderBy('nome')->get();
+        $barbearias = $this->getTenantBarbearias();
         return view('admin.despesas.form', ['edit' => false, 'barbearias' => $barbearias]);
     }
 
@@ -38,6 +78,10 @@ class DespesaController extends Controller
             'observacoes' => 'nullable|string',
         ]);
 
+        if ($this->isTenantContext() && empty($data['barbearia_id'])) {
+            $data['barbearia_id'] = $this->tenantId();
+        }
+
         $data['user_id'] = Auth::guard('web')->id();
 
         $despesa = Despesa::create($data);
@@ -46,12 +90,16 @@ class DespesaController extends Controller
             $this->registrarSaidaNoCaixa($despesa);
         }
 
-        return redirect()->route('admin.despesas.index')->with('success', 'Despesa cadastrada com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.despesas.index', $this->getTenant()->slug)
+            : route('admin.despesas.index');
+
+        return redirect()->to($route)->with('success', 'Despesa cadastrada com sucesso!');
     }
 
     public function edit(Despesa $despesa)
     {
-        $barbearias = Barbearia::orderBy('nome')->get();
+        $barbearias = $this->getTenantBarbearias();
         return view('admin.despesas.form', ['edit' => true, 'despesa' => $despesa, 'barbearias' => $barbearias]);
     }
 
@@ -76,7 +124,11 @@ class DespesaController extends Controller
             $this->registrarSaidaNoCaixa($despesa);
         }
 
-        return redirect()->route('admin.despesas.index')->with('success', 'Despesa atualizada com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.despesas.index', $this->getTenant()->slug)
+            : route('admin.despesas.index');
+
+        return redirect()->to($route)->with('success', 'Despesa atualizada com sucesso!');
     }
 
     public function destroy(Despesa $despesa)
@@ -103,13 +155,23 @@ class DespesaController extends Controller
     {
         $data = $despesa->data_pagamento ? \Carbon\Carbon::parse($despesa->data_pagamento) : now();
 
-        $caixa = Caixa::firstOrCreate(
-            ['data' => $data->format('Y-m-d')],
-            [
+        $caixaQuery = Caixa::whereDate('data', $data->format('Y-m-d'));
+        if ($despesa->barbearia_id) {
+            $caixaQuery->where('barbearia_id', $despesa->barbearia_id);
+        } elseif ($this->isTenantContext()) {
+            $caixaQuery->where('barbearia_id', $this->tenantId());
+        }
+
+        $caixa = $caixaQuery->first();
+
+        if (!$caixa) {
+            $caixa = Caixa::create([
+                'barbearia_id' => $despesa->barbearia_id ?? $this->tenantId(),
+                'data' => $data->format('Y-m-d'),
                 'saldo_inicial' => 0,
                 'user_id_abertura' => Auth::guard('web')->id(),
-            ]
-        );
+            ]);
+        }
 
         if (!$caixa->fechado) {
             $caixa->increment('total_saidas', $despesa->valor);
@@ -117,6 +179,7 @@ class DespesaController extends Controller
             $caixa->save();
 
             CaixaMovimentacao::create([
+                'barbearia_id' => $caixa->barbearia_id,
                 'caixa_id' => $caixa->id,
                 'tipo' => 'saida',
                 'valor' => $despesa->valor,
@@ -126,5 +189,15 @@ class DespesaController extends Controller
                 'user_id' => Auth::guard('web')->id(),
             ]);
         }
+    }
+
+    private function getTenantBarbearias()
+    {
+        if ($this->isTenantContext()) {
+            $tenant = $this->getTenant();
+            $ids = $tenant->tenantTreeIds();
+            return Barbearia::whereIn('id', $ids)->orderBy('nome')->get();
+        }
+        return Barbearia::orderBy('nome')->get();
     }
 }

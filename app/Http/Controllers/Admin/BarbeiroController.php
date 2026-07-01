@@ -3,25 +3,32 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TenantScoped;
 use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\BarbeiroHorario;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class BarbeiroController extends Controller
 {
+    use TenantScoped;
+
     public function index()
     {
-        $barbeiros = Barbeiro::with('barbearia', 'roles')->paginate(10);
+        $query = Barbeiro::with('barbearia', 'roles');
+        $query = $this->applyTenantScope($query);
+        $barbeiros = $query->paginate(10);
         return view('admin.barbeiros.index', compact('barbeiros'));
     }
 
     public function create()
     {
-        $barbearias = Barbearia::orderBy('nome')->get();
+        $barbearias = $this->getTenantBarbearias();
         $diasSemana = [
             0 => 'Domingo', 1 => 'Segunda', 2 => 'Terça',
             3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'
@@ -49,11 +56,32 @@ class BarbeiroController extends Controller
             'roles' => 'nullable|array',
             'roles.*' => 'exists:roles,id',
             'criar_como_admin' => 'nullable|boolean',
+            'tipo' => 'required|in:proprietario,funcionario',
+            'especialidades' => 'nullable|string|max:500',
+            'barbearias' => 'nullable|array',
+            'barbearias.*' => 'exists:barbearias,id',
         ]);
 
         $data['password'] = Hash::make($data['password']);
 
+        if ($this->isTenantContext()) {
+            $allowedIds = $this->tenantIds();
+            if (!empty($data['barbearias'])) {
+                $invalid = array_diff($data['barbearias'], $allowedIds);
+                if (!empty($invalid)) {
+                    return back()->withErrors(['barbearias' => 'Barbearia inválida.'])->withInput();
+                }
+            }
+            if ($data['barbearia_id'] && !in_array($data['barbearia_id'], $allowedIds)) {
+                return back()->withErrors(['barbearia_id' => 'Barbearia inválida.'])->withInput();
+            }
+        }
+
         $barbeiro = Barbeiro::create($data);
+
+        if ($request->filled('barbearias')) {
+            $barbeiro->barbearias()->sync($request->barbearias);
+        }
 
         if ($request->roles) {
             $barbeiro->syncRoles(Role::whereIn('id', $request->roles)->get());
@@ -89,35 +117,43 @@ class BarbeiroController extends Controller
             }
         }
 
-        return redirect()->route('admin.barbeiros.index')->with('success', 'Barbeiro cadastrado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.barbeiros.index', $this->getTenant()->slug)
+            : route('admin.barbeiros.index');
+
+        return redirect()->to($route)->with('success', 'Barbeiro cadastrado com sucesso!');
     }
 
-    public function show(Barbeiro $barbeiro)
+    public function show(Barbearia $barbearia, int $id)
     {
-        $barbeiro->load('barbearia', 'horarios', 'roles');
+        $barbeiro = Barbeiro::with('barbearia', 'horarios', 'roles', 'barbearias')->findOrFail($id);
         return view('admin.barbeiros.show', compact('barbeiro'));
     }
 
-    public function edit(Barbeiro $barbeiro)
+    public function edit(Barbearia $barbearia, int $id)
     {
-        $barbeiro->load('horarios', 'roles');
-        $barbearias = Barbearia::orderBy('nome')->get();
+        $barbeiro = Barbeiro::with('horarios', 'roles', 'barbearias')->findOrFail($id);
+        $barbearias = $this->getTenantBarbearias();
         $diasSemana = [
             0 => 'Domingo', 1 => 'Segunda', 2 => 'Terça',
             3 => 'Quarta', 4 => 'Quinta', 5 => 'Sexta', 6 => 'Sábado'
         ];
         $roles = Role::where('guard_name', 'barbeiro')->orderBy('name')->get();
+        $userExists = User::where('email', $barbeiro->email)->exists();
         return view('admin.barbeiros.form', [
             'edit' => true,
             'barbeiro' => $barbeiro,
             'barbearias' => $barbearias,
             'diasSemana' => $diasSemana,
             'roles' => $roles,
+            'userExists' => $userExists,
         ]);
     }
 
-    public function update(Request $request, Barbeiro $barbeiro)
+    public function update(Request $request, int $id)
     {
+        $barbeiro = Barbeiro::findOrFail($id);
+
         $data = $request->validate([
             'nome' => 'required|string|max:255',
             'email' => 'required|email|unique:barbeiros,email,' . $barbeiro->id,
@@ -129,6 +165,10 @@ class BarbeiroController extends Controller
             'horarios' => 'nullable|array',
             'roles' => 'nullable|array',
             'roles.*' => 'exists:roles,id',
+            'tipo' => 'required|in:proprietario,funcionario',
+            'especialidades' => 'nullable|string|max:500',
+            'barbearias' => 'nullable|array',
+            'barbearias.*' => 'exists:barbearias,id',
         ]);
 
         if ($request->filled('password')) {
@@ -138,6 +178,31 @@ class BarbeiroController extends Controller
         }
 
         $barbeiro->update($data);
+
+        if ($request->filled('barbearias')) {
+            $barbeiro->barbearias()->sync($request->barbearias);
+        } else {
+            $barbeiro->barbearias()->sync([]);
+        }
+
+        if ($request->criar_como_admin) {
+            $existingUser = User::where('email', $request->email)->first();
+            if (!$existingUser) {
+                $plainPassword = $request->filled('password') ? $request->password : Str::random(12);
+                $user = User::create([
+                    'name' => $request->nome,
+                    'email' => $request->email,
+                    'password' => Hash::make($plainPassword),
+                ]);
+                $proprietarioRole = Role::where('name', 'proprietario')->where('guard_name', 'web')->first();
+                if ($proprietarioRole) {
+                    $user->assignRole($proprietarioRole);
+                }
+                if (!$request->filled('password')) {
+                    session()->flash('info', "Conta admin criada com senha gerada: <strong>$plainPassword</strong> — peça ao profissional para alterar.");
+                }
+            }
+        }
 
         $barbeiro->syncRoles($request->roles ? Role::whereIn('id', $request->roles)->get() : []);
 
@@ -157,12 +222,37 @@ class BarbeiroController extends Controller
             }
         }
 
-        return redirect()->route('admin.barbeiros.index')->with('success', 'Barbeiro atualizado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.barbeiros.index', $this->getTenant()->slug)
+            : route('admin.barbeiros.index');
+
+        return redirect()->to($route)->with('success', 'Barbeiro atualizado com sucesso!');
     }
 
-    public function destroy(Barbeiro $barbeiro)
+    public function destroy(int $id)
     {
+        $barbeiro = Barbeiro::findOrFail($id);
         $barbeiro->delete();
         return response()->json(['success' => true, 'message' => 'Barbeiro excluído com sucesso']);
+    }
+
+    private function getTenantBarbearias()
+    {
+        if ($this->isTenantContext()) {
+            $tenant = $this->getTenant();
+            $ids = $tenant->tenantTreeIds();
+            return Barbearia::whereIn('id', $ids)->orderBy('nome')->get();
+        }
+
+        $user = Auth::guard('web')->user();
+        if ($user && !$user->isSuperAdmin()) {
+            $ownedIds = Barbearia::where('owner_id', $user->id)->pluck('id');
+            return Barbearia::whereIn('id', $ownedIds)
+                ->orWhereIn('parent_id', $ownedIds)
+                ->orderBy('nome')
+                ->get();
+        }
+
+        return Barbearia::orderBy('nome')->get();
     }
 }

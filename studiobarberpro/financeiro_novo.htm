@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova Transação — Studio Barber</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    --bg: #0d0d12;
+    --bg-elevated: #14141b;
+    --card: rgba(20, 20, 27, 0.65);
+    --card-solid: #16161e;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.11);
+    --text: #f4f4f6;
+    --text-muted: #8a8a94;
+    --text-faint: #55555f;
+    --accent: #f5b544;
+    --accent-hover: #ffc554;
+    --accent-soft: #e89538;
+    --accent-glow: rgba(245, 181, 68, 0.16);
+    --success: #4ade80;
+    --success-bg: rgba(74, 222, 128, 0.12);
+    --warning: #fbbf24;
+    --warning-bg: rgba(251, 191, 36, 0.14);
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.12);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.12);
+    --purple: #c084fc;
+    --purple-bg: rgba(192, 132, 252, 0.12);
+    --pink: #f472b6;
+    --pink-bg: rgba(244, 114, 182, 0.12);
+    --teal: #2dd4bf;
+    --teal-bg: rgba(45, 212, 191, 0.12);
+    --sidebar-w: 264px;
+    --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 22px;
+  }
+
+  [data-bs-theme="light"] {
+    --bg: #f6f6f8;
+    --bg-elevated: #ffffff;
+    --card: rgba(255, 255, 255, 0.75);
+    --card-solid: #ffffff;
+    --border: rgba(0, 0, 0, 0.07);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --text: #14141a;
+    --text-muted: #6b6b75;
+    --text-faint: #a0a0aa;
+    --accent: #c47a06;
+    --accent-hover: #d97706;
+    --accent-soft: #b45309;
+    --accent-glow: rgba(217, 119, 6, 0.12);
+    --success: #16a34a;
+    --success-bg: rgba(22, 163, 74, 0.1);
+    --warning: #d97706;
+    --warning-bg: rgba(217, 119, 6, 0.12);
+    --danger: #dc2626;
+    --danger-bg: rgba(220, 38, 38, 0.1);
+    --info: #2563eb;
+    --info-bg: rgba(37, 99, 235, 0.1);
+    --purple: #9333ea;
+    --purple-bg: rgba(147, 51, 234, 0.1);
+    --pink: #db2777;
+    --pink-bg: rgba(219, 39, 119, 0.1);
+    --teal: #0d9488;
+    --teal-bg: rgba(13, 148, 136, 0.1);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+    margin: 0;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(900px 600px at 85% -10%, var(--accent-glow), transparent 60%),
+      radial-gradient(700px 500px at 0% 110%, rgba(96, 165, 250, 0.05), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .icon { width: 22px; height: 22px; display: inline-flex; flex-shrink: 0; }
+  .icon-sm { width: 18px; height: 18px; }
+  .icon-xs { width: 15px; height: 15px; }
+
+  /* ============ Sidebar ============ */
+  .sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: var(--sidebar-w); background: var(--bg-elevated); border-right: 1px solid var(--border); padding: 26px 18px; display: flex; flex-direction: column; z-index: 100; backdrop-filter: blur(20px); }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 24px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .brand-mark { width: 42px; height: 42px; border-radius: 13px; background: linear-gradient(135deg, var(--accent), var(--accent-soft)); display: grid; place-items: center; color: #0d0d12; font-weight: 800; box-shadow: 0 8px 22px -8px var(--accent-glow); flex-shrink: 0; }
+  .brand-text { line-height: 1.15; }
+  .brand-text strong { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; display: block; }
+  .brand-text span { font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
+  .nav-section { margin-bottom: 22px; }
+  .nav-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text-faint); padding: 0 12px 10px; }
+  .nav-item { display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 11px; color: var(--text-muted); font-size: 14.5px; font-weight: 500; text-decoration: none; transition: all 180ms ease; position: relative; margin-bottom: 2px; cursor: pointer; }
+  .nav-item:hover { color: var(--text); background: var(--border); }
+  .nav-item.active { color: var(--accent); background: var(--accent-glow); font-weight: 600; }
+  .nav-item.active::before { content: ''; position: absolute; left: -18px; top: 50%; transform: translateY(-50%); width: 3px; height: 22px; background: var(--accent); border-radius: 0 3px 3px 0; }
+  .nav-badge { margin-left: auto; font-size: 11px; font-weight: 700; background: var(--accent); color: #0d0d12; padding: 1px 7px; border-radius: 6px; }
+  .sidebar-footer { margin-top: auto; padding-top: 18px; border-top: 1px solid var(--border); }
+  .user-card { display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px; background: var(--border); cursor: pointer; transition: all 180ms; }
+  .user-card:hover { background: var(--border-strong); }
+  .user-avatar { width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, #f87171, #f5b544); display: grid; place-items: center; font-weight: 700; color: white; font-size: 13px; flex-shrink: 0; }
+  .user-info { line-height: 1.25; overflow: hidden; flex: 1; }
+  .user-info strong { display: block; font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-info span { font-size: 11.5px; color: var(--text-muted); }
+  .user-card .icon { color: var(--text-faint); }
+
+  /* ============ Main ============ */
+  .main { margin-left: var(--sidebar-w); min-height: 100vh; position: relative; z-index: 1; }
+  .content { padding: 32px 40px 80px; max-width: 1400px; }
+
+  /* ============ Topbar ============ */
+  .topbar { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 28px; flex-wrap: wrap; }
+  .breadcrumb-trail { font-size: 12.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb-trail .sep { color: var(--text-faint); }
+  .breadcrumb-trail .current { color: var(--accent); font-weight: 600; }
+  .page-title { font-size: 30px; font-weight: 800; letter-spacing: -0.03em; margin: 0 0 8px; line-height: 1.1; }
+  .page-subtitle { font-size: 13.5px; color: var(--text-muted); display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px var(--success-bg); animation: pulse-dot 2s infinite; }
+  .page-subtitle .pipe { color: var(--text-faint); }
+  .topbar-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+  .icon-btn { width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--card-solid); color: var(--text-muted); display: grid; place-items: center; cursor: pointer; transition: all 180ms; position: relative; }
+  .icon-btn:hover { color: var(--text); border-color: var(--accent); transform: translateY(-1px); }
+  .icon-btn .dot-notif { position: absolute; top: 10px; right: 11px; width: 8px; height: 8px; background: var(--accent); border-radius: 50%; border: 2px solid var(--card-solid); }
+
+  .btn-primary-c { height: 44px; padding: 0 18px; border-radius: 12px; background: var(--accent); color: #0d0d12; border: none; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 180ms; box-shadow: 0 8px 22px -8px var(--accent-glow); font-family: inherit; }
+  .btn-primary-c:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-ghost-c { height: 44px; padding: 0 16px; border-radius: 12px; background: transparent; color: var(--text-muted); border: 1px solid var(--border-strong); font-weight: 600; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 180ms; font-family: inherit; text-decoration: none; }
+  .btn-ghost-c:hover { color: var(--text); border-color: var(--accent); background: var(--accent-glow); }
+
+  /* ============ Main grid ============ */
+  .main-grid { display: grid; grid-template-columns: 1fr 340px; gap: 22px; }
+  .col-stack { display: flex; flex-direction: column; gap: 22px; }
+
+  /* ============ Panel ============ */
+  .panel { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+  .panel-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .panel-title-wrap { display: flex; align-items: center; gap: 14px; }
+  .panel-title-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--accent-glow); color: var(--accent); display: grid; place-items: center; }
+  .panel-title { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.015em; }
+  .panel-subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+  .panel-body { padding: 24px; }
+
+  /* ============ Form Elements ============ */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .form-grid.full { grid-template-columns: 1fr; }
+  .form-group { display: flex; flex-direction: column; gap: 8px; }
+  .form-label { font-size: 12.5px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .form-label .mut { color: var(--text-faint); font-weight: 500; }
+  .form-input, .form-select, .form-textarea { width: 100%; height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--bg); color: var(--text); font-family: inherit; font-size: 14px; transition: all 180ms; }
+  .form-textarea { height: auto; padding: 12px 14px; resize: vertical; min-height: 80px; line-height: 1.5; }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-glow); background: var(--bg-elevated); }
+  .form-input::placeholder, .form-textarea::placeholder { color: var(--text-faint); }
+  .form-select { appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238a8a94' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 38px; }
+  .input-group { position: relative; }
+  .input-group .addon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: var(--text-faint); pointer-events: none; display: flex; align-items: center; }
+  .input-group .form-input { padding-left: 42px; }
+  
+  /* Custom Input with prefix/suffix */
+  .input-affix { position: relative; }
+  .input-affix .prefix, .input-affix .suffix { position: absolute; top: 50%; transform: translateY(-50%); font-size: 14px; font-weight: 600; color: var(--text-muted); pointer-events: none; }
+  .input-affix .prefix { left: 14px; }
+  .input-affix .suffix { right: 14px; }
+  .input-affix .form-input { padding-left: 42px; padding-right: 42px; }
+
+  /* ============ Type Selector ============ */
+  .type-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .type-card { display: flex; align-items: center; gap: 14px; padding: 18px; border-radius: 14px; border: 1px solid var(--border-strong); background: var(--bg); cursor: pointer; transition: all 200ms; }
+  .type-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .type-card .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; transition: all 200ms; }
+  .type-card.in .ic { background: var(--success-bg); color: var(--success); }
+  .type-card.out .ic { background: var(--danger-bg); color: var(--danger); }
+  .type-card .t { font-size: 15px; font-weight: 700; color: var(--text); }
+  .type-card .d { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .type-card.active { border-color: transparent; box-shadow: 0 0 0 2px var(--accent); background: var(--bg-elevated); }
+  .type-card.in.active { background: var(--success-bg); box-shadow: 0 0 0 2px var(--success); }
+  .type-card.out.active { background: var(--danger-bg); box-shadow: 0 0 0 2px var(--danger); }
+
+  /* ============ File Upload ============ */
+  .file-upload { display: flex; align-items: center; gap: 12px; padding: 14px; border: 1.5px dashed var(--border-strong); border-radius: 10px; background: var(--bg); cursor: pointer; transition: all 180ms; }
+  .file-upload:hover { border-color: var(--accent); background: var(--accent-glow); }
+  .file-upload .ic { width: 40px; height: 40px; border-radius: 10px; background: var(--border); color: var(--text-muted); display: grid; place-items: center; flex-shrink: 0; }
+  .file-upload .tx { flex: 1; }
+  .file-upload .t { font-size: 13.5px; font-weight: 600; color: var(--text); }
+  .file-upload .d { font-size: 11.5px; color: var(--text-faint); }
+
+  /* ============ Sidebar Action Card ============ */
+  .action-card { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 18px; }
+  .action-buttons { display: flex; flex-direction: column; gap: 10px; }
+  .action-buttons .btn-primary-c { width: 100%; justify-content: center; height: 48px; }
+  .action-buttons .btn-ghost-c { width: 100%; justify-content: center; height: 48px; }
+
+  /* ============ Live Preview Card ============ */
+  .preview-card { background: var(--card-solid); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 24px; text-align: center; position: relative; overflow: hidden; }
+  .preview-badge { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; color: var(--accent); background: var(--accent-glow); padding: 4px 10px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 18px; }
+  .preview-icon { width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; margin: 0 auto 16px; background: var(--border); color: var(--text-muted); transition: all 200ms; }
+  .preview-icon.in { background: var(--success-bg); color: var(--success); }
+  .preview-icon.out { background: var(--danger-bg); color: var(--danger); }
+  
+  .preview-amount { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 6px; transition: color 200ms; }
+  .preview-amount.in { color: var(--success); }
+  .preview-amount.out { color: var(--danger); }
+  .preview-amount .cur { font-size: 16px; font-weight: 600; opacity: 0.8; margin-right: 2px; }
+  
+  .preview-desc { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 4px; min-height: 18px; }
+  .preview-cat { font-size: 12.5px; color: var(--text-muted); margin-bottom: 18px; min-height: 16px; }
+  
+  .preview-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 14px; background: var(--bg); border-radius: 12px; text-align: left; }
+  .preview-meta .item { display: flex; flex-direction: column; gap: 3px; }
+  .preview-meta .l { font-size: 10.5px; color: var(--text-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+  .preview-meta .v { font-size: 13px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  
+  .preview-status { margin-top: 14px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; padding: 5px 12px; border-radius: 999px; background: var(--success-bg); color: var(--success); }
+  .preview-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  /* ============ Tips List ============ */
+  .tips-list { display: flex; flex-direction: column; gap: 14px; }
+  .tip-item { display: flex; align-items: flex-start; gap: 12px; }
+  .tip-ic { width: 32px; height: 32px; border-radius: 9px; background: var(--accent-glow); color: var(--accent); display: grid; place-items: center; flex-shrink: 0; }
+  .tip-info .t { font-size: 13.5px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .tip-info .d { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+
+  @keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 currentColor; }
+    70% { box-shadow: 0 0 0 5px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeInUp 400ms ease both; }
+  .d1 { animation-delay: 50ms; } .d2 { animation-delay: 100ms; } .d3 { animation-delay: 150ms; } .d4 { animation-delay: 200ms; } .d5 { animation-delay: 250ms; } .d6 { animation-delay: 300ms; }
+
+  /* ============ Toast ============ */
+  .toast-c { position: fixed; bottom: 24px; right: 24px; background: var(--card-solid); border: 1px solid var(--border-strong); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); z-index: 1000; transform: translateY(120%); transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1); max-width: 360px; }
+  .toast-c.show { transform: translateY(0); }
+  .toast-c .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+  .toast-c .ic.success { background: var(--success-bg); color: var(--success); }
+  .toast-c .ic.info { background: var(--info-bg); color: var(--info); }
+  .toast-c strong { display: block; font-size: 13.5px; font-weight: 700; }
+  .toast-c span { font-size: 12.5px; color: var(--text-muted); }
+
+  /* ============ Mobile ============ */
+  .mobile-menu-btn { display: none; width: 44px; height: 44px; border-radius: 12px; border: 1px solid var(--border-strong); background: var(--card-solid); color: var(--text); align-items: center; justify-content: center; cursor: pointer; }
+  .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 99; opacity: 0; transition: opacity 250ms; }
+  .sidebar-backdrop.show { display: block; opacity: 1; }
+
+  @media (max-width: 992px) {
+    .sidebar { transform: translateX(-100%); transition: transform 250ms; }
+    .sidebar.open { transform: translateX(0); box-shadow: 0 0 60px rgba(0,0,0,0.4); }
+    .main { margin-left: 0; }
+    .topbar { flex-direction: column; align-items: stretch; }
+    .topbar-actions { justify-content: flex-end; flex-wrap: wrap; }
+    .mobile-menu-btn { display: inline-flex; }
+    .main-grid { grid-template-columns: 1fr; }
+    .action-card { position: static; }
+  }
+  @media (max-width: 768px) {
+    .content { padding: 20px 16px 60px; }
+    .page-title { font-size: 24px; }
+    .panel-header, .panel-body { padding: 18px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .type-grid { grid-template-columns: 1fr; }
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG Icon Library ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none"><path d="M9.02 2.84L4.04 6.74c-.68.54-1.17 1.71-1.17 2.58v7.04c0 1.83 1.49 3.34 3.32 3.34h11.62c1.83 0 3.32-1.49 3.32-3.33V9.4c0-.93-.53-2.07-1.23-2.6l-5.71-4.04c-1.01-.72-2.55-.69-3.54.06z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 17.5v-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none"><path d="M8 2v3M16 2v3M3.5 9.09h17M22 19c0 .75-.21 1.46-.58 2.06a3.42 3.42 0 0 1-2.91 1.64H5.49C3.26 22.7 1.7 21.07 1.7 19V8.06c0-2.13 1.56-3.79 3.79-3.79h13.02c2.13 0 3.79 1.66 3.79 3.79V16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24" fill="none"><path d="M16.67 20.17v-1.5c0-2.07-1.68-3.75-3.75-3.75H5.42c-2.07 0-3.75 1.68-3.75 3.75v1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="9.17" cy="7.42" r="3.75" stroke="currentColor" stroke-width="1.6"/><path d="M22 20.17v-1.5c0-1.69-1.13-3.12-2.67-3.58M15.42 4.05a3.74 3.74 0 0 1 0 6.74" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-scissor" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M8.12 7.88L20 18M8.12 16.12L20 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-user-tag" viewBox="0 0 24 24" fill="none"><path d="M13 20.5H6.5c-1.5 0-2.5-1-2.5-2.5 0-3.5 3-5.5 6-5.5.83 0 1.63.13 2.36.37" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="10" cy="6.5" r="3.5" stroke="currentColor" stroke-width="1.6"/><path d="M17.13 17.92l2.32 2.32c.21.21.55.21.76 0l1.55-1.55c.21-.21.21-.55 0-.76l-2.32-2.32a.54.54 0 0 1-.16-.38v-2.18c0-.29-.24-.53-.53-.53h-2.18a.54.54 0 0 1-.38-.16L14 9.95c-.18-.18-.49-.18-.67 0l-1.55 1.55c-.18.18-.18.49 0 .67l1.65 1.65c.1.1.16.24.16.38v2.18c0 .29.24.53.53.53h2.18c.14 0 .28.06.38.16z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none"><path d="M22 12v3.5c0 1.5-.5 2.5-2 2.5h-2v-3.25c0-.41-.34-.75-.75-.75h-3.5c-.41 0-.75.34-.75.75V18H4c-1.5 0-2-1-2-2.5V8.5C2 7 2.5 6 4 6h16c1.5 0 2 1 2 2.5V12z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 9h4M2 13h4M14 9.5V7c0-1.5 1-2.5 2.5-2.5h2.05c.31 0 .57.25.62.55.06.4.07.81.07 1.2 0 1.55-.43 2.95-1.13 4.13-.21.35-.59.55-.99.55H14z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24" fill="none"><path d="M3 22h18M5.6 18V9M10.6 18V5M15.6 18v-7M20.6 18V8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24" fill="none"><path d="M3 8.5L4.5 6.5L7 7L8.13 4.84L10.5 5.5L12 4L13.5 5.5L15.87 4.84L17 7L19.5 6.5L21 8.5L20 10.5L21 12.5L19.5 14.5L17 14L15.87 16.16L13.5 15.5L12 17L10.5 15.5L8.13 16.16L7 14L4.5 14.5L3 12.5L4 10.5L3 8.5Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="10.5" r="2.5" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-lifebuoy" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M5 5l4 4M15 15l4 4M19 5l-4 4M9 15l-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none"><path d="M12 6.44v6.72M9 16.5h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M8.5 2.5H15.5c.55 0 1 .45 1 1v.74c0 .3.13.59.36.78.83.69 1.27 1.91 1.27 3.45v5.95c0 1.84-1.27 3.43-3.07 3.83-.97.22-1.96.36-2.95.41-.51.03-1.02.04-1.53.04s-1.02-.01-1.53-.04c-.99-.05-1.98-.19-2.95-.41-1.8-.4-3.07-1.99-3.07-3.83V8.47c0-1.54.44-2.76 1.27-3.45.23-.19.36-.48.36-.78V3.5c0-.55.45-1 1-1z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none"><path d="M3.27 12.31c.43 4.6 4.34 8.21 8.95 8.41 3.16.13 5.97-1.18 7.86-3.34.62-.71.27-1.32-.69-1.21-.55.06-1.11.04-1.69-.06-3.58-.6-6.32-3.45-6.65-7.06-.12-1.34.07-2.62.5-3.79.34-.92-.31-1.39-1.22-1.04-4.21 1.61-7.04 5.71-6.69 10.09z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none"><path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trend-up" viewBox="0 0 24 24" fill="none"><path d="M3 17l6-6 4 4 8-8M14 7h7v7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-trend-down" viewBox="0 0 24 24" fill="none"><path d="M3 7l6 6 4-4 8 8M14 17h7v-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24" fill="none"><path d="M3 12V5a2 2 0 0 1 2-2h7l9 9-9 9-9-9z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><circle cx="7.5" cy="7.5" r="1.5" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-receipt" viewBox="0 0 24 24" fill="none"><path d="M4 5c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v15.5l-2.5-1.5L15 20.5 12.5 19 10 20.5 7.5 19 5 20.5 4 19.5V5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8 8h8M8 11.5h8M8 15h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-pix" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 12l10 10 10-10L12 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7 12l5-5 5 5-5 5-5-5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M2 10h20M6 15h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-cash" viewBox="0 0 24 24" fill="none"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M6 12h.01M18 12h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24" fill="none"><path d="M3 21h18M5 21V5c0-1 .5-2 2-2h10c1.5 0 2 1 2 2v16M9 7h2M9 11h2M9 15h2M13 7h2M13 11h2M13 15h2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-paperclip" viewBox="0 0 24 24" fill="none"><path d="M21 11l-9.5 9.5a5 5 0 0 1-7-7L13 4.5a3.5 3.5 0 0 1 5 5L9.5 18a2 2 0 0 1-3-3L14 7.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 20h20L12 2z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M12 9v5M12 17h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none"><circle cx="11.5" cy="11.5" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5V12l3 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-scissors-2" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-percent" viewBox="0 0 24 24" fill="none"><path d="M19 5L5 19M8 8h.01M16 16h.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="16" cy="16" r="4" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24" fill="none"><path d="M12 2.5C12 2.5 5 10 5 15a7 7 0 0 0 14 0c0-5-7-12.5-7-12.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ===== Sidebar ===== -->
+<aside class="sidebar" id="sidebar">
+  <div class="brand">
+    <div class="brand-mark"><svg class="icon" style="width:22px;height:22px"><use href="#i-scissor"/></svg></div>
+    <div class="brand-text">
+      <strong>Studio Barber</strong>
+      <span>Pro · v2.4</span>
+    </div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Menu</div>
+    <a class="nav-item"><svg class="icon"><use href="#i-home"/></svg>Dashboard</a>
+    <a class="nav-item"><svg class="icon"><use href="#i-calendar"/></svg>Agendamentos<span class="nav-badge">32</span></a>
+    <a class="nav-item"><svg class="icon"><use href="#i-people"/></svg>Clientes</a>
+    <a class="nav-item"><svg class="icon"><use href="#i-scissor"/></svg>Serviços</a>
+    <a class="nav-item"><svg class="icon"><use href="#i-user-tag"/></svg>Profissionais</a>
+    <a class="nav-item active"><svg class="icon"><use href="#i-wallet"/></svg>Financeiro</a>
+  </div>
+  <div class="nav-section">
+    <div class="nav-label">Geral</div>
+    <a class="nav-item"><svg class="icon"><use href="#i-chart"/></svg>Relatórios</a>
+    <a class="nav-item"><svg class="icon"><use href="#i-settings"/></svg>Configurações</a>
+    <a class="nav-item"><svg class="icon"><use href="#i-lifebuoy"/></svg>Suporte</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="user-card">
+      <div class="user-avatar">RM</div>
+      <div class="user-info">
+        <strong>Rafael Moura</strong>
+        <span>Gerente</span>
+      </div>
+      <svg class="icon icon-sm"><use href="#i-settings"/></svg>
+    </div>
+  </div>
+</aside>
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+<!-- ===== Main ===== -->
+<main class="main">
+  <div class="content">
+
+    <!-- Topbar -->
+    <header class="topbar fade-in">
+      <div>
+        <div class="breadcrumb-trail">
+          <svg class="icon icon-sm"><use href="#i-home"/></svg>
+          <span class="sep">/</span>
+          <a href="#" style="color:inherit; text-decoration:none;">Financeiro</a>
+          <span class="sep">/</span>
+          <span class="current">Nova Transação</span>
+        </div>
+        <h1 class="page-title">Nova Transação</h1>
+        <div class="page-subtitle">
+          <span class="live-dot"></span>
+          <span>Registrando movimento de caixa</span>
+          <span class="pipe">·</span>
+          <span>Campos com * são obrigatórios</span>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button class="mobile-menu-btn" id="mobileMenuBtn"><svg class="icon"><use href="#i-menu"/></svg></button>
+        <button class="icon-btn" id="themeToggle" title="Alternar tema"><svg class="icon"><use href="#i-sun"/></svg></button>
+        <button class="icon-btn"><svg class="icon"><use href="#i-bell"/></svg><span class="dot-notif"></span></button>
+        <a href="#" class="btn-ghost-c"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Voltar</a>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <div class="main-grid">
+
+      <!-- LEFT: Form Panels -->
+      <div class="col-stack">
+
+        <!-- 1. Type & Amount -->
+        <div class="panel fade-in d1">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="panel-title-icon"><svg class="icon"><use href="#i-wallet"/></svg></div>
+              <div>
+                <h2 class="panel-title">Tipo e Valor</h2>
+                <div class="panel-subtitle">Defina se é entrada ou saída e o valor</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="type-grid" style="margin-bottom: 24px;">
+              <div class="type-card in active" data-type="in" data-color="success">
+                <div class="ic"><svg class="icon"><use href="#i-trend-up"/></svg></div>
+                <div>
+                  <div class="t">Entrada</div>
+                  <div class="d">Recebimento de serviços, vendas</div>
+                </div>
+              </div>
+              <div class="type-card out" data-type="out" data-color="danger">
+                <div class="ic"><svg class="icon"><use href="#i-trend-down"/></svg></div>
+                <div>
+                  <div class="t">Saída</div>
+                  <div class="d">Pagamento de contas, despesas</div>
+                </div>
+              </div>
+            </div>
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Valor da Transação *</label>
+                <div class="input-affix">
+                  <span class="prefix">R$</span>
+                  <input type="number" class="form-input" placeholder="0,00" id="inp-amount" value="55.00" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. Details & Category -->
+        <div class="panel fade-in d2">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="panel-title-icon"><svg class="icon"><use href="#i-receipt"/></svg></div>
+              <div>
+                <h2 class="panel-title">Detalhes da Transação</h2>
+                <div class="panel-subtitle">Informações sobre o motivo do lançamento</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Descrição *</label>
+                <div class="input-group">
+                  <span class="addon"><svg class="icon icon-sm"><use href="#i-receipt"/></svg></span>
+                  <input type="text" class="form-input" placeholder="Ex: Aluguel do mês ou Corte + Barba" id="inp-desc" value="Corte + Barba - Pedro Henrique" />
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Categoria *</label>
+                <select class="form-select" id="inp-cat">
+                  <option value="Serviço">Serviço</option>
+                  <option value="Aluguel">Aluguel</option>
+                  <option value="Comissão">Comissão</option>
+                  <option value="Fornecedores">Fornecedores</option>
+                  <option value="Contas">Contas (Água, Luz, Internet)</option>
+                  <option value="Estorno">Estorno</option>
+                  <option value="Outros">Outros</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Data da Transação *</label>
+                <div class="input-group">
+                  <span class="addon"><svg class="icon icon-sm"><use href="#i-calendar"/></svg></span>
+                  <input type="date" class="form-input" value="2026-06-18" id="inp-date" />
+                </div>
+              </div>
+              <div class="form-group" style="grid-column: 1 / -1;">
+                <label class="form-label">Cliente / Fornecedor <span class="mut">(opcional)</span></label>
+                <div class="input-group">
+                  <span class="addon"><svg class="icon icon-sm"><use href="#i-search"/></svg></span>
+                  <input type="text" class="form-input" placeholder="Buscar nome..." id="inp-ref" value="Pedro Henrique" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. Payment Method -->
+        <div class="panel fade-in d3">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="panel-title-icon"><svg class="icon"><use href="#i-card"/></svg></div>
+              <div>
+                <h2 class="panel-title">Forma de Pagamento</h2>
+                <div class="panel-subtitle">Como o valor foi pago ou recebido</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Método *</label>
+                <select class="form-select" id="inp-method">
+                  <option value="Pix">Pix</option>
+                  <option value="Dinheiro">Dinheiro</option>
+                  <option value="Cartão de Crédito">Cartão de Crédito</option>
+                  <option value="Cartão de Débito">Cartão de Débito</option>
+                  <option value="TED/Transferência">TED/Transferência</option>
+                  <option value="Boleto">Boleto</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Status *</label>
+                <select class="form-select" id="inp-status">
+                  <option value="Pago">Pago / Liquidado</option>
+                  <option value="Pendente">Pendente</option>
+                  <option value="Agendado">Agendado</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. Notes & Attachments -->
+        <div class="panel fade-in d4">
+          <div class="panel-header">
+            <div class="panel-title-wrap">
+              <div class="panel-title-icon"><svg class="icon"><use href="#i-paperclip"/></svg></div>
+              <div>
+                <h2 class="panel-title">Anexos e Observações</h2>
+                <div class="panel-subtitle">Comprovantes e notas internas</div>
+              </div>
+            </div>
+          </div>
+          <div class="panel-body">
+            <div class="form-group" style="margin-bottom: 20px;">
+              <label class="form-label">Comprovante <span class="mut">(opcional)</span></label>
+              <div class="file-upload">
+                <div class="ic"><svg class="icon"><use href="#i-paperclip"/></svg></div>
+                <div class="tx">
+                  <div class="t">Clique para anexar</div>
+                  <div class="d">PDF, JPG ou PNG até 5MB</div>
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Observações <span class="mut">(opcional)</span></label>
+              <textarea class="form-textarea" placeholder="Adicione uma nota interna sobre esta transação..."></textarea>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Action Card & Live Preview -->
+      <div class="action-card">
+
+        <!-- Live Preview -->
+        <div class="preview-card fade-in d2">
+          <span class="preview-badge"><svg class="icon icon-xs"><use href="#i-eye"/></svg>Pré-visualização</span>
+          <div class="preview-icon in" id="prevIcon">
+            <svg class="icon" style="width:28px;height:28px"><use href="#i-trend-up"/></svg>
+          </div>
+          <div class="preview-amount in" id="prevAmount"><span class="cur">R$</span> 55,00</div>
+          <div class="preview-desc" id="prevDesc">Corte + Barba - Pedro Henrique</div>
+          <div class="preview-cat" id="prevCat">Serviço · 18/06/2026</div>
+          
+          <div class="preview-meta">
+            <div class="item">
+              <span class="l">Método</span>
+              <span class="v" id="prevMethod">Pix</span>
+            </div>
+            <div class="item">
+              <span class="l">Referência</span>
+              <span class="v" id="prevRef">Pedro H.</span>
+            </div>
+          </div>
+          
+          <div class="preview-status" id="prevStatus">Pago</div>
+        </div>
+
+        <!-- Actions -->
+        <div class="action-buttons fade-in d3">
+          <button class="btn-primary-c" id="saveBtn">
+            <svg class="icon icon-sm"><use href="#i-check"/></svg>
+            Salvar Transação
+          </button>
+          <button class="btn-ghost-c" id="saveNewBtn">
+            <svg class="icon icon-sm"><use href="#i-plus"/></svg>
+            Salvar e Adicionar Outra
+          </button>
+        </div>
+
+        <!-- Tips -->
+        <div class="panel fade-in d4" style="background: transparent; border: none; backdrop-filter: none; padding: 0;">
+          <div class="panel-body" style="padding: 0;">
+            <div class="tips-list">
+              <div class="tip-item">
+                <div class="tip-ic"><svg class="icon icon-sm"><use href="#i-info"/></svg></div>
+                <div class="tip-info">
+                  <div class="t">Categorização Correta</div>
+                  <div class="d">Use a categoria certa para relatórios financeiros precisos.</div>
+                </div>
+              </div>
+              <div class="tip-item">
+                <div class="tip-ic"><svg class="icon icon-sm"><use href="#i-alert"/></svg></div>
+                <div class="tip-info">
+                  <div class="t">Concilie no Mesmo Dia</div>
+                  <div class="d">Lance transações no dia em que ocorrem para não perder o controle.</div>
+                </div>
+              </div>
+              <div class="tip-item">
+                <div class="tip-ic"><svg class="icon icon-sm"><use href="#i-paperclip"/></svg></div>
+                <div class="tip-info">
+                  <div class="t">Salve Comprovantes</div>
+                  <div class="d">Anexar notas fiscais evita dores de cabeça no futuro.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast-c" id="toast">
+  <div class="ic success"><svg class="icon"><use href="#i-check"/></svg></div>
+  <div>
+    <strong id="toastTitle">Tudo certo</strong>
+    <span id="toastMsg">Ação executada com sucesso.</span>
+  </div>
+</div>
+
+<script>
+  /* ============ Live Preview Logic ============ */
+  const inpAmount = document.getElementById('inp-amount');
+  const inpDesc = document.getElementById('inp-desc');
+  const inpCat = document.getElementById('inp-cat');
+  const inpDate = document.getElementById('inp-date');
+  const inpMethod = document.getElementById('inp-method');
+  const inpStatus = document.getElementById('inp-status');
+  const inpRef = document.getElementById('inp-ref');
+
+  const prevIcon = document.getElementById('prevIcon');
+  const prevAmount = document.getElementById('prevAmount');
+  const prevDesc = document.getElementById('prevDesc');
+  const prevCat = document.getElementById('prevCat');
+  const prevMethod = document.getElementById('prevMethod');
+  const prevRef = document.getElementById('prevRef');
+  const prevStatus = document.getElementById('prevStatus');
+
+  function formatCurrency(val) {
+    return Number(val || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+
+  function getFirstName(name) {
+    if (!name.trim()) return '—';
+    return name.trim().split(' ')[0];
+  }
+
+  function updatePreview() {
+    // Amount
+    prevAmount.innerHTML = `<span class="cur">R$</span> ${formatCurrency(inpAmount.value)}`;
+    
+    // Description
+    prevDesc.textContent = inpDesc.value || 'Descrição da transação';
+    
+    // Category + Date
+    prevCat.textContent = `${inpCat.value} · ${formatDate(inpDate.value)}`;
+    
+    // Method
+    prevMethod.textContent = inpMethod.value;
+    
+    // Reference
+    prevRef.textContent = getFirstName(inpRef.value);
+    
+    // Status
+    prevStatus.textContent = inpStatus.value;
+    if (inpStatus.value === 'Pendente') {
+      prevStatus.style.background = 'var(--warning-bg)';
+      prevStatus.style.color = 'var(--warning)';
+    } else if (inpStatus.value === 'Agendado') {
+      prevStatus.style.background = 'var(--info-bg)';
+      prevStatus.style.color = 'var(--info)';
+    } else {
+      prevStatus.style.background = 'var(--success-bg)';
+      prevStatus.style.color = 'var(--success)';
+    }
+  }
+
+  [inpAmount, inpDesc, inpCat, inpDate, inpMethod, inpStatus, inpRef].forEach(el => {
+    el.addEventListener('input', updatePreview);
+    el.addEventListener('change', updatePreview);
+  });
+
+  /* ============ Type Selector ============ */
+  document.querySelectorAll('.type-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      
+      const type = card.dataset.type;
+      if (type === 'in') {
+        prevIcon.classList.remove('out');
+        prevIcon.classList.add('in');
+        prevIcon.innerHTML = `<svg class="icon" style="width:28px;height:28px"><use href="#i-trend-up"/></svg>`;
+        
+        prevAmount.classList.remove('out');
+        prevAmount.classList.add('in');
+      } else {
+        prevIcon.classList.remove('in');
+        prevIcon.classList.add('out');
+        prevIcon.innerHTML = `<svg class="icon" style="width:28px;height:28px"><use href="#i-trend-down"/></svg>`;
+        
+        prevAmount.classList.remove('in');
+        prevAmount.classList.add('out');
+      }
+    });
+  });
+
+  /* ============ Form Actions ============ */
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    if (!inpAmount.value || !inpDesc.value.trim()) {
+      showToast('Campos obrigatórios', 'Por favor, preencha Valor e Descrição.');
+      return;
+    }
+    showToast('Transação salva!', `Lançamento de ${prevAmount.textContent} registrado com sucesso.`);
+  });
+
+  document.getElementById('saveNewBtn').addEventListener('click', () => {
+    if (!inpAmount.value || !inpDesc.value.trim()) {
+      showToast('Campos obrigatórios', 'Por favor, preencha Valor e Descrição.');
+      return;
+    }
+    showToast('Transação salva!', 'Formulário limpo. Pronto para a próxima.');
+    document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(i => i.value = '');
+    document.querySelectorAll('select').forEach(s => s.selectedIndex = 0);
+    updatePreview();
+  });
+
+  /* ============ Theme toggle ============ */
+  const themeToggle = document.getElementById('themeToggle');
+  const html = document.documentElement;
+  themeToggle.addEventListener('click', () => {
+    const isDark = html.getAttribute('data-bs-theme') === 'dark';
+    html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
+    themeToggle.innerHTML = isDark ? '<svg class="icon"><use href="#i-moon"/></svg>' : '<svg class="icon"><use href="#i-sun"/></svg>';
+  });
+
+  /* ============ Mobile sidebar ============ */
+  const sidebar = document.getElementById('sidebar');
+  const backdrop = document.getElementById('sidebarBackdrop');
+  document.getElementById('mobileMenuBtn').addEventListener('click', () => {
+    sidebar.classList.add('open');
+    backdrop.classList.add('show');
+  });
+  backdrop.addEventListener('click', () => {
+    sidebar.classList.remove('open');
+    backdrop.classList.remove('show');
+  });
+
+  /* ============ Toast ============ */
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(title, msg) {
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2800);
+  }
+
+  // Initial render
+  updatePreview();
+</script>
+</body>
+</html>

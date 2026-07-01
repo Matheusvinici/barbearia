@@ -10,6 +10,7 @@ class Servico extends Model
     use HasFactory;
 
     protected $fillable = [
+        'barbearia_id',
         'nome',
         'descricao',
         'foto',
@@ -36,5 +37,10 @@ class Servico extends Model
         return $this->belongsToMany(Agendamento::class, 'agendamento_servico')
             ->withPivot('preco_praticado')
             ->withTimestamps();
+    }
+
+    public function barbearia()
+    {
+        return $this->belongsTo(Barbearia::class);
     }
 }

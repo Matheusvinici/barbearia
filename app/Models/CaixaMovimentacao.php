@@ -12,6 +12,7 @@ class CaixaMovimentacao extends Model
     protected $table = 'caixa_movimentacoes';
 
     protected $fillable = [
+        'barbearia_id',
         'caixa_id',
         'tipo',
         'valor',
@@ -31,5 +32,10 @@ class CaixaMovimentacao extends Model
     public function caixa()
     {
         return $this->belongsTo(Caixa::class);
+    }
+
+    public function barbearia()
+    {
+        return $this->belongsTo(Barbearia::class);
     }
 }

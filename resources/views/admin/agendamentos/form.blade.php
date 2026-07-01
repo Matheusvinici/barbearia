@@ -52,6 +52,15 @@
                         @endforeach
                     </div>
                 </div>
+                <div class="col-md-4 mb-3">
+                    <label>Forma de Pagamento</label>
+                    <select name="forma_pagamento" class="form-control">
+                        <option value="">Selecione...</option>
+                        @foreach(['Dinheiro','Cartão de Crédito','Cartão de Débito','Pix','Boleto','Plano'] as $fp)
+                        <option value="{{ $fp }}" {{ $agendamento->forma_pagamento == $fp ? 'selected' : '' }}>{{ $fp }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <div class="col-md-12 mb-3">
                     <div class="form-check">
                         <input class="form-check-input" type="checkbox" name="usar_plano" value="1" id="usarPlano" {{ $agendamento->usar_plano ? 'checked' : '' }}>

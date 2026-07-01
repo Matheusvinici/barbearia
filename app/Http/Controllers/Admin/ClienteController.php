@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TenantScoped;
 use App\Models\Cliente;
 use Illuminate\Http\Request;
 
 class ClienteController extends Controller
 {
+    use TenantScoped;
+
     public function index()
     {
-        $clientes = Cliente::withCount('agendamentos')->paginate(15);
+        $query = Cliente::withCount('agendamentos');
+        $query = $this->applyTenantScope($query);
+        $clientes = $query->paginate(15);
         return view('admin.clientes.index', compact('clientes'));
     }
 
@@ -28,9 +33,17 @@ class ClienteController extends Controller
             'observacoes' => 'nullable|string',
         ]);
 
+        if ($this->isTenantContext()) {
+            $data['barbearia_id'] = $this->tenantId();
+        }
+
         Cliente::create($data);
 
-        return redirect()->route('admin.clientes.index')->with('success', 'Cliente cadastrado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.clientes.index', $this->getTenant()->slug)
+            : route('admin.clientes.index');
+
+        return redirect()->to($route)->with('success', 'Cliente cadastrado com sucesso!');
     }
 
     public function show(Cliente $cliente)
@@ -55,7 +68,11 @@ class ClienteController extends Controller
 
         $cliente->update($data);
 
-        return redirect()->route('admin.clientes.index')->with('success', 'Cliente atualizado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.clientes.index', $this->getTenant()->slug)
+            : route('admin.clientes.index');
+
+        return redirect()->to($route)->with('success', 'Cliente atualizado com sucesso!');
     }
 
     public function destroy(Cliente $cliente)
@@ -67,10 +84,10 @@ class ClienteController extends Controller
     public function search(Request $request)
     {
         $term = $request->get('q');
-        $clientes = Cliente::where('nome', 'LIKE', "%{$term}%")
-            ->orWhere('telefone', 'LIKE', "%{$term}%")
-            ->limit(10)
-            ->get(['id', 'nome', 'telefone']);
+        $query = Cliente::where('nome', 'LIKE', "%{$term}%")
+            ->orWhere('telefone', 'LIKE', "%{$term}%");
+        $query = $this->applyTenantScope($query);
+        $clientes = $query->limit(10)->get(['id', 'nome', 'telefone']);
         return response()->json($clientes);
     }
 }

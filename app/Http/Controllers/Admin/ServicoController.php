@@ -3,14 +3,19 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TenantScoped;
 use App\Models\Servico;
 use Illuminate\Http\Request;
 
 class ServicoController extends Controller
 {
+    use TenantScoped;
+
     public function index()
     {
-        $servicos = Servico::paginate(10);
+        $query = Servico::query();
+        $query = $this->applyTenantScope($query);
+        $servicos = $query->paginate(10);
         return view('admin.servicos.index', compact('servicos'));
     }
 
@@ -30,13 +35,21 @@ class ServicoController extends Controller
             'ativo' => 'boolean',
         ]);
 
+        if ($this->isTenantContext()) {
+            $data['barbearia_id'] = $this->tenantId();
+        }
+
         if ($request->hasFile('foto')) {
             $data['foto'] = $request->file('foto')->store('servicos', 'public');
         }
 
         Servico::create($data);
 
-        return redirect()->route('admin.servicos.index')->with('success', 'Serviço cadastrado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.servicos.index', $this->getTenant()->slug)
+            : route('admin.servicos.index');
+
+        return redirect()->to($route)->with('success', 'Serviço cadastrado com sucesso!');
     }
 
     public function show(Servico $servico)
@@ -73,7 +86,11 @@ class ServicoController extends Controller
 
         $servico->update($data);
 
-        return redirect()->route('admin.servicos.index')->with('success', 'Serviço atualizado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.servicos.index', $this->getTenant()->slug)
+            : route('admin.servicos.index');
+
+        return redirect()->to($route)->with('success', 'Serviço atualizado com sucesso!');
     }
 
     public function destroy(Servico $servico)

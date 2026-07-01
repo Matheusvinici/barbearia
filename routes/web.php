@@ -1,7 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Site\LandingController;
+use App\Http\Controllers\Site\AuthController as SiteAuthController;
+use App\Http\Controllers\Site\TenantAuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\BarbeiroController;
 use App\Http\Controllers\Admin\ServicoController;
@@ -22,20 +24,29 @@ use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
 
-use App\Http\Controllers\Site\AuthController;
+// =====================
+// Landing Page
+// =====================
+Route::get('/', [LandingController::class, 'index'])->name('landing');
 
-Route::get('/', [AuthController::class, 'showLoginForm'])->name('site.login');
-Route::post('/entrar', [AuthController::class, 'login'])->name('site.login.store');
+// =====================
+// Legacy Routes (must be BEFORE tenant wildcard to avoid conflict)
+// =====================
+
+// Legacy site client login
+Route::get('/site/login', [SiteAuthController::class, 'showLoginForm'])->name('site.login');
+Route::post('/entrar', [SiteAuthController::class, 'login'])->name('site.login.store');
 
 Route::prefix('site')->name('site.')->group(function () {
     Route::get('/agendar', \App\Livewire\Site\AgendarWizard::class)->name('agendar');
     Route::get('/meus-agendamentos', \App\Livewire\Site\MeusAgendamentos::class)->name('meus-agendamentos');
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    Route::post('/logout', [SiteAuthController::class, 'logout'])->name('logout');
 });
 
+// Legacy admin (super admin)
 Route::middleware(['auth:web,barbeiro'])->group(function () {
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
-    Route::get('/dashboard', [HomeController::class, 'index'])->name('dashboard');
+    Route::get('/home', [DashboardController::class, 'index'])->name('home');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -78,12 +89,13 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
         Route::get('/agendamentos/{agendamento}/edit', [AgendamentoController::class, 'edit'])->name('agendamentos.edit');
         Route::put('/agendamentos/{agendamento}', [AgendamentoController::class, 'update'])->name('agendamentos.update');
         Route::delete('/agendamentos/{agendamento}', [AgendamentoController::class, 'destroy'])->name('agendamentos.destroy');
+        Route::put('/agendamentos/{agendamento}/confirmar', [AgendamentoController::class, 'confirmar'])->name('agendamentos.confirmar');
+        Route::put('/agendamentos/{agendamento}/realizar', [AgendamentoController::class, 'realizar'])->name('agendamentos.realizar');
         Route::get('/agendamentos/horarios/disponiveis', [AgendamentoController::class, 'horariosDisponiveis'])->name('agendamentos.horarios');
 
-
-        Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index')->middleware('can:bloqueio.view');
-        Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store')->middleware('can:bloqueio.create');
-        Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy')->middleware('can:bloqueio.delete');
+        Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
+        Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
+        Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
 
         Route::get('/despesas', [DespesaController::class, 'index'])->name('despesas.index');
         Route::get('/despesas/create', [DespesaController::class, 'create'])->name('despesas.create');
@@ -108,8 +120,6 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
 
         Route::get('/configuracoes', [ConfiguracaoController::class, 'index'])->name('configuracoes.index');
         Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
-        Route::get('/configuracoes/qr-code', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.qr-code');
-        Route::post('/configuracoes/pair', [ConfiguracaoController::class, 'pairBot'])->name('configuracoes.pair');
 
         Route::resource('barbearias', BarbeariaController::class)->names([
             'index' => 'barbearias.index',
@@ -128,9 +138,9 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             'edit' => 'users.edit',
             'update' => 'users.update',
             'destroy' => 'users.destroy',
-        ])->middleware('can:role.view');
+        ]);
 
-        Route::prefix('roles')->name('roles.')->middleware('can:role.view')->group(function () {
+        Route::prefix('roles')->name('roles.')->group(function () {
             Route::get('/', [RoleController::class, 'index'])->name('index');
             Route::post('/', [RoleController::class, 'store'])->name('store');
             Route::get('/{role}/edit', [RoleController::class, 'edit'])->name('edit');
@@ -163,6 +173,7 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
     Route::post('/notificacoes/{id}/marcar-lida', [NotificationController::class, 'marcarLida'])->name('notificacoes.marcar-lida');
 });
 
+// Legacy barber login (standalone)
 Route::prefix('barbeiro')->name('barbeiro.')->group(function () {
     Route::get('/login', [BarberAuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [BarberAuthController::class, 'login'])->name('login.store');
@@ -174,5 +185,167 @@ Route::prefix('barbeiro')->name('barbeiro.')->group(function () {
         Route::put('/agendamentos/{agendamento}/confirmar', [BarberAgendamentoController::class, 'confirmar'])->name('agendamentos.confirmar');
         Route::put('/agendamentos/{agendamento}/realizar', [BarberAgendamentoController::class, 'realizar'])->name('agendamentos.realizar');
         Route::put('/agendamentos/{agendamento}/cancelar', [BarberAgendamentoController::class, 'cancelar'])->name('agendamentos.cancelar');
+
+        Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
+        Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
+        Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
+    });
+});
+
+// =====================
+// Tenant-specific Routes (multi-tenant) — must be AFTER fixed routes
+// =====================
+Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->group(function () {
+
+    // -- Owner / Admin Login (User guard) --
+    Route::get('/login', [TenantAuthController::class, 'showLoginForm'])->name('login');
+    Route::post('/entrar', [TenantAuthController::class, 'login'])->name('login.store');
+    Route::post('/logout', [TenantAuthController::class, 'logout'])->name('logout');
+
+    // -- Owner Admin Area (authenticated with web guard) --
+    Route::middleware(['auth:web'])->prefix('admin')->name('admin.')->group(function () {
+        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+        Route::resource('barbeiros', BarbeiroController::class)->names([
+            'index' => 'barbeiros.index',
+            'create' => 'barbeiros.create',
+            'store' => 'barbeiros.store',
+            'show' => 'barbeiros.show',
+            'edit' => 'barbeiros.edit',
+            'update' => 'barbeiros.update',
+            'destroy' => 'barbeiros.destroy',
+        ]);
+
+        Route::resource('servicos', ServicoController::class)->names([
+            'index' => 'servicos.index',
+            'create' => 'servicos.create',
+            'store' => 'servicos.store',
+            'show' => 'servicos.show',
+            'edit' => 'servicos.edit',
+            'update' => 'servicos.update',
+            'destroy' => 'servicos.destroy',
+        ]);
+
+        Route::resource('clientes', ClienteController::class)->names([
+            'index' => 'clientes.index',
+            'create' => 'clientes.create',
+            'store' => 'clientes.store',
+            'show' => 'clientes.show',
+            'edit' => 'clientes.edit',
+            'update' => 'clientes.update',
+            'destroy' => 'clientes.destroy',
+        ]);
+        Route::get('/clientes/search/ajax', [ClienteController::class, 'search'])->name('clientes.search');
+
+        Route::get('/agendamentos', [AgendamentoController::class, 'index'])->name('agendamentos.index');
+        Route::post('/agendamentos', [AgendamentoController::class, 'store'])->name('agendamentos.store');
+        Route::get('/agendamentos/create', fn () => redirect()->route('tenant.admin.agendamentos.index', request()->route('barbearia')->slug))->name('agendamentos.create');
+        Route::get('/agendamentos/{agendamento}', [AgendamentoController::class, 'show'])->name('agendamentos.show');
+        Route::get('/agendamentos/{agendamento}/edit', [AgendamentoController::class, 'edit'])->name('agendamentos.edit');
+        Route::put('/agendamentos/{agendamento}', [AgendamentoController::class, 'update'])->name('agendamentos.update');
+        Route::delete('/agendamentos/{agendamento}', [AgendamentoController::class, 'destroy'])->name('agendamentos.destroy');
+        Route::put('/agendamentos/{agendamento}/confirmar', [AgendamentoController::class, 'confirmar'])->name('agendamentos.confirmar');
+        Route::put('/agendamentos/{agendamento}/realizar', [AgendamentoController::class, 'realizar'])->name('agendamentos.realizar');
+        Route::get('/agendamentos/horarios/disponiveis', [AgendamentoController::class, 'horariosDisponiveis'])->name('agendamentos.horarios');
+
+        Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
+        Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
+        Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
+
+        Route::get('/despesas', [DespesaController::class, 'index'])->name('despesas.index');
+        Route::get('/despesas/create', [DespesaController::class, 'create'])->name('despesas.create');
+        Route::post('/despesas', [DespesaController::class, 'store'])->name('despesas.store');
+        Route::get('/despesas/{despesa}/edit', [DespesaController::class, 'edit'])->name('despesas.edit');
+        Route::put('/despesas/{despesa}', [DespesaController::class, 'update'])->name('despesas.update');
+        Route::delete('/despesas/{despesa}', [DespesaController::class, 'destroy'])->name('despesas.destroy');
+        Route::patch('/despesas/{despesa}/toggle-pago', [DespesaController::class, 'togglePago'])->name('despesas.toggle-pago');
+
+        Route::get('/caixa', [CaixaController::class, 'index'])->name('caixa.index');
+        Route::get('/caixa/{caixa}', [CaixaController::class, 'show'])->name('caixa.show');
+        Route::get('/caixa/{caixa}/edit', [CaixaController::class, 'edit'])->name('caixa.edit');
+        Route::put('/caixa/{caixa}', [CaixaController::class, 'update'])->name('caixa.update');
+        Route::post('/caixa/abrir', [CaixaController::class, 'abrir'])->name('caixa.abrir');
+        Route::post('/caixa/{caixa}/fechar', [CaixaController::class, 'fechar'])->name('caixa.fechar');
+        Route::post('/caixa/{caixa}/reabrir', [CaixaController::class, 'reabrir'])->name('caixa.reabrir');
+
+        Route::get('/relatorios', [RelatorioController::class, 'index'])->name('relatorios.index');
+        Route::get('/relatorios/faturamento', [RelatorioController::class, 'faturamento'])->name('relatorios.faturamento');
+        Route::get('/relatorios/servicos', [RelatorioController::class, 'servicos'])->name('relatorios.servicos');
+        Route::get('/relatorios/faturamento/pdf', [RelatorioController::class, 'pdfFaturamento'])->name('relatorios.faturamento-pdf');
+
+        Route::get('/configuracoes', [ConfiguracaoController::class, 'index'])->name('configuracoes.index');
+        Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
+        Route::get('/configuracoes/qr-code', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.qr-code');
+        Route::post('/configuracoes/pair', [ConfiguracaoController::class, 'pairBot'])->name('configuracoes.pair');
+
+        Route::resource('users', UserController::class)->names([
+            'index' => 'users.index',
+            'create' => 'users.create',
+            'store' => 'users.store',
+            'show' => 'users.show',
+            'edit' => 'users.edit',
+            'update' => 'users.update',
+            'destroy' => 'users.destroy',
+        ]);
+
+        Route::prefix('roles')->name('roles.')->group(function () {
+            Route::get('/', [RoleController::class, 'index'])->name('index');
+            Route::post('/', [RoleController::class, 'store'])->name('store');
+            Route::get('/{role}/edit', [RoleController::class, 'edit'])->name('edit');
+            Route::put('/{role}', [RoleController::class, 'update'])->name('update');
+            Route::delete('/{role}', [RoleController::class, 'destroy'])->name('destroy');
+        });
+
+        Route::resource('planos', PlanoController::class)->names([
+            'index' => 'planos.index',
+            'create' => 'planos.create',
+            'store' => 'planos.store',
+            'show' => 'planos.show',
+            'edit' => 'planos.edit',
+            'update' => 'planos.update',
+            'destroy' => 'planos.destroy',
+        ]);
+
+        Route::prefix('clientes-planos')->name('clientes-planos.')->group(function () {
+            Route::get('/', [ClientePlanoController::class, 'index'])->name('index');
+            Route::post('/', [ClientePlanoController::class, 'store'])->name('store');
+            Route::get('/dashboard', [ClientePlanoController::class, 'dashboard'])->name('dashboard');
+            Route::get('/{clientesPlano}/edit', [ClientePlanoController::class, 'edit'])->name('edit');
+            Route::put('/{clientesPlano}', [ClientePlanoController::class, 'update'])->name('update');
+            Route::delete('/{clientesPlano}', [ClientePlanoController::class, 'destroy'])->name('destroy');
+        });
+
+        // Notifications
+        Route::get('/notificacoes', [NotificationController::class, 'index'])->name('notificacoes.index');
+        Route::post('/notificacoes/marcar-todas', [NotificationController::class, 'marcarTodas'])->name('notificacoes.marcar-todas');
+        Route::post('/notificacoes/{id}/marcar-lida', [NotificationController::class, 'marcarLida'])->name('notificacoes.marcar-lida');
+    });
+
+    // -- Barber Area --
+    Route::prefix('barbeiro')->name('barbeiro.')->group(function () {
+        Route::get('/login', [BarberAuthController::class, 'showTenantLoginForm'])->name('login');
+        Route::post('/login', [BarberAuthController::class, 'login'])->name('login.store');
+        Route::post('/logout', [BarberAuthController::class, 'logout'])->name('logout');
+
+        Route::middleware(['auth:barbeiro'])->group(function () {
+            Route::get('/dashboard', [BarberDashboardController::class, 'index'])->name('dashboard');
+            Route::get('/agendamentos', [BarberAgendamentoController::class, 'index'])->name('agendamentos.index');
+            Route::put('/agendamentos/{agendamento}/confirmar', [BarberAgendamentoController::class, 'confirmar'])->name('agendamentos.confirmar');
+            Route::put('/agendamentos/{agendamento}/realizar', [BarberAgendamentoController::class, 'realizar'])->name('agendamentos.realizar');
+            Route::put('/agendamentos/{agendamento}/cancelar', [BarberAgendamentoController::class, 'cancelar'])->name('agendamentos.cancelar');
+
+            Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
+            Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
+            Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
+        });
+    });
+
+    // -- Public Client Area --
+    Route::prefix('site')->name('site.')->group(function () {
+        Route::get('/login', [SiteAuthController::class, 'showTenantLoginForm'])->name('login');
+        Route::post('/entrar', [SiteAuthController::class, 'login'])->name('login.store');
+        Route::get('/agendar', \App\Livewire\Site\AgendarWizard::class)->name('agendar');
+        Route::get('/meus-agendamentos', \App\Livewire\Site\MeusAgendamentos::class)->name('meus-agendamentos');
+        Route::post('/logout', [SiteAuthController::class, 'logout'])->name('logout');
     });
 });

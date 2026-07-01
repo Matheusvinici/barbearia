@@ -2,6 +2,15 @@
 @section('title', 'Detalhes do Barbeiro')
 @section('breadcrumb', 'Barbeiros > Detalhes')
 
+@php
+    function barbeiroRoute($name, $params = []) {
+        $slug = request()->route('barbearia')?->slug;
+        if (!$slug) return route('admin.' . $name, $params);
+        $params = is_array($params) ? $params : [$params];
+        return route('tenant.admin.' . $name, array_merge([$slug], $params));
+    }
+@endphp
+
 @section('content')
 <div class="card">
     <div class="card-header"><h5>{{ $barbeiro->nome }}</h5></div>
@@ -40,8 +49,8 @@
         </table>
         @endif
 
-        <a href="{{ route('admin.barbeiros.edit', $barbeiro) }}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar</a>
-        <a href="{{ route('admin.barbeiros.index') }}" class="btn btn-secondary">Voltar</a>
+        <a href="{{ barbeiroRoute('barbeiros.edit', $barbeiro) }}" class="btn btn-warning"><i class="fas fa-edit"></i> Editar</a>
+        <a href="{{ barbeiroRoute('barbeiros.index') }}" class="btn btn-secondary">Voltar</a>
     </div>
 </div>
 @endsection

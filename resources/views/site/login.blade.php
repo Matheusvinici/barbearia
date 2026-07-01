@@ -2,49 +2,34 @@
     $telefone = old('telefone', session('telefone', ''));
     $novo = old('novo', session('novo', false));
 @endphp
-
 @extends('layouts.guest')
 @section('title', 'Agendar')
-@section('subtitle', 'Agende seu horário')
-
-@section('footer-links')
-    <a href="{{ route('login') }}" class="text-muted small me-3"><i class="fas fa-user-shield"></i> Administração</a>
-@stop
+@section('subtitle', 'Faça login para agendar seu horário')
 
 @section('content')
 <form method="POST" action="/entrar">
     @csrf
-
-    <div class="text-center mb-4">
-        <h5 class="fw-bold">Olá, cliente!</h5>
-        <p class="text-muted small">Digite seu telefone para agendar</p>
-    </div>
-
-    <div class="mb-3">
+    <div class="form-group">
         <label class="form-label">Telefone</label>
-        <input type="tel" name="telefone" class="form-control form-control-lg text-center"
-               value="{{ $telefone }}"
-               placeholder="(88) 99999-9999" maxlength="15" required autofocus
-               oninput="this.value=this.value.replace(/\D/g,'').replace(/^(\d{2})(\d{5})(\d{4}).*/,'($1) $2-$3')">
+        <div class="input-group">
+            <span class="addon">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+            </span>
+            <input type="tel" name="telefone" class="form-input" value="{{ $telefone }}" placeholder="(11) 99999-8888" required autofocus>
+        </div>
+        @error('telefone') <div class="form-error">{{ $message }}</div> @enderror
     </div>
-
-    <div class="mb-3" id="nome-field" style="{{ $novo ? '' : 'display:none' }}">
-        <label class="form-label">Nome completo</label>
-        <input type="text" name="nome" class="form-control form-control-lg"
-               value="{{ old('nome') }}" placeholder="Seu nome" {{ $novo ? 'required' : '' }}>
-    </div>
-
-    @if(session('error')) <div class="alert alert-danger py-2 small">{{ session('error') }}</div> @endif
-
-    <button type="submit" class="btn btn-login btn-block text-white w-100">
-        {{ $novo ? 'Cadastrar e Agendar' : 'Entrar' }}
+    <button type="submit" class="btn-primary-c" style="width:100%;justify-content:center;margin-top:20px;">
+        Entrar
     </button>
+    <div style="text-align:center;margin-top:14px;">
+        <a href="{{ route('site.agendar') }}" style="font-size:13px;color:var(--text-muted);text-decoration:none;">Continuar sem login</a>
+    </div>
 </form>
+@endsection
 
-@if(!$novo)
-<div class="text-center mt-3">
-    <span class="text-muted small">Primeira vez?</span>
-    <a href="#" class="small" onclick="event.preventDefault();document.getElementById('nome-field').style.display='';document.querySelector('[name=nome]').required=true;this.closest('div').remove()">Criar cadastro</a>
-</div>
-@endif
-@stop
+@section('footer-links')
+<a href="{{ route('login') }}" style="font-size:13px;color:var(--text-muted);text-decoration:none;">Administração</a>
+<span style="color:var(--text-faint);margin:0 8px;">|</span>
+<a href="{{ route('barbeiro.login') }}" style="font-size:13px;color:var(--text-muted);text-decoration:none;">Barbeiros</a>
+@endsection

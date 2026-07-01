@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TenantScoped;
 use App\Models\Agendamento;
 use App\Models\Barbearia;
 use App\Models\Barbeiro;
@@ -21,16 +22,20 @@ use App\Notifications\NovoAgendamentoBot;
 
 class AgendamentoController extends Controller
 {
+    use TenantScoped;
+
     public function index()
     {
         $data = request('data', Carbon::today()->format('Y-m-d'));
         $barbeiroId = request('barbeiro_id');
         $barbeariaId = request('barbearia_id');
 
-        $query = Agendamento::with(['barbeiro', 'cliente', 'servicos'])
+        $query = Agendamento::with(['barbeiro', 'cliente', 'cliente.planos', 'servicos'])
             ->whereDate('data', $data);
 
-        if ($barbeariaId) {
+        if ($this->isTenantContext()) {
+            $query = $this->applyTenantScope($query);
+        } elseif ($barbeariaId) {
             $query->where('barbearia_id', $barbeariaId);
         }
 
@@ -58,9 +63,14 @@ class AgendamentoController extends Controller
             'servico_ids.*' => 'exists:servicos,id',
             'data' => 'required|date',
             'hora_inicio' => 'required',
+            'forma_pagamento' => 'nullable|string|max:50',
             'usar_plano' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);
+
+        if ($this->isTenantContext() && empty($data['barbearia_id'])) {
+            $data['barbearia_id'] = $this->tenantId();
+        }
 
         $servicos = Servico::whereIn('id', $data['servico_ids'])->get();
         $totalMinutos = $servicos->sum('duracao_minutos');
@@ -74,6 +84,7 @@ class AgendamentoController extends Controller
             'barbeiro_id' => $data['barbeiro_id'],
             'cliente_id' => $data['cliente_id'],
             'data' => $data['data'],
+            'forma_pagamento' => $data['forma_pagamento'] ?? null,
             'hora_inicio' => $horaInicio->format('H:i'),
             'hora_fim' => $horaFim->format('H:i'),
             'status' => 'pendente',
@@ -98,8 +109,11 @@ class AgendamentoController extends Controller
             }
         } catch (\Exception $e) {}
 
-        return redirect()->route('admin.agendamentos.index', ['data' => $data['data']])
-            ->with('success', 'Agendamento criado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.agendamentos.index', [$this->getTenant()->slug, 'data' => $data['data']])
+            : route('admin.agendamentos.index', ['data' => $data['data']]);
+
+        return redirect()->to($route)->with('success', 'Agendamento criado com sucesso!');
     }
 
     public function show(Agendamento $agendamento)
@@ -128,6 +142,7 @@ class AgendamentoController extends Controller
             'servico_ids' => 'required|array',
             'servico_ids.*' => 'exists:servicos,id',
             'status' => 'required|in:pendente,confirmado,realizado,cancelado,ausente',
+            'forma_pagamento' => 'nullable|string|max:50',
             'usar_plano' => 'boolean',
             'observacoes' => 'nullable|string',
         ]);
@@ -148,6 +163,7 @@ class AgendamentoController extends Controller
             'hora_fim' => $horaFim->format('H:i'),
             'status' => $data['status'],
             'total' => $totalValor,
+            'forma_pagamento' => $data['forma_pagamento'] ?? null,
             'usar_plano' => $request->boolean('usar_plano'),
             'observacoes' => $data['observacoes'] ?? null,
         ]);
@@ -166,8 +182,35 @@ class AgendamentoController extends Controller
             }
         }
 
-        return redirect()->route('admin.agendamentos.index', ['data' => $agendamento->data->format('Y-m-d')])
-            ->with('success', 'Agendamento atualizado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.agendamentos.index', [$this->getTenant()->slug, 'data' => $agendamento->data->format('Y-m-d')])
+            : route('admin.agendamentos.index', ['data' => $agendamento->data->format('Y-m-d')]);
+
+        return redirect()->to($route)->with('success', 'Agendamento atualizado com sucesso!');
+    }
+
+    public function confirmar(Request $request, Agendamento $agendamento)
+    {
+        if ($agendamento->status !== 'pendente') {
+            return redirect()->back()->with('error', 'Agendamento não está pendente.');
+        }
+        $data = $request->validate(['forma_pagamento' => 'required|string|max:50']);
+        $agendamento->update(['status' => 'confirmado', 'forma_pagamento' => $data['forma_pagamento']]);
+        return redirect()->back()->with('success', 'Agendamento confirmado com sucesso!');
+    }
+
+    public function realizar(Request $request, Agendamento $agendamento)
+    {
+        if ($agendamento->status !== 'confirmado') {
+            return redirect()->back()->with('error', 'Agendamento não está confirmado.');
+        }
+        $data = $request->validate(['forma_pagamento' => 'required|string|max:50']);
+        $agendamento->update(['status' => 'realizado', 'forma_pagamento' => $data['forma_pagamento']]);
+        $this->registrarNoCaixa($agendamento);
+        if ($agendamento->usar_plano) {
+            $this->registrarUsoPlano($agendamento);
+        }
+        return redirect()->back()->with('success', 'Serviço realizado com sucesso!');
     }
 
     public function destroy(Agendamento $agendamento)
@@ -273,10 +316,19 @@ class AgendamentoController extends Controller
             ? $agendamento->data->format('Y-m-d')
             : Carbon::parse($agendamento->data)->format('Y-m-d');
 
-        $caixa = Caixa::whereDate('data', $dataStr)->first();
+        $caixaQuery = Caixa::whereDate('data', $dataStr);
+
+        if ($agendamento->barbearia_id) {
+            $caixaQuery->where('barbearia_id', $agendamento->barbearia_id);
+        } elseif ($this->isTenantContext()) {
+            $caixaQuery->where('barbearia_id', $this->tenantId());
+        }
+
+        $caixa = $caixaQuery->first();
 
         if (!$caixa) {
             $caixa = Caixa::create([
+                'barbearia_id' => $agendamento->barbearia_id ?? $this->tenantId(),
                 'data' => $dataStr,
                 'saldo_inicial' => 0,
                 'user_id_abertura' => Auth::guard('web')->id(),
@@ -289,6 +341,7 @@ class AgendamentoController extends Controller
             $caixa->save();
 
             CaixaMovimentacao::create([
+                'barbearia_id' => $caixa->barbearia_id,
                 'caixa_id' => $caixa->id,
                 'tipo' => 'entrada',
                 'valor' => $agendamento->total,

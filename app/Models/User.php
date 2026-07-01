@@ -32,4 +32,14 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function ownedBarbearias()
+    {
+        return $this->hasMany(Barbearia::class, 'owner_id');
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasAnyRole(['Admin', 'super-admin']);
+    }
 }

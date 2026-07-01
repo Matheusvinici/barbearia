@@ -18,6 +18,8 @@ class Barbeiro extends Authenticatable
         'telefone',
         'foto',
         'comissao_percentual',
+        'tipo',
+        'especialidades',
         'barbearia_id',
         'ativo',
     ];
@@ -57,5 +59,10 @@ class Barbeiro extends Authenticatable
     public function horarios()
     {
         return $this->hasMany(BarbeiroHorario::class);
+    }
+
+    public function barbearias()
+    {
+        return $this->belongsToMany(Barbearia::class, 'barbeiro_barbearia');
     }
 }

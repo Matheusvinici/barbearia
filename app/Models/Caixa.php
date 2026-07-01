@@ -10,6 +10,7 @@ class Caixa extends Model
     use HasFactory;
 
     protected $fillable = [
+        'barbearia_id',
         'data',
         'saldo_inicial',
         'total_entradas',
@@ -46,5 +47,10 @@ class Caixa extends Model
     public function usuarioFechamento()
     {
         return $this->belongsTo(User::class, 'user_id_fechamento');
+    }
+
+    public function barbearia()
+    {
+        return $this->belongsTo(Barbearia::class);
     }
 }

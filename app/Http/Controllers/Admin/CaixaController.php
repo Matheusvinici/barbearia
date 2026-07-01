@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\TenantScoped;
 use App\Models\Caixa;
 use App\Models\CaixaMovimentacao;
 use Illuminate\Http\Request;
@@ -10,11 +11,16 @@ use Illuminate\Support\Facades\Auth;
 
 class CaixaController extends Controller
 {
+    use TenantScoped;
+
     public function index()
     {
-        $caixas = Caixa::with(['usuarioAbertura', 'usuarioFechamento'])
-            ->orderBy('data', 'desc')
-            ->paginate(20);
+        $query = Caixa::with(['usuarioAbertura', 'usuarioFechamento'])
+            ->orderBy('data', 'desc');
+
+        $query = $this->applyTenantScope($query);
+
+        $caixas = $query->paginate(20);
 
         return view('admin.caixa.index', compact('caixas'));
     }
@@ -49,7 +55,11 @@ class CaixaController extends Controller
             'observacoes' => $request->observacoes,
         ]);
 
-        return redirect()->route('admin.caixa.index')->with('success', 'Caixa atualizado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.caixa.index', $this->getTenant()->slug)
+            : route('admin.caixa.index');
+
+        return redirect()->to($route)->with('success', 'Caixa atualizado com sucesso!');
     }
 
     public function abrir(Request $request)
@@ -59,19 +69,27 @@ class CaixaController extends Controller
             'saldo_inicial' => 'required|numeric|min:0',
         ]);
 
-        $existing = Caixa::whereDate('data', $request->data)->first();
+        $existingQuery = Caixa::whereDate('data', $request->data);
+        $existingQuery = $this->applyTenantScope($existingQuery);
+        $existing = $existingQuery->first();
+
         if ($existing) {
             return redirect()->back()->with('error', 'Caixa já aberto para esta data. Caso queira ajustar valores, edite o caixa diretamente.');
         }
 
         Caixa::create([
+            'barbearia_id' => $this->isTenantContext() ? $this->tenantId() : null,
             'data' => $request->data,
             'saldo_inicial' => $request->saldo_inicial,
             'saldo_final' => $request->saldo_inicial,
             'user_id_abertura' => Auth::guard('web')->id(),
         ]);
 
-        return redirect()->route('admin.caixa.index')->with('success', 'Caixa aberto com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.caixa.index', $this->getTenant()->slug)
+            : route('admin.caixa.index');
+
+        return redirect()->to($route)->with('success', 'Caixa aberto com sucesso!');
     }
 
     public function fechar(Request $request, Caixa $caixa)
@@ -88,7 +106,11 @@ class CaixaController extends Controller
             'user_id_fechamento' => Auth::guard('web')->id(),
         ]);
 
-        return redirect()->route('admin.caixa.index')->with('success', 'Caixa fechado com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.caixa.index', $this->getTenant()->slug)
+            : route('admin.caixa.index');
+
+        return redirect()->to($route)->with('success', 'Caixa fechado com sucesso!');
     }
 
     public function reabrir(Caixa $caixa)
@@ -102,6 +124,10 @@ class CaixaController extends Controller
             'user_id_fechamento' => null,
         ]);
 
-        return redirect()->route('admin.caixa.index')->with('success', 'Caixa reaberto com sucesso!');
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.caixa.index', $this->getTenant()->slug)
+            : route('admin.caixa.index');
+
+        return redirect()->to($route)->with('success', 'Caixa reaberto com sucesso!');
     }
 }

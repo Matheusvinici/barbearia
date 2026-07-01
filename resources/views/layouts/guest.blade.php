@@ -1,38 +1,52 @@
+@php
+    $nome = \App\Models\Configuracao::get('nome_barbearia', 'Barber Control');
+    $logo = asset('images/logo.jpg');
+@endphp
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-bs-theme="light">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>@yield('title', 'Login') - Santa Barba</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        * { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background-color: #f8f9fa; height: 100vh; display: flex; align-items: center; justify-content: center; background-image: url('{{ asset("images/frenteBarbearia.jpg") }}'); background-size: cover; background-position: center; background-attachment: fixed; }
-        body::before { content: ''; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 0; }
-        .login-card { border: none; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 16px rgba(0,0,0,0.04); width: 100%; max-width: 400px; overflow: hidden; position: relative; z-index: 1; }
-        .login-header { background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); padding: 2rem 2rem 1rem; text-align: center; border-bottom: 1px solid #f1f3f5; }
-        .login-header h4 { margin: 0; font-weight: 600; color: #212529; letter-spacing: -0.3px; }
-        .login-header p { margin: 4px 0 0; color: #868e96; font-size: 0.85rem; }
-        .login-header i { color: #212529; }
-        .btn-login { background-color: #212529; border: none; border-radius: 8px; padding: 12px; font-weight: 600; font-size: 0.875rem; }
-        .btn-login:hover { background-color: #343a40; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>@yield('title', 'Login') — {{ $nome }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ asset('css/studio-barber.css') }}">
 </head>
-<body>
-    <div class="login-card">
-        <div class="login-header">
-            <img src="{{ asset('images/logo.jpg') }}" alt="Logo" style="max-width:60%;height:auto;max-height:80px;margin-bottom:0.75rem;">
-            <h4>Santa Barba</h4>
-            <p>@yield('subtitle', 'Administração')</p>
+<body style="background:var(--bg);min-height:100vh;">
+<div class="login-wrapper">
+    <div class="brand-panel">
+        <div>
+            <div class="brand-top">
+                <div class="brand-mark-lg">SB</div>
+                <div class="brand-title"><span>Studio</span> Barber <span>Pro</span></div>
+            </div>
+            <div class="testimonial" style="margin-top:80px;">
+                <blockquote>O sistema que transformou a gestão da minha barbearia. Agendamento online, controle financeiro e muito mais.</blockquote>
+                <cite>
+                    <div style="width:40px;height:40px;border-radius:50%;background:var(--accent-glow);display:grid;place-items:center;font-weight:700;color:var(--accent);">C</div>
+                    <div>
+                        <strong>Carlos Silva</strong>
+                        <span>Proprietário, Santa Barba</span>
+                    </div>
+                </cite>
+            </div>
         </div>
-        <div class="card-body p-4 bg-white" style="border-radius: 0 0 15px 15px;">
-            @yield('content')
-        </div>
-        <div class="card-footer text-center py-3 bg-white" style="border-radius: 0 0 15px 15px; border-top: none;">
-            @yield('footer-links')
-            <a href="{{ route('barbeiro.login') }}" class="text-muted small"><i class="fas fa-user-tie"></i> Área do Barbeiro</a>
+        <div style="font-size:12.5px;color:var(--text-muted);">
+            &copy; {{ date('Y') }} Barber Control Pro. Todos os direitos reservados.
         </div>
     </div>
+    <div class="auth-panel">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>@yield('title', 'Bem-vindo')</h1>
+                <p>@yield('subtitle', 'Acesse sua conta')</p>
+            </div>
+            @yield('content')
+            <div style="text-align:center;margin-top:24px;padding-top:20px;border-top:1px solid var(--border);">
+                @yield('footer-links')
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>

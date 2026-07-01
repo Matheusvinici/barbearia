@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     @stack('styles')
     <style>
-        :root { --primary: #1a1a2e; --accent: #e94560; --bg: #f8f9fa; }
+        :root { --accent: #f5b544; --bg: #ffffff; --card-bg: #ffffff; }
         html, body { height: 100%; margin: 0; }
         body {
             background: var(--bg);
@@ -20,7 +20,7 @@
         .main-content { flex: 1; padding: 1rem; display: flex; flex-direction: column; }
         .main-content > .container { max-width: 400px; width: 100%; margin: 0 auto; flex: 1; display: flex; flex-direction: column; }
         .footer-bar {
-            background: #fff;
+            background: #f8f9fa;
             border-top: 1px solid #eee;
             padding: .6rem .5rem;
             text-align: center;
@@ -29,22 +29,30 @@
             position: sticky;
             bottom: 0;
         }
-        .footer-bar a { color: #666; text-decoration: none; margin: 0 .5rem; }
+        .footer-bar a { color: #555; text-decoration: none; margin: 0 .5rem; }
         .footer-bar a:hover { color: var(--accent); }
         .step-card {
-            background: #fff;
+            background: var(--card-bg);
+            border: 1px solid #e5e7eb;
             border-radius: 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,.08);
+            box-shadow: 0 1px 6px rgba(0,0,0,.04);
             padding: 1.5rem;
             margin-bottom: 1rem;
         }
-        .step-card h5 { font-weight: 600; margin-bottom: 1rem; }
-        .btn-primary { background: var(--accent); border-color: var(--accent); }
-        .btn-primary:hover { background: #d63850; border-color: #d63850; }
+        .step-card h5 { font-weight: 600; margin-bottom: 1rem; color: #111; }
+        .btn-primary { background: var(--accent); border-color: var(--accent); color: #111; font-weight: 600; }
+        .btn-primary:hover { background: #e0a030; border-color: #e0a030; color: #111; }
+        .btn-outline-dark { border-color: #d1d5db; color: #374151; }
+        .btn-outline-dark:hover { background: #f3f4f6; border-color: #d1d5db; color: #111; }
+        .btn-dark { background: #111; border-color: #111; color: #fff; }
         .service-card { cursor: pointer; border: 2px solid transparent; transition: all .2s; border-radius: 12px; padding: .75rem; }
         .service-card:hover { border-color: var(--accent); }
-        .service-card.selected { border-color: var(--accent); background: #fff5f5; }
+        .service-card.selected { border-color: var(--accent); background: #fef9ef; }
         .service-card img { width: 100%; height: 120px; object-fit: cover; border-radius: 8px; }
+        .form-control { border: 1px solid #d1d5db; border-radius: 10px; padding: .6rem .75rem; font-size: .95rem; }
+        .form-control:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(245,181,68,.15); }
+        .form-label { font-size: .85rem; font-weight: 500; color: #374151; margin-bottom: .3rem; }
+        .alert { border-radius: 10px; }
     </style>
 </head>
 <body>
@@ -55,12 +63,16 @@
         </div>
     </div>
 
+    @php
+        $barbearia = request()->route('barbearia');
+        $slug = $barbearia ? $barbearia->slug : null;
+    @endphp
     <div class="footer-bar">
-        <a href="{{ route('site.agendar') }}">Agendar</a>
+        <a href="{{ $slug ? route('tenant.site.agendar', $slug) : route('site.agendar') }}">Agendar</a>
         <span class="text-secondary">|</span>
-        <a href="{{ route('login') }}">Administração</a>
+        <a href="{{ $slug ? route('tenant.login', $slug) : route('login') }}">Administração</a>
         <span class="text-secondary">|</span>
-        <a href="{{ route('barbeiro.login') }}">Barbeiros</a>
+        <a href="{{ $slug ? route('tenant.barbeiro.login', $slug) : route('barbeiro.login') }}">Barbeiros</a>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

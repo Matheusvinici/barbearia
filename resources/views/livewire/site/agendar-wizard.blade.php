@@ -15,7 +15,8 @@
             <button class="btn btn-primary w-100" wire:click="novoAgendamento">
                 <i class="bi bi-plus-circle"></i> Novo Agendamento
             </button>
-            <a href="{{ route('site.meus-agendamentos') }}" class="btn btn-outline-secondary w-100 mt-2">
+            @php $barbearia = request()->route('barbearia'); @endphp
+            <a href="{{ $barbearia ? route('tenant.site.meus-agendamentos', $barbearia->slug) : route('site.meus-agendamentos') }}" class="btn btn-outline-secondary w-100 mt-2">
                 <i class="bi bi-calendar-check"></i> Meus Agendamentos
             </a>
         </div>
@@ -153,8 +154,17 @@
         @if($step == 5)
         <div class="step-card">
             <h5><i class="bi bi-check-circle"></i> Confirmar Agendamento</h5>
+            @if(!$cliente)
+            <div class="mb-3">
+                <label class="form-label">Seu nome</label>
+                <input type="text" class="form-control" wire:model.defer="nome" placeholder="Seu nome" required>
+                <label class="form-label mt-2">Seu WhatsApp</label>
+                <input type="tel" class="form-control" wire:model.defer="telefone" placeholder="(11) 99999-8888" required>
+            </div>
+            @endif
+            @if(session('error'))<div class="alert alert-danger py-1 small">{{ session('error') }}</div>@endif
             <table class="table table-borderless small">
-                <tr><th>Cliente:</th><td>{{ $cliente->nome }}</td></tr>
+                <tr><th>Cliente:</th><td>{{ $cliente->nome ?? $nome }}</td></tr>
                 <tr><th>Barbearia:</th><td>{{ \App\Models\Barbearia::find($barbearia_id)?->nome ?? '-' }}</td></tr>
                 <tr><th>Barbeiro:</th><td>{{ \App\Models\Barbeiro::find($barbeiro_id)->nome }}</td></tr>
                 <tr><th>Serviço:</th><td>{{ $servico->nome }} - R$ {{ number_format($servico->preco, 2, ',', '.') }}</td></tr>
@@ -174,7 +184,8 @@
     @endif
 
     <div class="text-center mt-2">
-        <a href="{{ route('site.meus-agendamentos') }}" class="text-muted small">
+        @php $barbearia = request()->route('barbearia'); @endphp
+        <a href="{{ $barbearia ? route('tenant.site.meus-agendamentos', $barbearia->slug) : route('site.meus-agendamentos') }}" class="text-muted small">
             <i class="bi bi-calendar-check"></i> Meus Agendamentos
         </a>
     </div>

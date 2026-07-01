@@ -35,18 +35,30 @@ class AgendarWizard extends Component
     public $success = false;
     public $agendamento;
 
+    public $nome;
+    public $telefone;
+
     public function mount()
     {
         $clienteId = session('cliente_id');
         $this->cliente = $clienteId ? Cliente::find($clienteId) : null;
+        $this->telefone = session('telefone', '');
 
-        if (!$this->cliente) {
-            $this->redirect(route('site.login'));
+        $route = request()->route();
+        $barbearia = $route->parameter('barbearia');
+
+        if ($barbearia) {
+            $filiais = $barbearia->filiais;
+            if ($filiais->isNotEmpty()) {
+                $this->barbearias = collect([$barbearia])->merge($filiais);
+            } else {
+                $this->barbearias = collect([$barbearia]);
+            }
+        } else {
+            $this->barbearias = Barbearia::whereHas('barbeiros', function ($q) {
+                $q->where('ativo', true);
+            })->orWhereDoesntHave('barbeiros')->orderBy('nome')->get();
         }
-
-        $this->barbearias = Barbearia::whereHas('barbeiros', function ($q) {
-            $q->where('ativo', true);
-        })->orWhereDoesntHave('barbeiros')->orderBy('nome')->get();
 
         $this->servicos = Servico::where('ativo', true)->get();
     }
@@ -113,6 +125,25 @@ class AgendarWizard extends Component
 
     public function confirmar()
     {
+        if (!$this->cliente) {
+            $telefone = preg_replace('/\D/', '', $this->telefone);
+            if (strlen($telefone) < 10) {
+                session()->flash('error', 'Digite um telefone válido com DDD.');
+                return;
+            }
+            if (strlen(trim($this->nome ?? '')) < 3) {
+                session()->flash('error', 'Digite seu nome.');
+                return;
+            }
+            $this->cliente = Cliente::create([
+                'nome' => trim($this->nome),
+                'telefone' => $telefone,
+                'whatsapp_id' => $telefone,
+                'barbearia_id' => $this->barbearia_id,
+            ]);
+            session(['cliente_id' => $this->cliente->id, 'cliente_nome' => $this->cliente->nome]);
+        }
+
         $barbeiro = Barbeiro::find($this->barbeiro_id);
         $horaInicio = Carbon::parse($this->data . ' ' . $this->hora);
         $horaFim = $horaInicio->copy()->addMinutes($this->servico->duracao_minutos);
