@@ -97,6 +97,10 @@ body::before {
   z-index: 100;
   backdrop-filter: blur(20px);
 }
+.sidebar-nav-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.sidebar-nav-scroll::-webkit-scrollbar { width: 4px; }
+.sidebar-nav-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav-scroll::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
 .brand { display: flex; align-items: center; gap: 12px; padding: 0 10px 24px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
 .brand-mark { width: 42px; height: 42px; border-radius: 13px; background: linear-gradient(135deg, var(--accent), var(--accent-soft)); display: grid; place-items: center; color: #0d0d12; font-weight: 800; box-shadow: 0 8px 22px -8px var(--accent-glow); flex-shrink: 0; }
 .brand-text { line-height: 1.15; }

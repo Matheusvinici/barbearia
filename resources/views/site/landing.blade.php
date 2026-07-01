@@ -616,40 +616,44 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
     </div>
     <div class="pricing-grid">
       <div class="price-card reveal">
-        <div class="price-name">Essencial</div>
-        <div class="price-desc">Para barbearias independentes começando a organizar a casa.</div>
+        <div class="price-name">Profissional</div>
+        <div class="price-desc">Para barbearias que querem organizar a gestão do negócio.</div>
         <div class="price-val">
           <span class="price-cur">R$</span>
-          <span class="price-num" data-monthly="79" data-yearly="63">79</span>
+          <span class="price-num" data-monthly="149,90" data-yearly="119,92">149,90</span>
           <span class="price-period">/mês</span>
         </div>
         <div class="price-sub">Cobrança mensal recorrente</div>
         <ul class="price-features">
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Até 2 barbeiros</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Agenda online 24/7</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Lembretes WhatsApp</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Controle financeiro básico</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Suporte por e-mail</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Até 3 barbearias</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Barbeiros ilimitados</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Agendamentos de clientes</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Cadastro de despesas</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Relatório de acompanhamento</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Gerenciamento de planos</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Acompanhamento financeiro</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Bloqueio de agenda</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Controle de clientes</li>
         </ul>
         <button class="price-cta">Começar Teste Grátis</button>
       </div>
       <div class="price-card featured reveal">
         <div class="price-tag-popular">Mais Popular</div>
         <div class="price-name">Pro</div>
-        <div class="price-desc">Para barbearias em crescimento que querem dominar o mercado.</div>
+        <div class="price-desc">Para redes de barbearias que precisam de ainda mais alcance.</div>
         <div class="price-val">
           <span class="price-cur">R$</span>
-          <span class="price-num" data-monthly="149" data-yearly="119">149</span>
+          <span class="price-num" data-monthly="199,90" data-yearly="159,92">199,90</span>
           <span class="price-period">/mês</span>
         </div>
         <div class="price-sub">Cobrança mensal recorrente</div>
         <ul class="price-features">
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Até 5 barbearias</li>
           <li><svg class="icon-sm"><use href="#i-check"/></svg> Barbeiros ilimitados</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> App próprio com sua marca</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Integração Mercado Pago (Pix)</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Relatórios avançados</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Programa de fidelidade</li>
-          <li><svg class="icon-sm"><use href="#i-check"/></svg> Suporte prioritário (WhatsApp)</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Agendamentos de clientes</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Cadastro de despesas</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Relatório de acompanhamento</li>
+          <li><svg class="icon-sm"><use href="#i-check"/></svg> Gerenciamento de planos</li>
         </ul>
         <button class="price-cta">Começar Teste Grátis</button>
       </div>
@@ -733,7 +737,8 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
     </div>
     <div class="footer-bottom">
       <span>&copy; {{ date('Y') }} Barber Control Pro. Todos os direitos reservados.</span>
-      <div style="display:flex; gap:16px;">
+      <div style="display:flex; gap:16px; align-items:center;">
+        <a href="{{ route('admin.access') }}" style="color:var(--text-faint);font-size:11px;text-decoration:none;">Acesso Admin</a>
         <a href="#" style="color:var(--text-faint);"><svg class="icon"><use href="#i-instagram"/></svg></a>
         <a href="#" style="color:var(--text-faint);"><svg class="icon"><use href="#i-whatsapp"/></svg></a>
       </div>
@@ -766,15 +771,15 @@ document.querySelectorAll('.toggle-btn').forEach(btn => {
         btn.classList.add('active');
         const period = btn.dataset.period;
         document.querySelectorAll('.price-num').forEach(num => {
-            const target = parseInt(num.dataset[period]);
-            let current = parseInt(num.textContent);
+            const target = parseFloat(num.dataset[period].replace(',', '.'));
+            let current = parseFloat(num.textContent.replace(',', '.'));
             let step = (target - current) / 10;
             let i = 0;
             const interval = setInterval(() => {
                 current += step;
                 i++;
-                if (i >= 10) { num.textContent = target; clearInterval(interval); }
-                else { num.textContent = Math.round(current); }
+                if (i >= 10) { num.textContent = target.toFixed(2).replace('.', ','); clearInterval(interval); }
+                else { num.textContent = current.toFixed(2).replace('.', ','); }
             }, 20);
         });
     });

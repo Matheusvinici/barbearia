@@ -22,13 +22,21 @@
 <body>
 <div class="sidebar">
     <div class="brand">
-        <div class="brand-mark">SB</div>
+        <div class="brand-mark">
+            @if($__tenant?->logo)
+            <img src="{{ $__tenant->logo_url }}" alt="Logo" style="width:42px;height:42px;border-radius:13px;object-fit:cover;">
+            @else
+            SB
+            @endif
+        </div>
         <div class="brand-text">
             <strong>{{ $__tenant?->nome ?? 'Barber Control' }}</strong>
             <span>{{ $__tenant ? 'Administração' : 'Pro' }}</span>
         </div>
     </div>
+    <div class="sidebar-nav-scroll">
     @include('layouts.navigation')
+    </div>
     <div class="sidebar-footer">
         <div class="user-card" onclick="document.getElementById('user-dropdown').classList.toggle('show')">
             <div class="user-avatar">{{ $__userInitial }}</div>

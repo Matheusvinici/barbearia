@@ -27,6 +27,7 @@
 .action-btn.danger:hover { background: var(--danger-bg); }
 .action-btn.success { color: var(--success); border-color: var(--success); }
 .action-btn.success:hover { background: var(--success-bg); }
+.chart-wrap { width: 100%; }
 </style>
 @endpush
 
@@ -110,43 +111,8 @@
         </div>
     </div>
     <div class="panel-body">
-        @php
-            $chartData = $chartData ?? [];
-            $maxVal = count($chartData) > 0 ? max(array_column($chartData, 'total')) : 1;
-        @endphp
         <div class="chart-wrap">
-            <svg class="finance-chart" viewBox="0 0 720 300" preserveAspectRatio="none">
-                <defs>
-                    <linearGradient id="exp-gradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#f87171" stop-opacity="0.8"/>
-                        <stop offset="100%" stop-color="#ef4444" stop-opacity="0.4"/>
-                    </linearGradient>
-                </defs>
-                <g class="chart-grid">
-                    <line x1="40" y1="40" x2="700" y2="40"/>
-                    <line x1="40" y1="110" x2="700" y2="110"/>
-                    <line x1="40" y1="180" x2="700" y2="180"/>
-                    <line x1="40" y1="250" x2="700" y2="250"/>
-                </g>
-                <g class="chart-axis">
-                    <text x="30" y="44" text-anchor="end">R$ {{ number_format($maxVal, 0, ',', '.') }}</text>
-                    <text x="30" y="114" text-anchor="end">R$ {{ number_format($maxVal * 0.75, 0, ',', '.') }}</text>
-                    <text x="30" y="184" text-anchor="end">R$ {{ number_format($maxVal * 0.5, 0, ',', '.') }}</text>
-                    <text x="30" y="254" text-anchor="end">R$ {{ number_format($maxVal * 0.25, 0, ',', '.') }}</text>
-                    @foreach($chartData as $i => $d)
-                    <text x="{{ 90 + $i * 112 }}" y="280" text-anchor="middle">{{ $d['label'] }}</text>
-                    @endforeach
-                </g>
-                <g class="chart-bars">
-                    @foreach($chartData as $i => $d)
-                    @php
-                        $barH = $maxVal > 0 ? max(2, ($d['total'] / $maxVal) * 210) : 2;
-                        $barX = 40 + $i * (660 / max(count($chartData), 1)) + ((660 / max(count($chartData), 1)) - 40) / 2;
-                    @endphp
-                    <rect class="chart-bar-exp" x="{{ $barX }}" y="{{ 40 + 210 - $barH }}" width="40" height="{{ $barH }}" rx="5" fill="url(#exp-gradient)"/>
-                    @endforeach
-                </g>
-            </svg>
+            <div id="expenses-chart" style="width:100%;height:300px;"></div>
         </div>
     </div>
 </div>
@@ -220,7 +186,7 @@
                     </td>
                     <td>
                         <div style="display:flex;gap:4px;">
-                            <button onclick="togglePago({{ $d->id }})" class="action-btn {{ $d->pago ? 'danger' : 'success' }}" style="font-size:12px;">
+                            <button onclick="togglePago('{{ route('admin.despesas.toggle-pago', $d) }}')" class="action-btn {{ $d->pago ? 'danger' : 'success' }}" style="font-size:12px;">
                                 <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $d->pago ? 'M5 12l5 5L20 7' : 'M5 12l5 5L20 7' }}"/></svg>
                                 {{ $d->pago ? 'Reverter' : 'Pagar' }}
                             </button>
@@ -258,10 +224,14 @@
 @endsection
 
 @push('scripts')
+<script src="{{ asset('vendor/amcharts5/index.js') }}"></script>
+<script src="{{ asset('vendor/amcharts5/xy.js') }}"></script>
+<script src="{{ asset('vendor/amcharts5/Animated.js') }}"></script>
 <script>
-function togglePago(id) {
+var _chartData = JSON.parse('{!! json_encode($chartData) !!}');
+function togglePago(url) {
     $.ajax({
-        url: '{{ route("admin.despesas.toggle-pago", "") }}/' + id,
+        url: url,
         method: 'PATCH',
         data: { _token: '{{ csrf_token() }}' },
         success: () => location.reload()
@@ -271,5 +241,41 @@ function confirmarExclusao(url) {
     Swal.fire({ title: 'Excluir despesa?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33', cancelButtonText: 'Cancelar', confirmButtonText: 'Excluir' })
     .then((r) => { if(r.isConfirmed) $.ajax({ url, method: 'DELETE', data: { _token: '{{ csrf_token() }}' }, success: () => location.reload() }); });
 }
+</script>
+<script>
+am5.ready(function() {
+    var el = document.getElementById('expenses-chart');
+    if (!el) return;
+    var data = typeof _chartData !== 'undefined' ? _chartData : [];
+    if (!data || !data.length) {
+        el.innerHTML = '<div style="text-align:center;padding:80px 20px;color:var(--text-muted);font-size:14px;">Nenhum dado disponível.</div>';
+        return;
+    }
+    var root = am5.Root.new("expenses-chart");
+    root.setThemes([am5themes_Animated.new(root)]);
+    var chart = root.container.children.push(am5xy.XYChart.new(root, {}));
+    var xAxis = chart.xAxes.push(am5xy.CategoryAxis.new(root, {
+        categoryField: "label",
+        renderer: am5xy.AxisRendererX.new(root, {})
+    }));
+    xAxis.data.setAll(data);
+    var yAxis = chart.yAxes.push(am5xy.ValueAxis.new(root, {
+        renderer: am5xy.AxisRendererY.new(root, {})
+    }));
+    var series = chart.series.push(am5xy.ColumnSeries.new(root, {
+        name: "Despesas",
+        xAxis: xAxis,
+        yAxis: yAxis,
+        valueYField: "total",
+        categoryXField: "label"
+    }));
+    series.columns.template.setAll({
+        fill: am5.color(0xef4444),
+        cornerRadiusTL: 5,
+        cornerRadiusTR: 5,
+        strokeOpacity: 0
+    });
+    series.data.setAll(data);
+});
 </script>
 @endpush

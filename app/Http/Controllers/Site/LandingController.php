@@ -16,4 +16,14 @@ class LandingController extends Controller
 
         return view('site.landing', compact('barbearias'));
     }
+
+    public function adminAccess()
+    {
+        $barbearias = Barbearia::whereNull('parent_id')
+            ->whereNotNull('slug')
+            ->orderBy('nome')
+            ->get();
+
+        return view('site.admin-access', compact('barbearias'));
+    }
 }

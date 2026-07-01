@@ -27,7 +27,7 @@
 <div class="main-grid">
     <div class="col-stack">
 
-        <form action="{{ $edit ? route('admin.barbearias.update', $barbearia) : route('admin.barbearias.store') }}" method="POST">
+        <form action="{{ $edit ? route('admin.barbearias.update', $barbearia) : route('admin.barbearias.store') }}" method="POST" enctype="multipart/form-data">
             @csrf
             @if($edit) @method('PUT') @endif
 
@@ -80,6 +80,20 @@
                                 <input type="text" name="cidade" class="form-input @error('cidade') form-error @enderror" placeholder="São Paulo" value="{{ old('cidade', $edit ? $barbearia->cidade : '') }}">
                             </div>
                             @error('cidade')<span style="font-size:12px;color:var(--danger);margin-top:4px;display:block;">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="form-group" style="grid-column:1/-1;">
+                            <label class="form-label">Logomarca</label>
+                            <div class="input-group">
+                                <span class="addon"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></span>
+                                <input type="file" name="logo" class="form-input @error('logo') form-error @enderror" accept="image/jpeg,image/png,image/webp">
+                            </div>
+                            @error('logo')<span style="font-size:12px;color:var(--danger);margin-top:4px;display:block;">{{ $message }}</span>@enderror
+                            @if($edit && $barbearia->logo)
+                            <div style="margin-top:8px;display:flex;align-items:center;gap:12px;">
+                                <img src="{{ $barbearia->logo_url }}" alt="Logo" style="width:48px;height:48px;border-radius:10px;object-fit:cover;border:1px solid var(--border);">
+                                <span style="font-size:12px;color:var(--text-muted);">Logo atual. Envie uma nova para substituir.</span>
+                            </div>
+                            @endif
                         </div>
                         <div class="form-group" style="grid-column:1/-1;">
                             <label class="form-label">Descrição</label>

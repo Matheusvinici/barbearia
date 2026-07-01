@@ -28,6 +28,7 @@ use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoCont
 // Landing Page
 // =====================
 Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/admin-login', [LandingController::class, 'adminAccess'])->name('admin.access');
 
 // =====================
 // Legacy Routes (must be BEFORE tenant wildcard to avoid conflict)
