@@ -1,7 +1,7 @@
 <div>
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="mb-0"><i class="bi bi-calendar-check"></i> Meus Agendamentos</h5>
-        <a href="{{ route('site.agendar') }}" class="btn btn-primary btn-sm" wire:navigate>
+        <a href="{{ $slug ? route('tenant.site.agendar', $slug) : route('site.agendar') }}" class="btn btn-primary btn-sm" wire:navigate>
             <i class="bi bi-plus-circle"></i> Novo
         </a>
     </div>
@@ -42,7 +42,7 @@
     <div class="step-card text-center text-muted py-4">
         <i class="bi bi-calendar-x fs-1"></i>
         <p class="mt-2">Nenhum agendamento encontrado.</p>
-        <a href="{{ route('site.agendar') }}" class="btn btn-primary" wire:navigate>
+        <a href="{{ $slug ? route('tenant.site.agendar', $slug) : route('site.agendar') }}" class="btn btn-primary" wire:navigate>
             <i class="bi bi-plus-circle"></i> Agendar Agora
         </a>
     </div>

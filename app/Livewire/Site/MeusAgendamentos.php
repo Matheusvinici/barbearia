@@ -10,6 +10,7 @@ class MeusAgendamentos extends Component
 {
     public $cliente;
     public $agendamentos;
+    public $slug;
 
     public function mount()
     {
@@ -19,6 +20,12 @@ class MeusAgendamentos extends Component
 
         if (!$this->cliente) {
             $this->redirect(route('site.login'));
+        }
+
+        $route = request()->route();
+        $barbearia = $route->parameter('barbearia');
+        if ($barbearia) {
+            $this->slug = $barbearia instanceof \App\Models\Barbearia ? $barbearia->slug : $barbearia;
         }
 
         $this->agendamentos = Agendamento::where('cliente_id', $clienteId)

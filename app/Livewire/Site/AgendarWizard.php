@@ -37,17 +37,27 @@ class AgendarWizard extends Component
 
     public $nome;
     public $telefone;
+    public $step1_pedir_nome = false;
+    public $slug;
 
     public function mount()
     {
         $clienteId = session('cliente_id');
         $this->cliente = $clienteId ? Cliente::find($clienteId) : null;
-        $this->telefone = session('telefone', '');
+        if ($this->cliente) {
+            $this->nome = $this->cliente->nome;
+            $this->telefone = $this->cliente->telefone;
+        } else {
+            $this->telefone = session('telefone', '');
+        }
+
+        $this->step = $this->cliente ? 2 : 1;
 
         $route = request()->route();
         $barbearia = $route->parameter('barbearia');
 
         if ($barbearia) {
+            $this->slug = $barbearia->slug;
             $filiais = $barbearia->filiais;
             if ($filiais->isNotEmpty()) {
                 $this->barbearias = collect([$barbearia])->merge($filiais);
@@ -78,7 +88,7 @@ class AgendarWizard extends Component
             ->where('barbearia_id', $id)
             ->get();
 
-        $this->step = 2;
+        $this->step = 3;
     }
 
     public function selectBarbeiro($id)
@@ -90,7 +100,7 @@ class AgendarWizard extends Component
         $this->hora = null;
         $this->horarios = null;
         $this->carregarDias();
-        $this->step = 3;
+        $this->step = 4;
     }
 
     public function selectServico($id)
@@ -101,7 +111,7 @@ class AgendarWizard extends Component
         $this->hora = null;
         $this->horarios = null;
         $this->carregarDias();
-        $this->step = 4;
+        $this->step = 5;
     }
 
     public function selectDia($data)
@@ -109,13 +119,58 @@ class AgendarWizard extends Component
         $this->data = $data;
         $this->hora = null;
         $this->carregarHorarios();
-        $this->step = 4;
+        $this->step = 5;
     }
 
     public function selectHora($hora)
     {
         $this->hora = $hora;
         $this->step = 5;
+    }
+
+    public function avancarStep1()
+    {
+        $telefone = preg_replace('/\D/', '', $this->telefone);
+        if (strlen($telefone) < 10) {
+            session()->flash('error', 'Digite um telefone válido com DDD.');
+            return;
+        }
+
+        $cliente = Cliente::where('telefone', $telefone)->first();
+        if ($cliente) {
+            $this->cliente = $cliente;
+            $this->nome = $cliente->nome;
+            session(['cliente_id' => $cliente->id, 'cliente_nome' => $cliente->nome, 'telefone' => $telefone]);
+            $this->step = 2;
+            return;
+        }
+
+        if (!$this->step1_pedir_nome) {
+            $this->step1_pedir_nome = true;
+            return;
+        }
+
+        if (strlen(trim($this->nome ?? '')) < 3) {
+            session()->flash('error', 'Digite seu nome.');
+            return;
+        }
+
+        $this->cliente = Cliente::create([
+            'nome' => trim($this->nome),
+            'telefone' => $telefone,
+            'whatsapp_id' => $telefone,
+        ]);
+        session(['cliente_id' => $this->cliente->id, 'cliente_nome' => $this->cliente->nome, 'telefone' => $telefone]);
+        $this->step = 2;
+    }
+
+    public function corrigirTelefone()
+    {
+        $this->step1_pedir_nome = false;
+        $this->cliente = null;
+        $this->nome = null;
+        $this->telefone = null;
+        $this->step = 1;
     }
 
     public function voltar()
@@ -178,8 +233,8 @@ class AgendarWizard extends Component
 
     public function novoAgendamento()
     {
-        $this->resetExcept(['cliente', 'barbearias', 'servicos']);
-        $this->step = 1;
+        $this->resetExcept(['cliente', 'barbearias', 'servicos', 'telefone', 'nome']);
+        $this->step = $this->cliente ? 2 : 1;
     }
 
     private function carregarDias()

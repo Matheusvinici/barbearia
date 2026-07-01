@@ -15,8 +15,7 @@
             <button class="btn btn-primary w-100" wire:click="novoAgendamento">
                 <i class="bi bi-plus-circle"></i> Novo Agendamento
             </button>
-            @php $barbearia = request()->route('barbearia'); @endphp
-            <a href="{{ $barbearia ? route('tenant.site.meus-agendamentos', $barbearia->slug) : route('site.meus-agendamentos') }}" class="btn btn-outline-secondary w-100 mt-2">
+            <a href="{{ $slug ? route('tenant.site.meus-agendamentos', $slug) : route('site.meus-agendamentos') }}" class="btn btn-outline-secondary w-100 mt-2">
                 <i class="bi bi-calendar-check"></i> Meus Agendamentos
             </a>
         </div>
@@ -27,10 +26,37 @@
             @endforeach
         </div>
 
-        {{-- STEP 1: Barbearia --}}
+        {{-- STEP 1: Telefone (e nome se novo) --}}
         @if($step == 1)
         <div class="step-card">
-            <h5><i class="bi bi-shop"></i> Escolha a Barbearia</h5>
+            <div class="d-flex align-items-center gap-2 mb-3">
+                @if($step1_pedir_nome)
+                <button class="btn btn-sm btn-outline-secondary" wire:click="corrigirTelefone"><i class="bi bi-arrow-left"></i></button>
+                @endif
+                <h5 class="mb-0"><i class="bi bi-whatsapp"></i> Seu WhatsApp</h5>
+            </div>
+            @if(session('error'))<div class="alert alert-danger py-1 small">{{ session('error') }}</div>@endif
+            <div class="mb-3">
+                <label class="form-label">Digite seu WhatsApp</label>
+                <input type="tel" class="form-control" wire:model="telefone" placeholder="(87) 99999-8888" required>
+                @if($step1_pedir_nome)
+                <label class="form-label mt-2">Seu nome</label>
+                <input type="text" class="form-control" wire:model="nome" placeholder="Seu nome" required>
+                @endif
+            </div>
+            <button class="btn btn-primary w-100" wire:click="avancarStep1">
+                <i class="bi bi-arrow-right"></i> {{ $step1_pedir_nome ? 'Cadastrar' : 'Continuar' }}
+            </button>
+        </div>
+        @endif
+
+        {{-- STEP 2: Barbearia --}}
+        @if($step == 2)
+        <div class="step-card">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
+                <h5 class="mb-0"><i class="bi bi-shop"></i> Escolha a Barbearia</h5>
+            </div>
             <div class="d-flex flex-column gap-2">
                 @foreach($barbearias as $b)
                 <button class="btn btn-outline-dark text-start d-flex align-items-center gap-2 p-3 rounded-3
@@ -49,8 +75,8 @@
         </div>
         @endif
 
-        {{-- STEP 2: Barbeiro --}}
-        @if($step == 2)
+        {{-- STEP 3: Barbeiro --}}
+        @if($step == 3)
         <div class="step-card">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
@@ -71,8 +97,8 @@
         </div>
         @endif
 
-        {{-- STEP 3: Serviço --}}
-        @if($step == 3)
+        {{-- STEP 4: Serviço --}}
+        @if($step == 4)
         <div class="step-card">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
@@ -102,8 +128,8 @@
         </div>
         @endif
 
-        {{-- STEP 4: Data e Hora --}}
-        @if($step == 4)
+        {{-- STEP 5: Data e Hora + Confirmar --}}
+        @if($step == 5)
         <div class="step-card">
             <div class="d-flex align-items-center gap-2 mb-3">
                 <button class="btn btn-sm btn-outline-secondary" wire:click="voltar"><i class="bi bi-arrow-left"></i></button>
@@ -142,27 +168,8 @@
             @endif
 
             @if($hora)
-            <button class="btn btn-primary w-100 mt-3" wire:click="$set('step',5)">
-                <i class="bi bi-check-lg"></i> Confirmar Agendamento
-            </button>
-            @endif
-            @endif
-        </div>
-        @endif
-
-        {{-- STEP 5: Confirmar --}}
-        @if($step == 5)
-        <div class="step-card">
-            <h5><i class="bi bi-check-circle"></i> Confirmar Agendamento</h5>
-            @if(!$cliente)
-            <div class="mb-3">
-                <label class="form-label">Seu nome</label>
-                <input type="text" class="form-control" wire:model.defer="nome" placeholder="Seu nome" required>
-                <label class="form-label mt-2">Seu WhatsApp</label>
-                <input type="tel" class="form-control" wire:model.defer="telefone" placeholder="(11) 99999-8888" required>
-            </div>
-            @endif
-            @if(session('error'))<div class="alert alert-danger py-1 small">{{ session('error') }}</div>@endif
+            <hr>
+            <h6 class="mb-2">Resumo do Agendamento</h6>
             <table class="table table-borderless small">
                 <tr><th>Cliente:</th><td>{{ $cliente->nome ?? $nome }}</td></tr>
                 <tr><th>Barbearia:</th><td>{{ \App\Models\Barbearia::find($barbearia_id)?->nome ?? '-' }}</td></tr>
@@ -171,21 +178,18 @@
                 <tr><th>Data:</th><td>{{ \Carbon\Carbon::parse($data)->format('d/m/Y') }}</td></tr>
                 <tr><th>Horário:</th><td>{{ $hora }}</td></tr>
             </table>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary flex-fill" wire:click="voltar">
-                    <i class="bi bi-arrow-left"></i> Voltar
-                </button>
-                <button class="btn btn-primary flex-fill" wire:click="confirmar">
-                    <i class="bi bi-check-lg"></i> Confirmar
-                </button>
-            </div>
+            @if(session('error'))<div class="alert alert-danger py-1 small">{{ session('error') }}</div>@endif
+            <button class="btn btn-primary w-100 mt-2" wire:click="confirmar">
+                <i class="bi bi-check-lg"></i> Confirmar Agendamento
+            </button>
+            @endif
+            @endif
         </div>
         @endif
     @endif
 
     <div class="text-center mt-2">
-        @php $barbearia = request()->route('barbearia'); @endphp
-        <a href="{{ $barbearia ? route('tenant.site.meus-agendamentos', $barbearia->slug) : route('site.meus-agendamentos') }}" class="text-muted small">
+        <a href="{{ $slug ? route('tenant.site.meus-agendamentos', $slug) : route('site.meus-agendamentos') }}" class="text-muted small">
             <i class="bi bi-calendar-check"></i> Meus Agendamentos
         </a>
     </div>
