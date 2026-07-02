@@ -22,6 +22,15 @@ class BarbeiroController extends Controller
     {
         $query = Barbeiro::with('barbearia', 'roles');
         $query = $this->applyTenantScope($query);
+        if (!$this->isTenantContext()) {
+            $user = Auth::guard('web')->user();
+            if ($user && !$user->isSuperAdmin()) {
+                $ids = $user->ownedBarbearias()->get()->flatMap(fn($b) => $b->tenantTreeIds())->unique()->values()->toArray();
+                if (!empty($ids)) {
+                    $query->whereIn('barbearia_id', $ids);
+                }
+            }
+        }
         $barbeiros = $query->paginate(10);
         return view('admin.barbeiros.index', compact('barbeiros'));
     }
