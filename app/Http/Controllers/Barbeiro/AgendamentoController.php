@@ -44,9 +44,8 @@ class AgendamentoController extends Controller
         return view('barbeiro.agendamentos.index', compact('agendamentos'));
     }
 
-    public function confirmar(Request $request)
+    public function confirmar(Request $request, Agendamento $agendamento)
     {
-        $agendamento = $request->route('agendamento');
         $barbeiro = Auth::guard('barbeiro')->user();
 
         if (!$barbeiro->hasRole('proprietario') && $agendamento->barbeiro_id !== $barbeiro->id) {
@@ -62,9 +61,8 @@ class AgendamentoController extends Controller
         return redirect()->back()->with('success', 'Presença confirmada!');
     }
 
-    public function realizar(Request $request)
+    public function realizar(Request $request, Agendamento $agendamento)
     {
-        $agendamento = $request->route('agendamento');
         $barbeiro = Auth::guard('barbeiro')->user();
 
         if (!$barbeiro->hasRole('proprietario') && $agendamento->barbeiro_id !== $barbeiro->id) {
@@ -83,9 +81,8 @@ class AgendamentoController extends Controller
         return redirect()->back()->with('success', 'Serviço marcado como realizado!');
     }
 
-    public function cancelar(Request $request)
+    public function cancelar(Request $request, Agendamento $agendamento)
     {
-        $agendamento = $request->route('agendamento');
         $barbeiro = Auth::guard('barbeiro')->user();
 
         if (!$barbeiro->hasRole('proprietario') && $agendamento->barbeiro_id !== $barbeiro->id) {

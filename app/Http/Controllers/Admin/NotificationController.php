@@ -23,6 +23,16 @@ class NotificationController extends Controller
                 'ago' => $n->created_at->diffForHumans(),
                 'lida' => !is_null($n->read_at),
                 'created_at' => $n->created_at->toIso8601String(),
+                'agendamento_id' => $data['agendamento_id'] ?? null,
+                'cliente_nome' => $data['cliente_nome'] ?? null,
+                'cliente_telefone' => $data['cliente_telefone'] ?? null,
+                'barbeiro_nome' => $data['barbeiro_nome'] ?? null,
+                'data' => $data['data'] ?? null,
+                'hora_inicio' => $data['hora_inicio'] ?? null,
+                'hora_fim' => $data['hora_fim'] ?? null,
+                'servicos' => $data['servicos'] ?? null,
+                'total' => $data['total'] ?? null,
+                'status' => $data['status'] ?? null,
             ];
         });
 

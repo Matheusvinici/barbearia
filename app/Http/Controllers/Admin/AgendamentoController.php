@@ -132,9 +132,15 @@ class AgendamentoController extends Controller
         return redirect()->to($route)->with('success', 'Agendamento criado com sucesso!');
     }
 
+    private function getAgendamentoFromRoute(Request $request): Agendamento
+    {
+        $param = $request->route('agendamento');
+        return $param instanceof Agendamento ? $param : Agendamento::findOrFail((int) $param);
+    }
+
     public function show(Request $request)
     {
-        $agendamento = $request->route('agendamento');
+        $agendamento = $this->getAgendamentoFromRoute($request);
         $agendamento->load(['barbeiro', 'cliente', 'servicos', 'cliente.planos' => function ($q) {
             $q->where('ativo', true)->with('plano.quotas');
         }, 'planoUso']);
@@ -143,7 +149,7 @@ class AgendamentoController extends Controller
 
     public function edit(Request $request)
     {
-        $agendamento = $request->route('agendamento');
+        $agendamento = $this->getAgendamentoFromRoute($request);
         $agendamento->load('servicos');
         $barbeirosQuery = Barbeiro::where('ativo', true);
         $servicos = Servico::where('ativo', true)->get();
@@ -159,7 +165,7 @@ class AgendamentoController extends Controller
 
     public function update(Request $request)
     {
-        $agendamento = $request->route('agendamento');
+        $agendamento = $this->getAgendamentoFromRoute($request);
         $data = $request->validate([
             'barbeiro_id' => 'required|exists:barbeiros,id',
             'data' => 'required|date',
@@ -216,7 +222,7 @@ class AgendamentoController extends Controller
 
     public function confirmar(Request $request)
     {
-        $agendamento = $request->route('agendamento');
+        $agendamento = $this->getAgendamentoFromRoute($request);
         if ($agendamento->status !== 'pendente') {
             return redirect()->back()->with('error', 'Agendamento não está pendente.');
         }
@@ -227,7 +233,7 @@ class AgendamentoController extends Controller
 
     public function realizar(Request $request)
     {
-        $agendamento = $request->route('agendamento');
+        $agendamento = $this->getAgendamentoFromRoute($request);
         if ($agendamento->status !== 'confirmado') {
             return redirect()->back()->with('error', 'Agendamento não está confirmado.');
         }
@@ -242,7 +248,7 @@ class AgendamentoController extends Controller
 
     public function destroy(Request $request)
     {
-        $agendamento = $request->route('agendamento');
+        $agendamento = $this->getAgendamentoFromRoute($request);
         $agendamento->servicos()->detach();
         $agendamento->delete();
         return response()->json(['success' => true, 'message' => 'Agendamento excluído com sucesso']);

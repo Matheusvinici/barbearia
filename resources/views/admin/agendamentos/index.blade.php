@@ -30,7 +30,7 @@
     </button>
     <button class="icon-btn" id="notifBtn" title="Notificações">
         <svg class="icon"><use href="#i-bell"/></svg>
-        <span class="dot-notif"></span>
+        <span class="dot-notif" id="notif-count"></span>
     </button>
     <button class="btn-primary-c" data-bs-toggle="modal" data-bs-target="#modalNovoAgendamento">
         <svg class="icon icon-sm"><use href="#i-plus"/></svg>
