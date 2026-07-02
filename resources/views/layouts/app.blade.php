@@ -103,14 +103,14 @@
         somTocando: false,
         notifPerm: false,
         modalTimeout: null,
-        guard: '{{ $__guard }}',
-        tenantSlug: '{{ $__tenantSlug }}',
     };
 
     function detalhesUrl(dados) {
-        if (state.guard === 'barbeiro') {
-            var base = state.tenantSlug ? '/' + state.tenantSlug + '/barbeiro/agendamentos' : '/barbeiro/agendamentos';
-            return base;
+        var path = window.location.pathname;
+        if (path.indexOf('/barbeiro/') !== -1) {
+            var match = path.match(/^\/([^\/]+)\//);
+            var slug = match && match[1] !== 'barbeiro' ? match[1] : null;
+            return slug ? '/' + slug + '/barbeiro/agendamentos' : '/barbeiro/agendamentos';
         }
         return dados.url || '#';
     }
@@ -223,33 +223,35 @@
     }
 
     function carregarNotificacoes() {
-        var isAuth = {{ Auth::guard('web')->check() || Auth::guard('barbeiro')->check() ? 'true' : 'false' }};
-        if (!isAuth) return;
+        try {
+            var isAuth = {{ Auth::guard('web')->check() || Auth::guard('barbeiro')->check() ? 'true' : 'false' }};
+            if (!isAuth) return;
 
-        fetch('/notificacoes', { credentials: 'same-origin' })
-            .then(function(r) { return r.json(); })
-            .then(function(data) {
-                document.querySelectorAll('#notif-count').forEach(function(el) {
-                    el.textContent = data.nao_lidas || '';
-                });
+            fetch('/notificacoes', { credentials: 'same-origin' })
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    document.querySelectorAll('#notif-count').forEach(function(el) {
+                        el.textContent = data.nao_lidas || '';
+                    });
 
-                data.notificacoes.forEach(function(n) {
-                    if (!n.id || state.idsVistos[n.id]) return;
-                    state.idsVistos[n.id] = true;
+                    data.notificacoes.forEach(function(n) {
+                        if (!n.id || state.idsVistos[n.id]) return;
+                        state.idsVistos[n.id] = true;
 
-                    if (!n.lida && n.title && n.title.indexOf('Novo agendamento') !== -1) {
-                        var isRecente = n.created_at && (Date.now() - new Date(n.created_at).getTime()) < 30000;
-                        if (!state.primeiraCarga || isRecente) {
-                            tocarAlarme();
-                            mostrarNotifDesktop(n.title, n.message, n.url, n);
-                            mostrarModal(n);
+                        if (!n.lida && n.title && n.title.indexOf('Novo agendamento') !== -1) {
+                            var isRecente = n.created_at && (Date.now() - new Date(n.created_at).getTime()) < 30000;
+                            if (!state.primeiraCarga || isRecente) {
+                                tocarAlarme();
+                                mostrarNotifDesktop(n.title, n.message, n.url, n);
+                                mostrarModal(n);
+                            }
                         }
-                    }
-                });
+                    });
 
-                state.primeiraCarga = false;
-            })
-            .catch(function() {});
+                    state.primeiraCarga = false;
+                })
+                .catch(function() {});
+        } catch (e) {}
     }
 
     carregarNotificacoes();
