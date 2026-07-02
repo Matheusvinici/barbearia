@@ -128,8 +128,9 @@ class BarbeiroController extends Controller
             $barbeiro->barbearias()->sync($request->barbearias);
         }
 
-        if ($request->roles) {
-            $barbeiro->syncRoles(Role::whereIn('id', $request->roles)->get());
+        $funcionarioRole = Role::where('name', 'funcionario')->where('guard_name', 'barbeiro')->first();
+        if ($funcionarioRole) {
+            $barbeiro->syncRoles([$funcionarioRole]);
         }
 
         if ($request->horarios) {
@@ -207,7 +208,7 @@ class BarbeiroController extends Controller
         ]);
     }
 
-    public function update(Request $request, int $id)
+    public function update(Request $request, Barbearia $barbearia, int $id)
     {
         $barbeiro = Barbeiro::findOrFail($id);
 
@@ -274,7 +275,10 @@ class BarbeiroController extends Controller
             }
         }
 
-        $barbeiro->syncRoles($request->roles ? Role::whereIn('id', $request->roles)->get() : []);
+        $funcionarioRole = Role::where('name', 'funcionario')->where('guard_name', 'barbeiro')->first();
+        if ($funcionarioRole) {
+            $barbeiro->syncRoles([$funcionarioRole]);
+        }
 
         $barbeiro->horarios()->delete();
         if ($request->horarios) {
@@ -299,7 +303,7 @@ class BarbeiroController extends Controller
         return redirect()->to($route)->with('success', 'Barbeiro atualizado com sucesso!');
     }
 
-    public function destroy(int $id)
+    public function destroy(Barbearia $barbearia, int $id)
     {
         $barbeiro = Barbeiro::findOrFail($id);
         $barbeiro->delete();

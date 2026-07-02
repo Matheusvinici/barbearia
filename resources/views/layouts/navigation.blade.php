@@ -24,6 +24,7 @@
     }
 @endphp
 
+
 <div class="nav-section">
     <div class="nav-label">Geral</div>
 
@@ -68,6 +69,7 @@
     @endif
 </div>
 
+@if($user->can('despesa.view') || $user->can('caixa.view') || $user->can('relatorio.view'))
 <div class="nav-section">
     <div class="nav-label">Financeiro</div>
 
@@ -92,7 +94,9 @@
     </a>
     @endif
 </div>
+@endif
 
+@if($user->can('configuracao.edit') || $user->can('plano.view') || $user->can('role.view') || $user->can('barbearia.view'))
 <div class="nav-section">
     <div class="nav-label">Configurações</div>
 
@@ -128,3 +132,4 @@
     </a>
     @endif
 </div>
+@endif
