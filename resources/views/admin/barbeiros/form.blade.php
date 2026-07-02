@@ -205,6 +205,7 @@
                                     <input type="time" name="horarios[{{ $hi }}][hora_fim]" class="form-input h-out" style="height:36px;width:100px;padding:0 8px;font-size:13px;" value="{{ $valOut }}" {{ !count($diaHorarios) ? 'disabled' : '' }}>
                                     <input type="hidden" name="horarios[{{ $hi }}][dia_semana]" value="{{ $diaIdx }}">
                                     <input type="hidden" name="horarios[{{ $hi }}][periodo]" value="{{ $periKey }}">
+                                    <button type="button" class="period-remove" onclick="removerTurno(this)" title="Remover turno">×</button>
                                 </div>
                                 @php $hi++; @endphp
                                 @endforeach
@@ -282,6 +283,17 @@ function toggleTipo() {
     document.getElementById('criarAdminContainer').style.display = val === 'proprietario' ? '' : 'none';
 }
 
+function removerTurno(btn) {
+    var group = btn.closest('.period-group');
+    var hIn = group.querySelector('.h-in');
+    var hOut = group.querySelector('.h-out');
+    hIn.value = '';
+    hOut.value = '';
+    hIn.disabled = true;
+    hOut.disabled = true;
+    group.classList.add('removed');
+}
+
 function toggleDia(el, diaIdx) {
     el.classList.toggle('on');
     var row = el.closest('.schedule-row');
@@ -292,6 +304,7 @@ function toggleDia(el, diaIdx) {
     inputs.forEach(function(group, idx) {
         var hIn = group.querySelector('.h-in');
         var hOut = group.querySelector('.h-out');
+        group.classList.remove('removed');
         hIn.disabled = !ativo;
         hOut.disabled = !ativo;
         if (ativo && !hIn.value && idx < periodNames.length) {

@@ -1,11 +1,20 @@
 @extends('layouts.app')
 
+@php
+    function _caixaRoute($name, $params = []) {
+        $slug = request()->route('barbearia')?->slug;
+        if (!$slug) return route('admin.' . $name, $params);
+        $params = is_array($params) ? $params : [$params];
+        return route('tenant.admin.' . $name, array_merge([$slug], $params));
+    }
+@endphp
+
 @section('title', 'Caixa - '.$caixa->data->format('d/m/Y'))
 
 @section('breadcrumb')
 <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.02 2.84L4.04 6.74c-.68.54-1.17 1.71-1.17 2.58v7.04c0 1.83 1.49 3.34 3.32 3.34h11.62c1.83 0 3.32-1.49 3.32-3.33V9.4c0-.93-.53-2.07-1.23-2.6l-5.71-4.04c-1.01-.72-2.55-.69-3.54.06z"/><path d="M12 17.5v-3"/></svg>
 <span class="sep">/</span>
-<a href="{{ route('admin.caixa.index') }}" style="color:inherit;text-decoration:none;">Caixa</a>
+<a href="{{ _caixaRoute('caixa.index') }}" style="color:inherit;text-decoration:none;">Caixa</a>
 <span class="sep">/</span>
 <span class="current">{{ $caixa->data->format('d/m/Y') }}</span>
 @endsection
@@ -14,14 +23,16 @@
 <span class="live-dot"></span>
 <span>Detalhes do caixa</span>
 <span class="pipe">·</span>
+<span>{{ $caixa->barbearia?->nome ?? 'Sem unidade' }}</span>
+<span class="pipe">·</span>
 <span>{{ $caixa->fechado ? 'Fechado' : 'Aberto' }}</span>
 @endsection
 
 @section('topbar-actions')
 <button class="mobile-menu-btn" id="mobileMenuBtn"><svg class="icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7h18M3 12h18M3 17h18"/></svg></button>
 <button class="icon-btn" id="themeToggle" title="Alternar tema"><svg class="icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41" stroke-linecap="round"/></svg></button>
-<a href="{{ route('admin.caixa.edit', $caixa) }}" class="btn-primary-c"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7M18.5 1.5a2.12 2.12 0 0 1 3 3L12 14l-4 1 1-4 9.5-9.5z"/></svg>Editar</a>
-<a href="{{ route('admin.caixa.index') }}" class="btn-ghost-c"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Voltar</a>
+<a href="{{ _caixaRoute('caixa.edit', $caixa) }}" class="btn-primary-c"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7M18.5 1.5a2.12 2.12 0 0 1 3 3L12 14l-4 1 1-4 9.5-9.5z"/></svg>Editar</a>
+<a href="{{ _caixaRoute('caixa.index') }}" class="btn-ghost-c"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>Voltar</a>
 @endsection
 
 @section('content')
