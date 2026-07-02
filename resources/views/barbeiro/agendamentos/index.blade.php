@@ -77,14 +77,14 @@
                                 @php
                                     $realizarRoute = route('barbeiro.agendamentos.realizar', $ag);
                                 @endphp
-                                <button class="action-btn warning" title="Realizar" data-action="{{ $realizarRoute }}"
+                                <button class="action-btn warning" data-action="{{ $realizarRoute }}"
                                     onclick="abrirModalRealizar(this, '{{ addslashes($ag->cliente->nome) }}', '{{ $horaAgd }}')">
                                     <svg class="icon icon-sm"><use href="#i-scissor"/></svg>
                                     <span class="action-label">Realizar</span>
                                 </button>
                                 <form action="{{ route('barbeiro.agendamentos.cancelar', $ag) }}" method="POST" class="d-inline" onsubmit="return confirm('Cancelar agendamento?')">
                                     @csrf @method('PUT')
-                                    <button class="action-btn delete" title="Cancelar">
+                                    <button class="action-btn delete">
                                         <svg class="icon icon-sm"><use href="#i-x"/></svg>
                                         <span class="action-label">Cancelar</span>
                                     </button>
@@ -181,6 +181,7 @@
     text-decoration: none;
     white-space: nowrap;
 }
+.action-label { font-size: 12px; }
 .action-btn.success { color: var(--success); border-color: var(--success); }
 .action-btn.success:hover { background: var(--success-bg); }
 .action-btn.warning { color: #d97706; border-color: #d97706; }
@@ -201,7 +202,6 @@ form.d-inline { display: inline; }
     .appointments-table tbody td { padding: 6px 0; border: none; display: flex; justify-content: space-between; align-items: center; }
     .appointments-table tbody td::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px; flex-shrink: 0; }
     .actions-cell { justify-content: flex-end; flex-wrap: wrap; gap: 6px; }
-    .action-label { display: none; }
 }
 </style>
 @endpush

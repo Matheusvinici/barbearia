@@ -166,12 +166,14 @@ function getInitials($name) {
 .value-cell { font-weight: 700; font-size: 14.5px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; }
 .value-cell .sub { display: block; font-size: 11.5px; color: var(--text-faint); font-weight: 500; margin-top: 3px; }
 
-.actions-cell { display: flex; gap: 4px; justify-content: flex-end; }
-.action-btn { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); display: grid; place-items: center; cursor: pointer; transition: all 150ms; }
+.actions-cell { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
+.action-btn { height: 34px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: all 150ms; font-size: 12px; font-weight: 600; font-family: inherit; white-space: nowrap; }
 .action-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-glow); }
 .action-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
 .action-btn.info:hover { color: var(--info); border-color: var(--info); background: var(--info-bg); }
 .action-btn.success:hover { color: var(--success); border-color: var(--success); background: var(--success-bg); }
+.action-btn .icon { width: 16px; height: 16px; }
+.action-label { font-size: 12px; }
 
 .panel-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .result-info { font-size: 13px; color: var(--text-muted); }
@@ -185,7 +187,7 @@ function getInitials($name) {
 .d1 { animation-delay: 50ms; } .d2 { animation-delay: 100ms; } .d3 { animation-delay: 150ms; } .d4 { animation-delay: 200ms; } .d5 { animation-delay: 250ms; }
 
 @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .search-box { width: 220px; } }
-@media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .appointments-table thead { display: none; } .appointments-table, .appointments-table tbody, .appointments-table tr, .appointments-table td { display: block; width: 100%; } .appointments-table tr { padding: 14px 18px; border-bottom: 1px solid var(--border); } .appointments-table tbody td { padding: 6px 0; border: none; display: flex; justify-content: space-between; align-items: center; } .appointments-table tbody td::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px; } .actions-cell { justify-content: flex-end; } }
+@media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .appointments-table thead { display: none; } .appointments-table, .appointments-table tbody, .appointments-table tr, .appointments-table td { display: block; width: 100%; } .appointments-table tr { padding: 14px 18px; border-bottom: 1px solid var(--border); } .appointments-table tbody td { padding: 6px 0; border: none; display: flex; justify-content: space-between; align-items: center; } .appointments-table tbody td::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px; flex-shrink: 0; } .actions-cell { justify-content: flex-end; flex-wrap: wrap; gap: 6px; } }
 </style>
 @endpush
 
@@ -376,21 +378,22 @@ $slug = request()->route('barbearia')?->slug;
                             @endphp
                             @php $horaAgd = $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio; @endphp
                             @if(in_array($agendamento->status, ['pendente', 'confirmado']))
-                            <button class="action-btn warning" title="Realizar" data-action="{{ $realizarUrl }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
-                                <svg class="icon icon-sm"><use href="#i-check-double"/></svg>
+                            <button class="action-btn warning" data-action="{{ $realizarUrl }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
+                                <svg class="icon"><use href="#i-check-double"/></svg>
+                                <span class="action-label">Realizar</span>
                             </button>
                             @endif
-                            <a href="{{ $slug ? route('tenant.admin.agendamentos.edit', [$slug, $agendamento]) : route('admin.agendamentos.edit', $agendamento) }}" class="action-btn" title="Editar">
-                                <svg class="icon icon-sm"><use href="#i-edit"/></svg>
+                            <a href="{{ $slug ? route('tenant.admin.agendamentos.edit', [$slug, $agendamento]) : route('admin.agendamentos.edit', $agendamento) }}" class="action-btn">
+                                <svg class="icon"><use href="#i-edit"/></svg>
+                                <span class="action-label">Editar</span>
                             </a>
-                            <a href="tel:{{ $agendamento->cliente->telefone }}" class="action-btn info" title="Ligar" target="_blank">
-                                <svg class="icon icon-sm"><use href="#i-call"/></svg>
+                            <a href="https://wa.me/55{{ preg_replace('/[^0-9]/', '', $agendamento->cliente->telefone) }}" class="action-btn success" target="_blank">
+                                <svg class="icon"><use href="#i-message"/></svg>
+                                <span class="action-label">WhatsApp</span>
                             </a>
-                            <a href="https://wa.me/55{{ preg_replace('/[^0-9]/', '', $agendamento->cliente->telefone) }}" class="action-btn success" title="WhatsApp" target="_blank">
-                                <svg class="icon icon-sm"><use href="#i-message"/></svg>
-                            </a>
-                            <button class="action-btn danger" title="Excluir" onclick="confirmarExclusao('{{ $slug ? route('tenant.admin.agendamentos.destroy', [$slug, $agendamento]) : route('admin.agendamentos.destroy', $agendamento) }}')">
-                                <svg class="icon icon-sm"><use href="#i-close"/></svg>
+                            <button class="action-btn danger" onclick="confirmarExclusao('{{ $slug ? route('tenant.admin.agendamentos.destroy', [$slug, $agendamento]) : route('admin.agendamentos.destroy', $agendamento) }}')">
+                                <svg class="icon"><use href="#i-close"/></svg>
+                                <span class="action-label">Excluir</span>
                             </button>
                         </div>
                     </td>
