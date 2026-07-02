@@ -234,8 +234,8 @@ class AgendamentoController extends Controller
     public function realizar(Request $request)
     {
         $agendamento = $this->getAgendamentoFromRoute($request);
-        if ($agendamento->status !== 'confirmado') {
-            return redirect()->back()->with('error', 'Agendamento não está confirmado.');
+        if (!in_array($agendamento->status, ['pendente', 'confirmado'])) {
+            return redirect()->back()->with('error', 'Agendamento não pode ser realizado.');
         }
         $data = $request->validate(['forma_pagamento' => 'required|string|max:50']);
         $agendamento->update(['status' => 'realizado', 'forma_pagamento' => $data['forma_pagamento']]);

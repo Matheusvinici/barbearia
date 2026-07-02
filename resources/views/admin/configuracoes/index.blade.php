@@ -7,12 +7,11 @@
     <symbol id="i-check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
     <symbol id="i-menu" viewBox="0 0 24 24" fill="none"><path d="M3 7h18M3 12h18M3 17h18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
-    <symbol id="i-mail" viewBox="0 0 24 24" fill="none"><rect x="2" y="4.5" width="20" height="15" rx="3" stroke="currentColor" stroke-width="1.6"/><path d="M3 6l9 7 9-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-call" viewBox="0 0 24 24" fill="none"><path d="M21 16.5v2.6c0 .97-.79 1.78-1.76 1.78-9.07.05-16.55-7.43-16.5-16.5 0-.97.81-1.76 1.78-1.76H7.1c.45 0 .85.3.97.73l.84 3.14c.11.41-.05.85-.39 1.11l-1.49 1.19c1.21 2.47 3.21 4.47 5.68 5.68l1.19-1.49c.26-.34.7-.5 1.11-.39l3.14.84c.43.12.73.52.73.97z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-    <symbol id="i-map-pin" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6"/></symbol>
     <symbol id="i-plug" viewBox="0 0 24 24" fill="none"><path d="M9 2v6M15 2v6M6 8h12v3a6 6 0 0 1-12 0V8zM12 17v5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-info" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
     <symbol id="i-x" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7l3-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-shop" viewBox="0 0 24 24" fill="none"><path d="M4 7h16v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7zM9 21V12h6v9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 7l2-4h14l2 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
   </defs>
 </svg>
 
@@ -41,64 +40,92 @@
 @endsection
 
 @section('content')
-<form id="settings-form" action="{{ route('admin.configuracoes.update') }}" method="POST">
+<form id="settings-form" action="{{ $barbearia ? route('tenant.admin.configuracoes.update', $barbearia->slug) : route('admin.configuracoes.update') }}" method="POST">
     @csrf
 
     <div class="settings-grid fade-in d1">
         <nav class="settings-nav" id="settingsNav">
-            <button type="button" class="settings-nav-item active" data-target="sec-geral">
-                <svg class="icon icon-sm"><use href="#i-building"/></svg>Geral
+            <button type="button" class="settings-nav-item active" data-target="sec-horarios">
+                <svg class="icon icon-sm"><use href="#i-sun"/></svg>Horários
             </button>
             <button type="button" class="settings-nav-item" data-target="sec-whatsapp">
                 <svg class="icon icon-sm"><use href="#i-plug"/></svg>WhatsApp
             </button>
-            <button type="button" class="settings-nav-item" data-target="sec-notificacoes">
-                <svg class="icon icon-sm"><use href="#i-bell-ring"/></svg>Notificações
-            </button>
-            <button type="button" class="settings-nav-item" data-target="sec-financeiro">
-                <svg class="icon icon-sm"><use href="#i-credit-card"/></svg>Financeiro
+            <button type="button" class="settings-nav-item" data-target="sec-avaliacoes">
+                <svg class="icon icon-sm"><use href="#i-star"/></svg>Avaliações
             </button>
         </nav>
 
         <div>
-            <section class="panel" id="sec-geral">
+            <section class="panel" id="sec-horarios">
                 <div class="panel-header">
                     <div class="panel-title-wrap">
-                        <div class="panel-title-icon"><svg class="icon"><use href="#i-building"/></svg></div>
+                        <div class="panel-title-icon"><svg class="icon"><use href="#i-sun"/></svg></div>
                         <div>
-                            <h2 class="panel-title">Geral</h2>
-                            <div class="panel-subtitle">Informações da barbearia</div>
+                            <h2 class="panel-title">Horários</h2>
+                            <div class="panel-subtitle">Configure os horários de funcionamento de cada unidade</div>
                         </div>
                     </div>
                 </div>
                 <div class="panel-body">
-                    <div class="form-grid">
-                        <div class="form-group" style="grid-column:1/-1;">
-                            <label class="form-label">Nome da Barbearia</label>
-                            <input type="text" name="nome_barbearia" class="form-input" value="{{ $configuracoes['nome_barbearia'] ?? '' }}" required>
-                        </div>
-                        <div class="form-group" style="grid-column:1/-1;">
-                            <label class="form-label">Endereço</label>
-                            <div class="input-group">
-                                <span class="addon"><svg class="icon icon-sm"><use href="#i-map-pin"/></svg></span>
-                                <input type="text" name="endereco" class="form-input" value="{{ $configuracoes['endereco'] ?? '' }}">
+                    @forelse($barbearias as $b)
+                    <div style="background:var(--card);border:1px solid var(--border);border-radius:var(--r-md);padding:16px;margin-bottom:16px;">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                            @if($b->logo)
+                            <img src="{{ $b->logo_url }}" alt="" style="width:36px;height:36px;border-radius:8px;object-fit:cover;">
+                            @else
+                            <div style="width:36px;height:36px;border-radius:8px;background:var(--accent-glow);color:var(--accent);display:grid;place-items:center;">
+                                <svg class="icon icon-sm"><use href="#i-shop"/></svg>
+                            </div>
+                            @endif
+                            <div>
+                                <strong style="color:var(--text);font-size:14px;">{{ $b->nome }}</strong>
+                                @if($b->parent_id)
+                                <span style="font-size:11px;color:var(--text-muted);margin-left:6px;">Filial</span>
+                                @else
+                                <span style="font-size:11px;color:var(--accent);margin-left:6px;">Matriz</span>
+                                @endif
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Telefone</label>
-                            <div class="input-group">
-                                <span class="addon"><svg class="icon icon-sm"><use href="#i-call"/></svg></span>
-                                <input type="text" name="telefone" class="form-input" value="{{ $configuracoes['telefone'] ?? '' }}">
+                        <div class="form-grid" style="margin-top:8px;">
+                            <input type="hidden" name="barbearias[{{ $b->id }}][id]" value="{{ $b->id }}">
+                            <div class="form-group">
+                                <label class="form-label">Abertura</label>
+                                <input type="time" name="barbearias[{{ $b->id }}][horario_abertura]" class="form-input" value="{{ $b->horario_abertura ?? '08:00' }}">
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">E-mail</label>
-                            <div class="input-group">
-                                <span class="addon"><svg class="icon icon-sm"><use href="#i-mail"/></svg></span>
-                                <input type="email" name="email" class="form-input" value="{{ $configuracoes['email'] ?? '' }}">
+                            <div class="form-group">
+                                <label class="form-label">Fechamento</label>
+                                <input type="time" name="barbearias[{{ $b->id }}][horario_fechamento]" class="form-input" value="{{ $b->horario_fechamento ?? '18:00' }}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Intervalo (min)</label>
+                                <select name="barbearias[{{ $b->id }}][intervalo_minutos]" class="form-select">
+                                    @foreach([15,20,30,40,45,60] as $int)
+                                    <option value="{{ $int }}" {{ ($b->intervalo_minutos ?? 30) == $int ? 'selected' : '' }}>{{ $int }} min</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="form-group" style="grid-column:1/-1;">
+                                <label class="form-label">Dias de funcionamento</label>
+                                @php
+                                    $dias = explode(',', $b->dias_funcionamento ?? '1,2,3,4,5,6');
+                                    $diasSemana = [0=>'Dom',1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sab'];
+                                @endphp
+                                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+                                    @foreach($diasSemana as $k => $v)
+                                    <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text);cursor:pointer;">
+                                        <input type="checkbox" class="dia-checkbox-{{ $b->id }}" value="{{ $k }}" {{ in_array((string)$k, $dias) ? 'checked' : '' }} style="accent-color:var(--accent);">
+                                        {{ $v }}
+                                    </label>
+                                    @endforeach
+                                </div>
+                                <input type="hidden" name="barbearias[{{ $b->id }}][dias_funcionamento]" class="dias-hidden-{{ $b->id }}" value="{{ $b->dias_funcionamento ?? '1,2,3,4,5,6' }}">
                             </div>
                         </div>
                     </div>
+                    @empty
+                    <p style="text-align:center;color:var(--text-muted);font-size:14px;padding:20px;">Nenhuma barbearia encontrada.</p>
+                    @endforelse
                 </div>
             </section>
 
@@ -181,95 +208,18 @@
                 </div>
             </section>
 
-            <section class="panel" id="sec-notificacoes">
+            <section class="panel" id="sec-avaliacoes">
                 <div class="panel-header">
                     <div class="panel-title-wrap">
-                        <div class="panel-title-icon"><svg class="icon"><use href="#i-bell-ring"/></svg></div>
+                        <div class="panel-title-icon"><svg class="icon"><use href="#i-star"/></svg></div>
                         <div>
-                            <h2 class="panel-title">Notificações</h2>
-                            <div class="panel-subtitle">Configure os alertas do sistema</div>
+                            <h2 class="panel-title">Avaliações</h2>
+                            <div class="panel-subtitle">Veja e responda às avaliações dos clientes</div>
                         </div>
                     </div>
                 </div>
                 <div class="panel-body">
-                    <div class="toggle-row">
-                        <div class="toggle-info">
-                            <div class="t">Notificações no painel</div>
-                            <div class="d">Receba alertas visuais no painel quando um novo agendamento for realizado.</div>
-                        </div>
-                        <button type="button" class="switch on" data-setting="notificacoes_painel" data-input="notificacoes_painel"></button>
-                        <input type="hidden" name="notificacoes_painel" id="notificacoes_painel" value="1">
-                    </div>
-                    <div class="toggle-row">
-                        <div class="toggle-info">
-                            <div class="t">Lembretes por e-mail</div>
-                            <div class="d">Envia lembretes automáticos de agendamento para os clientes por e-mail (1h, 30min e 15min antes).</div>
-                        </div>
-                        <button type="button" class="switch on" data-setting="lembretes_email" data-input="lembretes_email"></button>
-                        <input type="hidden" name="lembretes_email" id="lembretes_email" value="1">
-                    </div>
-                    <div class="toggle-row">
-                        <div class="toggle-info">
-                            <div class="t">Lembrete diário da agenda</div>
-                            <div class="d">Resumo da agenda do dia enviado todo dia às 8h no WhatsApp.</div>
-                        </div>
-                        <button type="button" class="switch" data-setting="resumo_diario" data-input="resumo_diario"></button>
-                        <input type="hidden" name="resumo_diario" id="resumo_diario" value="0">
-                    </div>
-                    <div class="toggle-row">
-                        <div class="toggle-info">
-                            <div class="t">Notificações de cancelamento</div>
-                            <div class="d">Seja notificado imediatamente quando um agendamento for cancelado.</div>
-                        </div>
-                        <button type="button" class="switch on" data-setting="cancelamento_notif" data-input="cancelamento_notif"></button>
-                        <input type="hidden" name="cancelamento_notif" id="cancelamento_notif" value="1">
-                    </div>
-                </div>
-            </section>
-
-            <section class="panel" id="sec-financeiro">
-                <div class="panel-header">
-                    <div class="panel-title-wrap">
-                        <div class="panel-title-icon"><svg class="icon"><use href="#i-credit-card"/></svg></div>
-                        <div>
-                            <h2 class="panel-title">Financeiro</h2>
-                            <div class="panel-subtitle">Configurações de pagamento e tributos</div>
-                        </div>
-                    </div>
-                </div>
-                <div class="panel-body">
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label class="form-label">Método de pagamento padrão</label>
-                            <select name="metodo_pagamento_padrao" class="form-select">
-                                <option value="dinheiro" {{ ($configuracoes['metodo_pagamento_padrao'] ?? '') == 'dinheiro' ? 'selected' : '' }}>Dinheiro</option>
-                                <option value="pix" {{ ($configuracoes['metodo_pagamento_padrao'] ?? '') == 'pix' ? 'selected' : '' }}>Pix</option>
-                                <option value="cartao_credito" {{ ($configuracoes['metodo_pagamento_padrao'] ?? '') == 'cartao_credito' ? 'selected' : '' }}>Cartão de Crédito</option>
-                                <option value="cartao_debito" {{ ($configuracoes['metodo_pagamento_padrao'] ?? '') == 'cartao_debito' ? 'selected' : '' }}>Cartão de Débito</option>
-                                <option value="debito" {{ ($configuracoes['metodo_pagamento_padrao'] ?? '') == 'debito' ? 'selected' : '' }}>Débito</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Taxa de serviço (%)</label>
-                            <input type="number" name="taxa_servico" class="form-input" step="0.01" min="0" max="100" value="{{ $configuracoes['taxa_servico'] ?? '0' }}">
-                            <div class="form-hint">Percentual cobrado sobre cada serviço</div>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Alíquota de impostos (%)</label>
-                            <input type="number" name="aliquota_impostos" class="form-input" step="0.01" min="0" max="100" value="{{ $configuracoes['aliquota_impostos'] ?? '0' }}">
-                            <div class="form-hint">Percentual de impostos sobre faturamento</div>
-                        </div>
-                        <div class="form-group">
-                            <div class="toggle-row" style="padding:0;border:none;">
-                                <div class="toggle-info">
-                                    <div class="t">Emissão de Nota Fiscal</div>
-                                    <div class="d">Habilitar emissão de NF-e para cada serviço realizado.</div>
-                                </div>
-                                <button type="button" class="switch {{ ($configuracoes['emissao_nf'] ?? false) ? 'on' : '' }}" data-setting="emissao_nf" data-input="emissao_nf"></button>
-                                <input type="hidden" name="emissao_nf" id="emissao_nf" value="{{ ($configuracoes['emissao_nf'] ?? false) ? '1' : '0' }}">
-                            </div>
-                        </div>
-                    </div>
+                    @livewire('admin.avaliacoes-list', ['barbearia' => $barbearia], key('avaliacoes-list'))
                 </div>
             </section>
         </div>
@@ -310,8 +260,20 @@ navItems.forEach(function(nav) {
     });
 });
 
-@if(!($botAuthenticated ?? false))
-setTimeout(function() { location.reload(); }, 8000);
-@endif
+
+
+// Salvar dias de funcionamento antes de enviar
+document.getElementById('settings-form').addEventListener('submit', function() {
+    var barbearias = @json($barbearias->pluck('id'));
+    barbearias.forEach(function(id) {
+        var dias = [];
+        document.querySelectorAll('.dia-checkbox-' + id + ':checked').forEach(function(cb) {
+            dias.push(cb.value);
+        });
+        var hidden = document.querySelector('.dias-hidden-' + id);
+        if (hidden) hidden.value = dias.join(',');
+    });
+});
+
 </script>
 @endpush

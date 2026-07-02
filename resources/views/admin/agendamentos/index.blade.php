@@ -370,20 +370,12 @@ $slug = request()->route('barbearia')?->slug;
                     <td data-label="Ações">
                         <div class="actions-cell">
                             @php
-                            $confirmUrl = $slug
-                                ? route('tenant.admin.agendamentos.confirmar', [$slug, $agendamento->id])
-                                : route('admin.agendamentos.confirmar', $agendamento->id);
                             $realizarUrl = $slug
                                 ? route('tenant.admin.agendamentos.realizar', [$slug, $agendamento->id])
                                 : route('admin.agendamentos.realizar', $agendamento->id);
                             @endphp
                             @php $horaAgd = $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio; @endphp
-                            @if($agendamento->status === 'pendente')
-                            <button class="action-btn success" title="Confirmar" data-action="{{ $confirmUrl }}" onclick="abrirModalConfirmar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
-                                <svg class="icon icon-sm"><use href="#i-check"/></svg>
-                            </button>
-                            @endif
-                            @if($agendamento->status === 'confirmado')
+                            @if(in_array($agendamento->status, ['pendente', 'confirmado']))
                             <button class="action-btn warning" title="Realizar" data-action="{{ $realizarUrl }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
                                 <svg class="icon icon-sm"><use href="#i-check-double"/></svg>
                             </button>
@@ -418,39 +410,6 @@ $slug = request()->route('barbearia')?->slug;
 </section>
 
 @push('modals')
-<div class="modal fade" id="modalConfirmar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form method="POST" action="" id="formConfirmar">
-                @csrf @method('PUT')
-                <div class="modal-header">
-                    <h5 class="modal-title fw-bold">Confirmar Agendamento</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="confirmarInfo" class="mb-4"></p>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Forma de Pagamento</label>
-                        <select name="forma_pagamento" class="form-control" required>
-                            <option value="">Selecione...</option>
-                            <option value="Dinheiro">Dinheiro</option>
-                            <option value="Cartão de Crédito">Cartão de Crédito</option>
-                            <option value="Cartão de Débito">Cartão de Débito</option>
-                            <option value="Pix">Pix</option>
-                            <option value="Boleto">Boleto</option>
-                            <option value="Plano">Plano</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Confirmar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <div class="modal fade" id="modalRealizar" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -587,12 +546,6 @@ function irParaData(data) {
     const params = new URLSearchParams(window.location.search);
     params.set('data', data);
     window.location.search = params.toString();
-}
-
-function abrirModalConfirmar(btn, nome, hora) {
-    document.getElementById('confirmarInfo').textContent = 'Confirmar presença de ' + nome + ' às ' + hora + '?';
-    document.getElementById('formConfirmar').action = btn.dataset.action;
-    new bootstrap.Modal(document.getElementById('modalConfirmar')).show();
 }
 
 function abrirModalRealizar(btn, nome, hora) {

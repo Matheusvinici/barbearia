@@ -3,6 +3,7 @@
 namespace App\Livewire\Site;
 
 use App\Models\Agendamento;
+use App\Models\Avaliacao;
 use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\BloqueioAgenda;
@@ -40,6 +41,9 @@ class AgendarWizard extends Component
     public $step1_pedir_nome = false;
     public $slug;
 
+    public $avaliacoes;
+    public $barbeariaAtual;
+
     public function mount()
     {
         $clienteId = session('cliente_id');
@@ -51,19 +55,24 @@ class AgendarWizard extends Component
             $this->telefone = session('telefone', '');
         }
 
-        $this->step = $this->cliente ? 2 : 1;
+        $this->step = 0;
 
         $route = request()->route();
         $barbearia = $route->parameter('barbearia');
 
         if ($barbearia) {
             $this->slug = $barbearia->slug;
+            $this->barbeariaAtual = $barbearia;
             $filiais = $barbearia->filiais;
             if ($filiais->isNotEmpty()) {
                 $this->barbearias = collect([$barbearia])->merge($filiais);
             } else {
                 $this->barbearias = collect([$barbearia]);
             }
+            $this->avaliacoes = Avaliacao::where('barbearia_id', $barbearia->id)
+                ->latest()
+                ->take(10)
+                ->get();
         } else {
             $this->barbearias = Barbearia::whereHas('barbeiros', function ($q) {
                 $q->where('ativo', true);
@@ -71,6 +80,11 @@ class AgendarWizard extends Component
         }
 
         $this->servicos = Servico::where('ativo', true)->get();
+    }
+
+    public function iniciarAgendamento()
+    {
+        $this->step = $this->cliente ? 2 : 1;
     }
 
     public function selectBarbearia($id)
@@ -233,8 +247,8 @@ class AgendarWizard extends Component
 
     public function novoAgendamento()
     {
-        $this->resetExcept(['cliente', 'barbearias', 'servicos', 'telefone', 'nome']);
-        $this->step = $this->cliente ? 2 : 1;
+        $this->resetExcept(['cliente', 'barbearias', 'servicos', 'telefone', 'nome', 'avaliacoes', 'barbeariaAtual']);
+        $this->step = 0;
     }
 
     private function carregarDias()

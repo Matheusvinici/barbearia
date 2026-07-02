@@ -36,6 +36,10 @@ class Barbearia extends Model
         'logo',
         'background_image',
         'owner_id',
+        'horario_abertura',
+        'horario_fechamento',
+        'intervalo_minutos',
+        'dias_funcionamento',
     ];
 
     public function barbeiros()
@@ -114,5 +118,15 @@ class Barbearia extends Model
     public function getBackgroundUrlAttribute()
     {
         return $this->background_image ? asset('storage/' . $this->background_image) : asset('images/frenteBarbearia.jpg');
+    }
+
+    public function avaliacoes()
+    {
+        return $this->hasMany(Avaliacao::class);
+    }
+
+    public function avaliacoesAprovadas()
+    {
+        return $this->hasMany(Avaliacao::class)->whereNotNull('resposta');
     }
 }

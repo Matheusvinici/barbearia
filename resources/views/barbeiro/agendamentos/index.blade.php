@@ -73,15 +73,6 @@
                             @endif
                         </td>
                         <td data-label="Ações" class="actions-cell">
-                            @if($ag->status == 'pendente')
-                            <form action="{{ route('barbeiro.agendamentos.confirmar', $ag) }}" method="POST" class="d-inline">
-                                @csrf @method('PUT')
-                                <button class="action-btn success" title="Confirmar">
-                                    <svg class="icon icon-sm"><use href="#i-check"/></svg>
-                                    <span class="action-label">Confirmar</span>
-                                </button>
-                            </form>
-                            @endif
                             @if(in_array($ag->status, ['pendente', 'confirmado']))
                                 @php
                                     $realizarRoute = route('barbeiro.agendamentos.realizar', $ag);

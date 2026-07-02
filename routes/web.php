@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\ClientePlanoController;
 use App\Http\Controllers\Admin\BarbeariaController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AvaliacaoController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -121,6 +122,9 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
 
         Route::get('/configuracoes', [ConfiguracaoController::class, 'index'])->name('configuracoes.index');
         Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
+
+        Route::get('/avaliacoes', [AvaliacaoController::class, 'index'])->name('avaliacoes.index');
+        Route::post('/avaliacoes/{avaliacao}/responder', [AvaliacaoController::class, 'responder'])->name('avaliacoes.responder');
 
         Route::resource('barbearias', BarbeariaController::class)->names([
             'index' => 'barbearias.index',
@@ -278,6 +282,9 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
         Route::post('/configuracoes', [ConfiguracaoController::class, 'update'])->name('configuracoes.update');
         Route::get('/configuracoes/qr-code', [ConfiguracaoController::class, 'qrCode'])->name('configuracoes.qr-code');
         Route::post('/configuracoes/pair', [ConfiguracaoController::class, 'pairBot'])->name('configuracoes.pair');
+
+        Route::get('/avaliacoes', [AvaliacaoController::class, 'index'])->name('avaliacoes.index');
+        Route::post('/avaliacoes/{avaliacao}/responder', [AvaliacaoController::class, 'responder'])->name('avaliacoes.responder');
 
         Route::resource('users', UserController::class)->names([
             'index' => 'users.index',

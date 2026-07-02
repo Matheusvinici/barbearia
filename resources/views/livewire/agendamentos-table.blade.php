@@ -65,11 +65,7 @@
                                 <button class="btn btn-sm btn-outline-danger" wire:click="atualizarStatus({{ $ag->id }}, 'ausente')" title="Faltou">
                                     <i class="fas fa-times"></i>
                                 </button>
-                                @if($ag->status === 'pendente')
-                                <button class="btn btn-sm btn-outline-primary" wire:click="atualizarStatus({{ $ag->id }}, 'confirmado')" title="Confirmar">
-                                    <i class="fas fa-user-check"></i>
-                                </button>
-                                @endif
+
                             </div>
                             @endif
                         </td>
