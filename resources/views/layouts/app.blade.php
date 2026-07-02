@@ -158,7 +158,16 @@
         } catch (e) {}
     }
 
+    function marcarLida(id) {
+        fetch('/notificacoes/' + id + '/marcar-lida', { method: 'POST', headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }, credentials: 'same-origin' }).catch(function(){});
+        document.querySelectorAll('#notif-count').forEach(function(el) {
+            var v = parseInt(el.textContent) || 0;
+            if (v > 0) el.textContent = v - 1;
+        });
+    }
+
     function mostrarModal(dados) {
+        marcarLida(dados.id);
         var servicos = '—';
         if (dados.servicos) {
             try {
