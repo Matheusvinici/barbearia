@@ -73,7 +73,9 @@ class AgendamentoController extends Controller
             return redirect()->back()->with('error', 'Agendamento não pode ser marcado como realizado.');
         }
 
-        $agendamento->update(['status' => 'realizado']);
+        $data = $request->validate(['forma_pagamento' => 'required|string|max:50']);
+
+        $agendamento->update(['status' => 'realizado', 'forma_pagamento' => $data['forma_pagamento']]);
 
         $this->registrarNoCaixa($agendamento);
         $this->registrarUsoPlano($agendamento);
