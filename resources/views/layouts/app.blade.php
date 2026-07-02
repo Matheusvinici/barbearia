@@ -103,7 +103,17 @@
         somTocando: false,
         notifPerm: false,
         modalTimeout: null,
+        guard: '{{ $__guard }}',
+        tenantSlug: '{{ $__tenantSlug }}',
     };
+
+    function detalhesUrl(dados) {
+        if (state.guard === 'barbeiro') {
+            var base = state.tenantSlug ? '/' + state.tenantSlug + '/barbeiro/agendamentos' : '/barbeiro/agendamentos';
+            return base;
+        }
+        return dados.url || '#';
+    }
 
     if ('Notification' in window) {
         if (Notification.permission === 'granted') {
@@ -149,11 +159,12 @@
         } catch (e) { state.somTocando = false; }
     }
 
-    function mostrarNotifDesktop(titulo, msg, url) {
+    function mostrarNotifDesktop(titulo, msg, url, dados) {
         if (!state.notifPerm) return;
         try {
             var n = new Notification(titulo, { body: msg, icon: '/images/logo.jpg', tag: 'novo-agendamento' });
-            if (url) n.onclick = function() { window.focus(); window.location.href = url; };
+            var link = detalhesUrl(dados);
+            if (link) n.onclick = function() { window.focus(); window.location.href = link; };
             setTimeout(function() { n.close(); }, 8000);
         } catch (e) {}
     }
@@ -197,7 +208,7 @@
             '</div>',
             '<div class="notif-footer">',
             '<button class="notif-btn notif-btn-secondary" onclick="this.closest(\'.notif-overlay\').remove()">Fechar</button>',
-            '<a href="' + (dados.url || '#') + '" class="notif-btn notif-btn-primary">Ver Detalhes</a>',
+            '<a href="' + detalhesUrl(dados) + '" class="notif-btn notif-btn-primary">Ver Detalhes</a>',
             '</div>',
             '</div>',
             '</div>',
@@ -230,7 +241,7 @@
                         var isRecente = n.created_at && (Date.now() - new Date(n.created_at).getTime()) < 30000;
                         if (!state.primeiraCarga || isRecente) {
                             tocarAlarme();
-                            mostrarNotifDesktop(n.title, n.message, n.url);
+                            mostrarNotifDesktop(n.title, n.message, n.url, n);
                             mostrarModal(n);
                         }
                     }
