@@ -1,10 +1,8 @@
 @php
     $isWeb = Auth::guard('web')->check();
-    $user = Auth::user();
+    $user = $isWeb ? Auth::guard('web')->user() : Auth::guard('barbeiro')->user();
     $__tenant = request()->route('barbearia');
     $__tenantSlug = $__tenant ? $__tenant->slug : null;
-    $__route = $__tenantSlug ? 'tenant.admin.' : 'admin.';
-    $__params = $__tenantSlug ? [$__tenantSlug] : [];
     function navRoute($name, $params = []) {
         $__tenantSlug = request()->route('barbearia')?->slug;
         return $__tenantSlug
@@ -29,13 +27,13 @@
 <div class="nav-section">
     <div class="nav-label">Geral</div>
 
-    <a href="{{ navRoute('dashboard') }}" class="nav-item {{ isActive(['admin/dashboard', 'admin/home', 'barbeiro/dashboard', 'dashboard', 'home']) || request()->is('*/dashboard') ? 'active' : '' }}">
+    <a href="{{ $isWeb ? navRoute('dashboard') : barbeiroNavRoute('dashboard') }}" class="nav-item {{ isActive(['admin/dashboard', 'admin/home', 'barbeiro/dashboard', 'dashboard', 'home']) || request()->is('*/dashboard') ? 'active' : '' }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
         <span>Painel Inicial</span>
     </a>
 
-    @if($user->can('agendamento.view'))
-    <a href="{{ navRoute('agendamentos.index') }}" class="nav-item {{ isActive(['admin/agendamentos', 'barbeiro/agendamentos']) ? 'active' : '' }}">
+    @if($user && $user->can('agendamento.view'))
+    <a href="{{ $isWeb ? navRoute('agendamentos.index') : barbeiroNavRoute('agendamentos.index') }}" class="nav-item {{ isActive(['admin/agendamentos', 'barbeiro/agendamentos']) ? 'active' : '' }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
         <span>{{ $isWeb ? 'Agendamentos' : 'Meus Agendamentos' }}</span>
     </a>
