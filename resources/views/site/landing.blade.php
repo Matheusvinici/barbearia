@@ -150,7 +150,7 @@ body::before {
 .theme-toggle-nav:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-glow); }
 .container-c { max-width: 1200px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
 .hero { padding: 160px 0 80px; position: relative; }
-.hero-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
+.hero-grid { display: grid; grid-template-columns: 1fr; gap: 60px; align-items: center; }
 .hero-badge {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 6px 14px; border-radius: 999px;
@@ -178,36 +178,7 @@ body::before {
 .avatar-sm { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--bg); margin-left: -10px; background-size: cover; background-position: center; }
 .avatar-sm:first-child { margin-left: 0; }
 .stars { display: flex; gap: 2px; color: var(--accent); }
-.mockup-wrap { position: relative; perspective: 1000px; }
-.mockup {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-strong);
-    border-radius: var(--r-xl);
-    padding: 16px;
-    box-shadow: 0 30px 60px -15px rgba(0,0,0,0.5), 0 0 0 1px var(--border);
-    transform: rotateY(-5deg) rotateX(2deg);
-    transition: transform 400ms;
-}
-.mockup:hover { transform: rotateY(0) rotateX(0); }
-.mockup-header { display: flex; gap: 6px; margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-.mockup-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
-.mockup-dot:nth-child(1) { background: #f87171; }
-.mockup-dot:nth-child(2) { background: #fbbf24; }
-.mockup-dot:nth-child(3) { background: #4ade80; }
-.mockup-body { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.mockup-card { background: var(--card-solid); border: 1px solid var(--border); border-radius: var(--r-md); padding: 14px; }
-.mockup-card-title { font-size: 10px; color: var(--text-faint); font-weight: 700; text-transform: uppercase; margin-bottom: 8px; }
-.mockup-card-val { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
-.mockup-card-val.amber { color: var(--accent); }
-.mockup-card-val.green { color: var(--success); }
-.mockup-chart { grid-column: 1 / -1; height: 120px; position: relative; padding: 14px; }
-.mockup-chart svg { width: 100%; height: 100%; }
-.mockup-list { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 8px; }
-.mockup-list-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: var(--card-solid); border: 1px solid var(--border); border-radius: 10px; }
-.mockup-av { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-.mockup-line { flex: 1; height: 8px; background: var(--border); border-radius: 4px; }
-.mockup-line.half { max-width: 60%; }
-.mockup-badge { width: 40px; height: 20px; background: var(--success-bg); border-radius: 6px; }
+
 .logos-strip { padding: 40px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); background: var(--bg-elevated); }
 .logos-grid { display: flex; justify-content: space-around; align-items: center; flex-wrap: wrap; gap: 24px; }
 .logo-item { font-size: 18px; font-weight: 800; color: var(--text-faint); letter-spacing: -0.02em; opacity: 0.6; transition: opacity 150ms; }
@@ -228,7 +199,8 @@ section { padding: 100px 0; position: relative; z-index: 1; }
 .bento-card.purple .bento-ic { background: var(--purple-bg); color: var(--purple); }
 .bento-title { font-size: 19px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
 .bento-desc { font-size: 14px; color: var(--text-muted); line-height: 1.5; }
-.bento-visual { position: absolute; bottom: 20px; right: 20px; width: 140px; height: 100px; opacity: 0.8; }
+.bento-visual { width: 140px; height: 100px; opacity: 0.5; margin-top: 16px; align-self: flex-end; }
+.bento-card.span-2 { display: flex; flex-direction: column; }
 .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
 .step-card { text-align: center; padding: 32px; background: var(--card); border: 1px solid var(--border); border-radius: var(--r-lg); position: relative; }
 .step-num { width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, var(--accent), var(--accent-soft)); color: #0d0d12; font-weight: 800; font-size: 20px; display: grid; place-items: center; margin: 0 auto 20px; box-shadow: 0 8px 20px -6px var(--accent-glow); }
@@ -309,7 +281,6 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
 @media (max-width: 992px) {
     .hero-grid { grid-template-columns: 1fr; gap: 40px; }
     .hero-title { font-size: 40px; }
-    .mockup-wrap { max-width: 500px; margin: 0 auto; }
     .bento-grid { grid-template-columns: 1fr; }
     .bento-card.span-2 { grid-column: span 1; }
     .steps-grid { grid-template-columns: 1fr; }
@@ -360,6 +331,7 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
     <a href="#" class="brand-logo">
       <div class="brand-mark"><svg class="icon" style="width:20px;height:20px"><use href="#i-scissor"/></svg></div>
       Barber Control <span>Pro</span>
+      <span style="font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-glow);padding:2px 8px;border-radius:999px;margin-left:8px;text-transform:uppercase;letter-spacing:0.03em;">Teste Grátis 14d</span>
     </a>
     <div class="nav-links">
       <a href="#features" class="nav-link-c">Funcionalidades</a>
@@ -372,7 +344,7 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
       <button class="theme-toggle-nav" id="themeToggle" title="Alternar tema">
         <svg class="icon"><use href="#i-sun"/></svg>
       </button>
-      <a href="https://wa.me/5587981782235" target="_blank" class="btn-primary-c"><svg class="icon"><use href="#i-whatsapp"/></svg> (87) 98178-2235</a>
+      <a href="#pricing" class="btn-primary-c">Teste Grátis <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg></a>
     </div>
   </div>
 </nav>
@@ -388,9 +360,9 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
         <h1 class="hero-title">A plataforma completa para <span>dominar sua barbearia</span></h1>
         <p class="hero-subtitle">Automatize agendamentos, controle o financeiro, gerencie sua equipe e fidelize clientes. Tudo em um só lugar, com a identidade da sua marca.</p>
         <div class="hero-cta">
-          <a href="https://wa.me/5587981782235" target="_blank" class="btn-primary-c">
-            <svg class="icon icon-sm"><use href="#i-whatsapp"/></svg>
-            (87) 98178-2235
+          <a href="#pricing" class="btn-primary-c">
+            Teste Grátis
+            <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg>
           </a>
           <a href="#how" class="btn-ghost-c">Ver como funciona</a>
         </div>
@@ -401,47 +373,7 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
           </a>
         </div>
       </div>
-      <div class="mockup-wrap">
-        <div class="mockup">
-          <div class="mockup-header">
-            <div class="mockup-dot"></div>
-            <div class="mockup-dot"></div>
-            <div class="mockup-dot"></div>
-          </div>
-          <div class="mockup-body">
-            <div class="mockup-card">
-              <div class="mockup-card-title">Faturamento Hoje</div>
-              <div class="mockup-card-val amber">R$ 1.240</div>
-            </div>
-            <div class="mockup-card">
-              <div class="mockup-card-title">Agendamentos</div>
-              <div class="mockup-card-val">32</div>
-            </div>
-            <div class="mockup-card mockup-chart">
-              <div class="mockup-card-title">Receita Semanal</div>
-              <svg viewBox="0 0 300 80" preserveAspectRatio="none">
-                <defs><linearGradient id="m-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="var(--accent)" stop-opacity="0.5"/><stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-                <path d="M0,60 L50,50 L100,55 L150,30 L200,35 L250,15 L300,20 L300,80 L0,80 Z" fill="url(#m-grad)"/>
-                <path d="M0,60 L50,50 L100,55 L150,30 L200,35 L250,15 L300,20" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round"/>
-              </svg>
-            </div>
-            <div class="mockup-list">
-              <div class="mockup-list-item">
-                <div class="mockup-av" style="background:linear-gradient(135deg,#f5b544,#e89538)"></div>
-                <div class="mockup-line"></div>
-                <div class="mockup-line half"></div>
-                <div class="mockup-badge"></div>
-              </div>
-              <div class="mockup-list-item">
-                <div class="mockup-av" style="background:linear-gradient(135deg,#60a5fa,#3b82f6)"></div>
-                <div class="mockup-line"></div>
-                <div class="mockup-line half"></div>
-                <div class="mockup-badge" style="background:var(--info-bg)"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+
     </div>
   </div>
 </section>

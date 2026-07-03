@@ -153,27 +153,25 @@
     function playBeep() {
         try {
             if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            var osc = audioCtx.createOscillator();
-            var gain = audioCtx.createGain();
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.type = 'sine';
-            osc.frequency.value = 800;
-            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-            osc.start(audioCtx.currentTime);
-            osc.stop(audioCtx.currentTime + 0.3);
-
-            var osc2 = audioCtx.createOscillator();
-            var gain2 = audioCtx.createGain();
-            osc2.connect(gain2);
-            gain2.connect(audioCtx.destination);
-            osc2.type = 'sine';
-            osc2.frequency.value = 1000;
-            gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.15);
-            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
-            osc2.start(audioCtx.currentTime + 0.15);
-            osc2.stop(audioCtx.currentTime + 0.45);
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            var n = audioCtx.currentTime;
+            [
+                { f: 880, t: 0 },
+                { f: 1100, t: 0.25 },
+                { f: 880, t: 0.5 },
+            ].forEach(function(t) {
+                var o = audioCtx.createOscillator();
+                var g = audioCtx.createGain();
+                o.type = 'triangle';
+                o.frequency.value = t.f;
+                g.gain.setValueAtTime(0, n + t.t);
+                g.gain.linearRampToValueAtTime(0.25, n + t.t + 0.02);
+                g.gain.exponentialRampToValueAtTime(0.001, n + t.t + 1.5);
+                o.connect(g);
+                g.connect(audioCtx.destination);
+                o.start(n + t.t);
+                o.stop(n + t.t + 1.6);
+            });
         } catch(e) {}
     }
 
@@ -210,7 +208,6 @@
             var hora = card.dataset.agHora || '';
 
             if (notifiedIds[id]) return;
-            if (ts <= now) return;
 
             var diffMin = Math.floor((ts - now) / 60);
             var tipo = null;
@@ -220,9 +217,14 @@
             else if (diffMin >= 10 && diffMin <= 20) tipo = '15 minutos';
             else if (diffMin >= 3 && diffMin <= 7) tipo = '5 minutos';
 
+            // dispara se estiver na janela OU se acabou de passar (phone ficou em background)
+            if (!tipo && diffMin <= 0 && diffMin > -10) tipo = 'agora';
+
             if (tipo) {
                 notifiedIds[id] = true;
-                var msg = 'Seu agendamento com ' + nome + ' é em ' + tipo + '! (' + data + ' às ' + hora + ')';
+                var msg = tipo === 'agora'
+                    ? 'Seu agendamento com ' + nome + ' era agora! (' + data + ' às ' + hora + ')'
+                    : 'Seu agendamento com ' + nome + ' é em ' + tipo + '! (' + data + ' às ' + hora + ')';
                 showReminderModal(msg);
                 if ('Notification' in window && Notification.permission === 'granted') {
                     try {
@@ -241,6 +243,13 @@
 
     checkReminders();
     setInterval(checkReminders, 10000);
+
+    // dispara check ao voltar do background (celular / aba inativa)
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            checkReminders();
+        }
+    });
 })();
 </script>
 @endpush
