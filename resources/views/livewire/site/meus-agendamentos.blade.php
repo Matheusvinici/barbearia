@@ -214,8 +214,8 @@
 
             if (diffMin >= 55 && diffMin <= 65) tipo = '1 hora';
             else if (diffMin >= 25 && diffMin <= 35) tipo = '30 minutos';
-            else if (diffMin >= 10 && diffMin <= 20) tipo = '15 minutos';
-            else if (diffMin >= 3 && diffMin <= 7) tipo = '5 minutos';
+            else if (diffMin >= 10 && diffMin <= 20) tipo = diffMin + ' minutos';
+            else if (diffMin >= 3 && diffMin <= 9) tipo = diffMin + ' minutos';
 
             // dispara se estiver na janela OU se acabou de passar (phone ficou em background)
             if (!tipo && diffMin <= 0 && diffMin > -10) tipo = 'agora';
