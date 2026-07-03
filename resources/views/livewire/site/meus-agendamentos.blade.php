@@ -1,6 +1,6 @@
 <div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;">
-        <div>
+<div wire:poll.15s>
             <h1 style="font-size:28px;font-weight:800;letter-spacing:-0.03em;margin:0;">Meus Agendamentos</h1>
             <p style="color:var(--text-muted);font-size:14px;margin-top:4px;">{{ $cliente->nome }}</p>
         </div>
@@ -37,7 +37,7 @@
         $agPassed = $agData->isPast();
         $agAvaliado = in_array($ag->id, $avaliados);
     @endphp
-    <div class="card-base" style="margin-bottom:12px;padding:16px 20px;" data-ag-id="{{ $ag->id }}" data-ag-timestamp="{{ $agTimestamp }}" data-ag-nome="{{ $ag->barbeiro->nome }}" data-ag-data="{{ \Carbon\Carbon::parse($ag->data)->format('d/m') }}" data-ag-hora="{{ substr($ag->hora_inicio, 0, 5) }}">
+    <div class="card-base" style="margin-bottom:12px;padding:16px 20px;" data-ag-id="{{ $ag->id }}" data-ag-timestamp="{{ $agTimestamp }}" data-ag-nome="{{ $ag->barbeiro->nome }}" data-ag-data="{{ \Carbon\Carbon::parse($ag->data)->format('d/m') }}" data-ag-hora="{{ $ag->hora_inicio->format('H:i') }}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;">
             <div style="flex:1;min-width:0;">
                 <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
@@ -62,7 +62,7 @@
                     <svg class="icon icon-xs" style="margin-right:2px;"><use href="#i-calendar"/></svg>
                     {{ \Carbon\Carbon::parse($ag->data)->format('d/m/Y') }}
                     <svg class="icon icon-xs" style="margin:0 2px 0 8px;"><use href="#i-clock"/></svg>
-                    {{ substr($ag->hora_inicio, 0, 5) }}
+                    {{ $ag->hora_inicio->format('H:i') }}
                 </div>
                 @foreach($ag->servicos as $s)
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--card-solid);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;">
@@ -138,8 +138,6 @@
     var notifiedIds = {};
 
     function checkReminders() {
-        if (Notification.permission !== 'granted') return;
-
         var cards = document.querySelectorAll('[data-ag-timestamp]');
         var now = Math.floor(Date.now() / 1000);
 
@@ -167,21 +165,23 @@
                 if (typeof showToast === 'function') {
                     showToast('Lembrete', msg);
                 }
-                try {
-                    var n = new Notification('Lembrete de Agendamento', {
-                        body: msg,
-                        icon: '/images/logo.jpg',
-                        tag: 'lembrete-' + id,
-                    });
-                    setTimeout(function() { n.close(); }, 10000);
-                    n.onclick = function() { window.focus(); };
-                } catch(e) {}
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    try {
+                        var n = new Notification('Lembrete de Agendamento', {
+                            body: msg,
+                            icon: '/images/logo.jpg',
+                            tag: 'lembrete-' + id,
+                        });
+                        setTimeout(function() { n.close(); }, 10000);
+                        n.onclick = function() { window.focus(); };
+                    } catch(e) {}
+                }
             }
         });
     }
 
     checkReminders();
-    setInterval(checkReminders, 30000);
+    setInterval(checkReminders, 10000);
 })();
 </script>
 @endpush

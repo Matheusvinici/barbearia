@@ -116,6 +116,7 @@ class MeusAgendamentos extends Component
 
     public function render()
     {
+        $this->carregarAgendamentos();
         return view('livewire.site.meus-agendamentos')
             ->layout('layouts.site');
     }
