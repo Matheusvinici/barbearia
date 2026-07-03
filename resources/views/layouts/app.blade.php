@@ -261,7 +261,7 @@
 
 <style>
 .notif-overlay {
-    position: fixed; inset: 0; z-index: 99999;
+    position: fixed; inset: 0; z-index: 1060;
     display: flex; align-items: center; justify-content: center;
     font-family: 'Plus Jakarta Sans', sans-serif;
 }

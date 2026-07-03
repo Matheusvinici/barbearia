@@ -54,10 +54,17 @@ class AgendamentoController extends Controller
         $barbeariasQuery = Barbearia::orderBy('nome');
 
         if ($this->isTenantContext()) {
-            $tenantId = $this->tenantId();
             $treeIds = $this->tenantIds();
             $barbeirosQuery->whereIn('barbearia_id', $treeIds);
             $barbeariasQuery->whereIn('id', $treeIds);
+        } elseif (!Auth::guard('web')->user()?->isSuperAdmin()) {
+            $ownedIds = Auth::guard('web')->user()?->ownedBarbearias()->get()
+                ->flatMap(fn($b) => $b->tenantTreeIds())
+                ->unique()->values()->toArray() ?? [];
+            if (!empty($ownedIds)) {
+                $barbeirosQuery->whereIn('barbearia_id', $ownedIds);
+                $barbeariasQuery->whereIn('id', $ownedIds);
+            }
         }
 
         $barbeiros = $barbeirosQuery->get();
@@ -156,6 +163,13 @@ class AgendamentoController extends Controller
 
         if ($this->isTenantContext()) {
             $barbeirosQuery->whereIn('barbearia_id', $this->tenantIds());
+        } elseif (!Auth::guard('web')->user()?->isSuperAdmin()) {
+            $ownedIds = Auth::guard('web')->user()?->ownedBarbearias()->get()
+                ->flatMap(fn($b) => $b->tenantTreeIds())
+                ->unique()->values()->toArray() ?? [];
+            if (!empty($ownedIds)) {
+                $barbeirosQuery->whereIn('barbearia_id', $ownedIds);
+            }
         }
 
         $barbeiros = $barbeirosQuery->get();
@@ -369,21 +383,21 @@ class AgendamentoController extends Controller
             ]);
         }
 
-        if (!$caixa->fechado) {
-            $caixa->increment('total_entradas', $agendamento->total);
-            $caixa->saldo_final = $caixa->saldo_inicial + $caixa->total_entradas - $caixa->total_saidas;
-            $caixa->save();
+    if (!$caixa->fechado) {
+        $caixa->increment('total_entradas', $agendamento->total);
+        $caixa->saldo_final = $caixa->saldo_inicial + $caixa->total_entradas - $caixa->total_saidas;
+        $caixa->save();
+    }
 
-            CaixaMovimentacao::create([
-                'barbearia_id' => $caixa->barbearia_id,
-                'caixa_id' => $caixa->id,
-                'tipo' => 'entrada',
-                'valor' => $agendamento->total,
-                'descricao' => "Serviço realizado - {$agendamento->cliente->nome}",
-                'origem_type' => Agendamento::class,
-                'origem_id' => $agendamento->id,
-                'user_id' => Auth::guard('web')->id(),
-            ]);
-        }
+    CaixaMovimentacao::create([
+        'barbearia_id' => $caixa->barbearia_id,
+        'caixa_id' => $caixa->id,
+        'tipo' => 'entrada',
+        'valor' => $agendamento->total,
+        'descricao' => "Serviço realizado - {$agendamento->cliente->nome}",
+        'origem_type' => Agendamento::class,
+        'origem_id' => $agendamento->id,
+        'user_id' => Auth::guard('web')->id(),
+    ]);
     }
 }

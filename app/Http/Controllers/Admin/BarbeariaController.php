@@ -98,6 +98,16 @@ class BarbeariaController extends Controller
             $barbearia->update(['owner_id' => $user->id]);
         }
 
+        if ($request->has('filiais')) {
+            foreach ($request->filiais as $filialData) {
+                if (!empty($filialData['nome'])) {
+                    $filialData['parent_id'] = $barbearia->id;
+                    $filialData['owner_id'] = $barbearia->owner_id;
+                    Barbearia::create($filialData);
+                }
+            }
+        }
+
         $route = $this->isTenantContext()
             ? route('tenant.admin.barbearias.index', $this->getTenant()->slug)
             : route('admin.barbearias.index');

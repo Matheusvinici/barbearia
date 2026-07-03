@@ -108,6 +108,9 @@
     @endif
 </div>
 
+@endsection
+
+@push('modals')
 <div class="modal fade" id="modalRealizar" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -140,7 +143,7 @@
         </div>
     </div>
 </div>
-@endsection
+@endpush
 
 @push('styles')
 <style>

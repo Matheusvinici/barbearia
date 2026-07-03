@@ -180,6 +180,65 @@
                 </div>
             </div>
 
+            {{-- Filiais Section --}}
+            @if(!$edit)
+            <div class="panel fade-in d3">
+                <div class="panel-header">
+                    <div class="panel-title-wrap">
+                        <div class="panel-title-icon"><svg class="icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+                        <div>
+                            <h2 class="panel-title">Filiais</h2>
+                            <div class="panel-subtitle">Adicione filiais diretamente vinculadas a esta barbearia</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div id="filiais-container"></div>
+                    <button type="button" class="btn-ghost-c" onclick="addFilial()" style="margin-top:8px;">
+                        <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                        Adicionar Filial
+                    </button>
+                </div>
+            </div>
+
+            <script>
+                let filialIndex = 0;
+                function addFilial(nome = '', bairro = '', cidade = '') {
+                    const i = filialIndex++;
+                    const div = document.createElement('div');
+                    div.className = 'filial-row';
+                    div.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;margin-bottom:12px;align-items:end;';
+                    div.innerHTML = `
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Nome *</label>
+                            <div class="input-group">
+                                <span class="addon"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.02 2.84L4.04 6.74c-.68.54-1.17 1.71-1.17 2.58v7.04c0 1.83 1.49 3.34 3.32 3.34h11.62c1.83 0 3.32-1.49 3.32-3.33V9.4c0-.93-.53-2.07-1.23-2.6l-5.71-4.04c-1.01-.72-2.55-.69-3.54.06z"/><path d="M12 17.5v-3"/></svg></span>
+                                <input type="text" name="filiais[${i}][nome]" class="form-input" placeholder="Nome da filial" value="${nome}" required>
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Bairro</label>
+                            <div class="input-group">
+                                <span class="addon"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                                <input type="text" name="filiais[${i}][bairro]" class="form-input" placeholder="Bairro" value="${bairro}">
+                            </div>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label class="form-label">Cidade</label>
+                            <div class="input-group">
+                                <span class="addon"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></span>
+                                <input type="text" name="filiais[${i}][cidade]" class="form-input" placeholder="Cidade" value="${cidade}">
+                            </div>
+                        </div>
+                        <button type="button" class="btn-danger-c" style="height:44px;width:44px;padding:0;display:flex;align-items:center;justify-content:center;" onclick="this.closest('.filial-row').remove()" title="Remover">
+                            <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    `;
+                    document.getElementById('filiais-container').appendChild(div);
+                }
+            </script>
+            @endif
+
             <div style="display:flex;gap:8px;margin-top:20px;">
                 <button type="submit" class="btn-primary-c">
                     <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>

@@ -44,6 +44,38 @@
         </div>
     </div>
 
+    {{-- Summary Badges --}}
+    <div class="stats-grid" style="margin-bottom:20px;">
+        <div class="stat-card fade-in d1">
+            <div class="stat-label">Entradas</div>
+            <div class="stat-value" style="color:var(--success);">R$ {{ number_format($resumo['total_entradas'], 2, ',', '.') }}</div>
+            <div class="stat-sub">Total do período</div>
+        </div>
+        <div class="stat-card fade-in d2">
+            <div class="stat-label">Saídas</div>
+            <div class="stat-value" style="color:var(--danger);">R$ {{ number_format($resumo['total_saidas'], 2, ',', '.') }}</div>
+            <div class="stat-sub">Total do período</div>
+        </div>
+        <div class="stat-card fade-in d3">
+            <div class="stat-label">Saldo Líquido</div>
+            <div class="stat-value" style="color:var(--info);">R$ {{ number_format($resumo['saldo_liquido'], 2, ',', '.') }}</div>
+            <div class="stat-sub">entradas - saídas</div>
+        </div>
+        <div class="stat-card fade-in d4">
+            <div class="stat-label">Caixas</div>
+            <div class="stat-value">{{ $resumo['abertos'] }}/{{ $resumo['total_caixas'] }}</div>
+            <div class="stat-sub">{{ $resumo['abertos'] }} abertos · {{ $resumo['fechados'] }} fechados</div>
+        </div>
+    </div>
+
+    @if($totalBarbeiro)
+    <div class="stat-card fade-in d1" style="margin-bottom:20px;">
+        <div class="stat-label" style="color:var(--warning);font-weight:700;">Entradas de {{ $totalBarbeiro['nome'] }}</div>
+        <div class="stat-value" style="color:var(--warning);">R$ {{ number_format($totalBarbeiro['total'], 2, ',', '.') }}</div>
+        <div class="stat-sub">{{ $totalBarbeiro['qtd'] }} serviço(s) realizado(s) no período</div>
+    </div>
+    @endif
+
     <div class="panel fade-in d2">
         <div class="panel-header">
             <div class="panel-title-wrap">
@@ -56,14 +88,35 @@
         </div>
 
         <div class="panel-body" style="padding:16px 24px 0;">
-            <div class="filter-bar">
-                <label for="filterBarbearia">Unidade:</label>
-                <select wire:model.live="barbeariaFilter" id="filterBarbearia" class="form-input" style="width:auto;min-width:180px;height:34px;padding:0 8px;font-size:13px;">
-                    <option value="">Todas as unidades</option>
-                    @foreach($barbearias as $b)
-                    <option value="{{ $b->id }}">{{ $b->nome }}</option>
-                    @endforeach
-                </select>
+            <div class="filter-bar" style="display:flex;flex-wrap:wrap;gap:12px;align-items:end;">
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Unidade</label>
+                    <select wire:model.live="barbeariaFilter" class="form-input" style="width:auto;min-width:180px;height:34px;padding:0 8px;font-size:13px;">
+                        <option value="">Todas as unidades</option>
+                        @foreach($barbearias as $b)
+                        <option value="{{ $b->id }}">{{ $b->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Data Início</label>
+                    <input type="date" wire:model.live="dataInicio" class="form-input" style="width:auto;min-width:150px;height:34px;padding:0 8px;font-size:13px;">
+                </div>
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Data Fim</label>
+                    <input type="date" wire:model.live="dataFim" class="form-input" style="width:auto;min-width:150px;height:34px;padding:0 8px;font-size:13px;">
+                </div>
+                @if($barbeariaFilter)
+                <div>
+                    <label style="font-size:11px;font-weight:700;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.08em;display:block;margin-bottom:4px;">Barbeiro</label>
+                    <select wire:model.live="barbeiroFilter" class="form-input" style="width:auto;min-width:180px;height:34px;padding:0 8px;font-size:13px;">
+                        <option value="">Todos os barbeiros</option>
+                        @foreach($barbeiros as $b)
+                        <option value="{{ $b->id }}">{{ $b->nome }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -131,6 +184,9 @@
                                 <button wire:click="openFechar({{ $c->id }})" class="action-btn warning" title="Fechar"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Fechar</button>
                                 @else
                                 <button wire:click="reabrir({{ $c->id }})" class="action-btn danger" title="Reabrir" onclick="return confirm('Reabrir caixa?')"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Reabrir</button>
+                                @endif
+                                @if($c->total_entradas == 0 && $c->total_saidas == 0)
+                                <button wire:click="destroy({{ $c->id }})" class="action-btn danger" title="Excluir" wire:confirm="Excluir caixa?"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M10 11v6M14 11v6"/></svg>Excluir</button>
                                 @endif
                             </div>
                             @endif

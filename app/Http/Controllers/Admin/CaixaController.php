@@ -137,8 +137,17 @@ class CaixaController extends Controller
             ->where('barbearia_id', $barbeariaId)
             ->first();
 
+        $route = $this->isTenantContext()
+            ? route('tenant.admin.caixa.index', $this->getTenant()->slug)
+            : route('admin.caixa.index');
+
         if ($existing) {
-            return redirect()->back()->with('error', 'Caixa já aberto para esta data para esta unidade.');
+            $existing->update([
+                'saldo_inicial' => $request->saldo_inicial,
+                'saldo_final' => $request->saldo_inicial + $existing->total_entradas - $existing->total_saidas,
+                'user_id_abertura' => Auth::guard('web')->id(),
+            ]);
+            return redirect()->to($route)->with('success', 'Saldo inicial do caixa atualizado com sucesso!');
         }
 
         Caixa::create([
@@ -148,10 +157,6 @@ class CaixaController extends Controller
             'saldo_final' => $request->saldo_inicial,
             'user_id_abertura' => Auth::guard('web')->id(),
         ]);
-
-        $route = $this->isTenantContext()
-            ? route('tenant.admin.caixa.index', $this->getTenant()->slug)
-            : route('admin.caixa.index');
 
         return redirect()->to($route)->with('success', 'Caixa aberto com sucesso!');
     }
@@ -189,9 +194,15 @@ class CaixaController extends Controller
             return redirect()->back()->with('error', 'Caixa já está aberto.');
         }
 
+        $totalEntradas = $caixa->movimentacoes()->where('tipo', 'entrada')->sum('valor');
+        $totalSaidas = $caixa->movimentacoes()->where('tipo', 'saida')->sum('valor');
+
         $caixa->update([
             'fechado' => false,
             'user_id_fechamento' => null,
+            'total_entradas' => $totalEntradas,
+            'total_saidas' => $totalSaidas,
+            'saldo_final' => $caixa->saldo_inicial + $totalEntradas - $totalSaidas,
         ]);
 
         $route = $this->isTenantContext()

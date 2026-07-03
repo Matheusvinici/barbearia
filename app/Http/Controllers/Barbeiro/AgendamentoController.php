@@ -116,10 +116,15 @@ class AgendamentoController extends Controller
     {
         $dataStr = Carbon::parse($agendamento->data)->format('Y-m-d');
 
-        $caixa = Caixa::whereDate('data', $dataStr)->first();
+        $caixa = Caixa::whereDate('data', $dataStr);
+        if ($agendamento->barbearia_id) {
+            $caixa->where('barbearia_id', $agendamento->barbearia_id);
+        }
+        $caixa = $caixa->first();
 
         if (!$caixa) {
             $caixa = Caixa::create([
+                'barbearia_id' => $agendamento->barbearia_id,
                 'data' => $dataStr,
                 'saldo_inicial' => 0,
             ]);
@@ -129,15 +134,16 @@ class AgendamentoController extends Controller
             $caixa->increment('total_entradas', $agendamento->total);
             $caixa->saldo_final = $caixa->saldo_inicial + $caixa->total_entradas - $caixa->total_saidas;
             $caixa->save();
-
-            CaixaMovimentacao::create([
-                'caixa_id' => $caixa->id,
-                'tipo' => 'entrada',
-                'valor' => $agendamento->total,
-                'descricao' => "Serviço realizado por {$agendamento->barbeiro->nome} - {$agendamento->cliente->nome}",
-                'origem_type' => Agendamento::class,
-                'origem_id' => $agendamento->id,
-            ]);
         }
+
+        CaixaMovimentacao::create([
+            'barbearia_id' => $caixa->barbearia_id,
+            'caixa_id' => $caixa->id,
+            'tipo' => 'entrada',
+            'valor' => $agendamento->total,
+            'descricao' => "Serviço realizado por {$agendamento->barbeiro->nome} - {$agendamento->cliente->nome}",
+            'origem_type' => Agendamento::class,
+            'origem_id' => $agendamento->id,
+        ]);
     }
 }
