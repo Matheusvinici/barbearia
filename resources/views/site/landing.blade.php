@@ -372,7 +372,7 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
       <button class="theme-toggle-nav" id="themeToggle" title="Alternar tema">
         <svg class="icon"><use href="#i-sun"/></svg>
       </button>
-      <a href="#cta" class="btn-primary-c">Teste Grátis</a>
+      <a href="https://wa.me/5587981782235" target="_blank" class="btn-primary-c"><svg class="icon"><use href="#i-whatsapp"/></svg> (87) 98178-2235</a>
     </div>
   </div>
 </nav>
@@ -395,22 +395,10 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
           <a href="#how" class="btn-ghost-c">Ver como funciona</a>
         </div>
         <div class="hero-social">
-          <div class="avatars">
-            <div class="avatar-sm" style="background:linear-gradient(135deg,#f5b544,#e89538)"></div>
-            <div class="avatar-sm" style="background:linear-gradient(135deg,#60a5fa,#3b82f6)"></div>
-            <div class="avatar-sm" style="background:linear-gradient(135deg,#4ade80,#22c55e)"></div>
-            <div class="avatar-sm" style="background:linear-gradient(135deg,#f472b6,#ec4899)"></div>
-          </div>
-          <div>
-            <div class="stars">
-              <svg class="icon-sm"><use href="#i-star"/></svg>
-              <svg class="icon-sm"><use href="#i-star"/></svg>
-              <svg class="icon-sm"><use href="#i-star"/></svg>
-              <svg class="icon-sm"><use href="#i-star"/></svg>
-              <svg class="icon-sm"><use href="#i-star"/></svg>
-            </div>
-            <span>+1.200 barbearias já usam</span>
-          </div>
+          <a href="https://wa.me/5587981782235" target="_blank" style="display:inline-flex;align-items:center;gap:10px;padding:12px 20px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.3);border-radius:12px;color:var(--success);text-decoration:none;font-weight:700;font-size:14px;">
+            <svg class="icon" style="color:var(--success);"><use href="#i-whatsapp"/></svg>
+            (87) 98178-2235
+          </a>
         </div>
       </div>
       <div class="mockup-wrap">
@@ -692,13 +680,14 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
 <section id="cta">
   <div class="container-c">
     <div class="cta-final reveal">
-      <h2 class="cta-title">Pronto para revolucionar sua barbearia?</h2>
-      <p class="cta-sub">Junte-se a +1.200 barbearias que já automatizaram seu negócio. Comece seu teste grátis hoje.</p>
-      <form method="POST" action="{{ route('landing') }}" class="newsletter-form">
-        @csrf
-        <input type="email" name="email" class="form-input" placeholder="Seu melhor e-mail" required>
-        <button type="submit" class="btn-primary-c">Quero Testar</button>
-      </form>
+      <h2 class="cta-title">Fale Conosco pelo WhatsApp</h2>
+      <p class="cta-sub">Tire suas dúvidas e solicite um teste grátis diretamente pelo WhatsApp.</p>
+      <div style="display:flex;justify-content:center;position:relative;z-index:1;">
+        <a href="https://wa.me/5587981782235" target="_blank" class="btn-primary-c cta-btn" style="background:rgba(74,222,128,0.15);border:2px solid var(--success);color:var(--success);gap:12px;font-size:18px;">
+          <svg class="icon" style="width:28px;height:28px;"><use href="#i-whatsapp"/></svg>
+          (87) 98178-2235
+        </a>
+      </div>
     </div>
   </div>
 </section>
