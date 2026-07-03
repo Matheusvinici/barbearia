@@ -127,6 +127,17 @@
     </div>
     @endif
     @endif
+{{-- Reminder Modal --}}
+<div wire:ignore id="reminderModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.65);align-items:center;justify-content:center;padding:20px;">
+    <div style="background:var(--card-solid);border:1px solid var(--border-strong);border-radius:var(--r-lg);padding:32px;max-width:400px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+        <div style="width:64px;height:64px;border-radius:50%;background:var(--accent-glow);display:grid;place-items:center;margin:0 auto 16px;">
+            <svg class="icon" style="width:32px;height:32px;color:var(--accent);"><use href="#i-bell"/></svg>
+        </div>
+        <h3 style="font-size:20px;font-weight:800;margin-bottom:4px;color:var(--text);">Lembrete de Agendamento</h3>
+        <p id="reminderMsg" style="font-size:15px;color:var(--text-muted);margin:12px 0 24px;line-height:1.5;"></p>
+        <button onclick="fecharReminder()" class="btn-primary-c" style="width:100%;justify-content:center;height:48px;font-size:15px;">OK, entendi</button>
+    </div>
+</div>
 </div>
 
 @push('scripts')
@@ -136,6 +147,56 @@
     if (Notification.permission === 'default') Notification.requestPermission();
 
     var notifiedIds = {};
+    var reminderTimeout = null;
+    var audioCtx = null;
+
+    function playBeep() {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            var osc = audioCtx.createOscillator();
+            var gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.type = 'sine';
+            osc.frequency.value = 800;
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.start(audioCtx.currentTime);
+            osc.stop(audioCtx.currentTime + 0.3);
+
+            var osc2 = audioCtx.createOscillator();
+            var gain2 = audioCtx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(audioCtx.destination);
+            osc2.type = 'sine';
+            osc2.frequency.value = 1000;
+            gain2.gain.setValueAtTime(0.3, audioCtx.currentTime + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.45);
+            osc2.start(audioCtx.currentTime + 0.15);
+            osc2.stop(audioCtx.currentTime + 0.45);
+        } catch(e) {}
+    }
+
+    window.fecharReminder = function() {
+        var modal = document.getElementById('reminderModal');
+        if (modal) {
+            modal.style.display = 'none';
+            modal.style.opacity = '';
+        }
+        if (reminderTimeout) {
+            clearTimeout(reminderTimeout);
+            reminderTimeout = null;
+        }
+    };
+
+    function showReminderModal(msg) {
+        document.getElementById('reminderMsg').textContent = msg;
+        var modal = document.getElementById('reminderModal');
+        modal.style.display = 'flex';
+        playBeep();
+        if (reminderTimeout) clearTimeout(reminderTimeout);
+        reminderTimeout = setTimeout(fecharReminder, 30000);
+    }
 
     function checkReminders() {
         var cards = document.querySelectorAll('[data-ag-timestamp]');
@@ -162,9 +223,7 @@
             if (tipo) {
                 notifiedIds[id] = true;
                 var msg = 'Seu agendamento com ' + nome + ' é em ' + tipo + '! (' + data + ' às ' + hora + ')';
-                if (typeof showToast === 'function') {
-                    showToast('Lembrete', msg);
-                }
+                showReminderModal(msg);
                 if ('Notification' in window && Notification.permission === 'granted') {
                     try {
                         var n = new Notification('Lembrete de Agendamento', {
@@ -172,8 +231,8 @@
                             icon: '/images/logo.jpg',
                             tag: 'lembrete-' + id,
                         });
-                        setTimeout(function() { n.close(); }, 10000);
-                        n.onclick = function() { window.focus(); };
+                        setTimeout(function() { n.close(); }, 15000);
+                        n.onclick = function() { window.focus(); fecharReminder(); };
                     } catch(e) {}
                 }
             }
