@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', 'Agende seu horário')</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#f5b544">
+<meta name="apple-mobile-web-app-capable" content="yes">
 @livewireStyles
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -392,6 +395,11 @@ function showToast(title, msg) {
 /* ============ Notification Permission ============ */
 if ('Notification' in window && Notification.permission === 'default') {
     Notification.requestPermission();
+}
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function(e) {
+        console.warn('SW registration failed', e);
+    });
 }
 </script>
 @stack('scripts')

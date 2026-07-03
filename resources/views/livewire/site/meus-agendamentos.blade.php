@@ -250,6 +250,52 @@
             checkReminders();
         }
     });
+
+    // --- Push Subscription ---
+    function urlBase64ToUint8Array(base64String) {
+        var padding = '='.repeat((4 - base64String.length % 4) % 4);
+        var base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+        var rawData = atob(base64);
+        var output = new Uint8Array(rawData.length);
+        for (var i = 0; i < rawData.length; ++i) output[i] = rawData.charCodeAt(i);
+        return output;
+    }
+
+    function subscribeToPush() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+        if (Notification.permission !== 'granted') return;
+
+        navigator.serviceWorker.ready.then(function(reg) {
+            reg.pushManager.getSubscription().then(function(sub) {
+                if (sub) return sub;
+                return reg.pushManager.subscribe({
+                    userVisibleOnly: true,
+                    applicationServerKey: urlBase64ToUint8Array('{{ env("VAPID_PUBLIC_KEY") }}')
+                });
+            }).then(function(sub) {
+                var rawKey = sub.getKey ? sub.getKey('p256dh') : null;
+                var rawAuth = sub.getKey ? sub.getKey('auth') : null;
+                if (!rawKey || !rawAuth) return;
+
+                fetch('{{ $slug ? route("tenant.site.push.subscribe", $slug) : route("site.push.subscribe") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        endpoint: sub.endpoint,
+                        auth_key: btoa(String.fromCharCode.apply(null, new Uint8Array(rawAuth))),
+                        p256dh_key: btoa(String.fromCharCode.apply(null, new Uint8Array(rawKey)))
+                    })
+                }).catch(function(){});
+            }).catch(function(e) {
+                console.warn('Push subscribe failed', e);
+            });
+        });
+    }
+
+    subscribeToPush();
 })();
 </script>
 @endpush

@@ -44,6 +44,8 @@ Route::prefix('site')->name('site.')->group(function () {
     Route::get('/agendar', \App\Livewire\Site\AgendarWizard::class)->name('agendar');
     Route::get('/meus-agendamentos', \App\Livewire\Site\MeusAgendamentos::class)->name('meus-agendamentos');
     Route::post('/logout', [SiteAuthController::class, 'logout'])->name('logout');
+    Route::post('/push/subscribe', [\App\Http\Controllers\Api\PushSubscriptionController::class, 'store'])->name('push.subscribe');
+    Route::delete('/push/unsubscribe', [\App\Http\Controllers\Api\PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
 });
 
 // Legacy admin (super admin)
@@ -376,5 +378,7 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
         Route::get('/agendar', \App\Livewire\Site\AgendarWizard::class)->name('agendar');
         Route::get('/meus-agendamentos', \App\Livewire\Site\MeusAgendamentos::class)->name('meus-agendamentos');
         Route::post('/logout', [SiteAuthController::class, 'logout'])->name('logout');
+        Route::post('/push/subscribe', [\App\Http\Controllers\Api\PushSubscriptionController::class, 'store'])->name('push.subscribe');
+        Route::delete('/push/unsubscribe', [\App\Http\Controllers\Api\PushSubscriptionController::class, 'destroy'])->name('push.unsubscribe');
     });
 });
