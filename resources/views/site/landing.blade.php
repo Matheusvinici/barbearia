@@ -388,9 +388,9 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
         <h1 class="hero-title">A plataforma completa para <span>dominar sua barbearia</span></h1>
         <p class="hero-subtitle">Automatize agendamentos, controle o financeiro, gerencie sua equipe e fidelize clientes. Tudo em um só lugar, com a identidade da sua marca.</p>
         <div class="hero-cta">
-          <a href="#pricing" class="btn-primary-c">
-            Começar 14 dias grátis
-            <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg>
+          <a href="https://wa.me/5587981782235" target="_blank" class="btn-primary-c">
+            <svg class="icon icon-sm"><use href="#i-whatsapp"/></svg>
+            (87) 98178-2235
           </a>
           <a href="#how" class="btn-ghost-c">Ver como funciona</a>
         </div>
@@ -486,11 +486,6 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
         <div class="bento-ic"><svg class="icon"><use href="#i-wallet"/></svg></div>
         <h3 class="bento-title">Financeiro Automático</h3>
         <p class="bento-desc">Controle caixa, comissões e despesas. Relatórios prontos para o contador.</p>
-      </div>
-      <div class="bento-card green reveal">
-        <div class="bento-ic"><svg class="icon"><use href="#i-whatsapp"/></svg></div>
-        <h3 class="bento-title">WhatsApp Integrado</h3>
-        <p class="bento-desc">Confirmações e lembretes automáticos. Pare de perder tempo com mensagens manuais.</p>
       </div>
       <div class="bento-card blue span-2 reveal">
         <div class="bento-ic"><svg class="icon"><use href="#i-smartphone"/></svg></div>
@@ -623,7 +618,7 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
           <li><svg class="icon-sm"><use href="#i-check"/></svg> Bloqueio de agenda</li>
           <li><svg class="icon-sm"><use href="#i-check"/></svg> Controle de clientes</li>
         </ul>
-        <button class="price-cta">Começar Teste Grátis</button>
+        <a href="https://wa.me/5587981782235" target="_blank" class="price-cta"><svg class="icon-sm"><use href="#i-whatsapp"/></svg> (87) 98178-2235</a>
       </div>
       <div class="price-card featured reveal">
         <div class="price-tag-popular">Mais Popular</div>
@@ -643,7 +638,7 @@ footer { border-top: 1px solid var(--border); padding: 60px 0 30px; margin-top: 
           <li><svg class="icon-sm"><use href="#i-check"/></svg> Relatório de acompanhamento</li>
           <li><svg class="icon-sm"><use href="#i-check"/></svg> Gerenciamento de planos</li>
         </ul>
-        <button class="price-cta">Começar Teste Grátis</button>
+        <a href="https://wa.me/5587981782235" target="_blank" class="price-cta"><svg class="icon-sm"><use href="#i-whatsapp"/></svg> (87) 98178-2235</a>
       </div>
     </div>
   </div>
