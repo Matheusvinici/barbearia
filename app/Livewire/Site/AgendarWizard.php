@@ -69,7 +69,8 @@ class AgendarWizard extends Component
             } else {
                 $this->barbearias = collect([$barbearia]);
             }
-            $this->avaliacoes = Avaliacao::where('barbearia_id', $barbearia->id)
+            $ids = collect([$barbearia->id])->merge($barbearia->filiais->pluck('id'));
+            $this->avaliacoes = Avaliacao::whereIn('barbearia_id', $ids)
                 ->latest()
                 ->take(10)
                 ->get();
@@ -77,6 +78,7 @@ class AgendarWizard extends Component
             $this->barbearias = Barbearia::whereHas('barbeiros', function ($q) {
                 $q->where('ativo', true);
             })->orWhereDoesntHave('barbeiros')->orderBy('nome')->get();
+            $this->avaliacoes = collect();
         }
 
         $this->servicos = Servico::where('ativo', true)->get();
@@ -100,7 +102,12 @@ class AgendarWizard extends Component
 
         $this->barbeiros = Barbeiro::where('ativo', true)
             ->where('barbearia_id', $id)
-            ->get();
+            ->get()
+            ->map(function ($b) {
+                $b->avg_rating = Avaliacao::whereHas('agendamento', fn($q) => $q->where('barbeiro_id', $b->id))
+                    ->avg('rating');
+                return $b;
+            });
 
         $this->step = 3;
     }
@@ -189,7 +196,7 @@ class AgendarWizard extends Component
 
     public function voltar()
     {
-        $this->step = max(1, $this->step - 1);
+        $this->step = max(0, $this->step - 1);
     }
 
     public function confirmar()

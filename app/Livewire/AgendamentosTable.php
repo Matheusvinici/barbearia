@@ -17,12 +17,17 @@ class AgendamentosTable extends Component
     public $data;
     public $barbeiroId;
     public $barbeariaId;
+    public $slug;
 
     public function mount()
     {
         $this->data = request('data', Carbon::today()->format('Y-m-d'));
         $this->barbeiroId = request('barbeiro_id');
         $this->barbeariaId = request('barbearia_id');
+
+        $route = request()->route();
+        $barbearia = $route->parameter('barbearia');
+        $this->slug = $barbearia instanceof Barbearia ? $barbearia->slug : null;
     }
 
     public function atualizarStatus($id, $status)

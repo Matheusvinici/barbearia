@@ -251,6 +251,127 @@ body::before {
 .badge-c.gold { background: var(--accent-glow); color: var(--accent-soft); }
 .badge-c.outlined { background: transparent; border: 1px solid var(--border-strong); color: var(--text-muted); }
 
+/* ============ Dashboard: Upcoming Appointments ============ */
+.upcoming-list { display: flex; flex-direction: column; }
+.upcoming-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms;
+}
+.upcoming-item:last-child { border-bottom: none; }
+.upcoming-item:hover { background: var(--border); }
+.up-time {
+  display: flex; flex-direction: column; align-items: center;
+  min-width: 52px; flex-shrink: 0;
+}
+.up-time .h { font-size: 16px; font-weight: 700; line-height: 1.2; }
+.up-time .d { font-size: 10.5px; color: var(--text-faint); font-weight: 600; margin-top: 2px; }
+.up-divider {
+  width: 2px; height: 36px;
+  border-radius: 2px;
+  background: var(--border-strong); flex-shrink: 0;
+}
+.up-avatar {
+  width: 38px; height: 38px; border-radius: 50%;
+  display: grid; place-items: center;
+  font-weight: 700; font-size: 12px; color: #fff;
+  flex-shrink: 0;
+}
+.up-avatar.amber { background: linear-gradient(135deg, #f5b544, #e89538); }
+.up-avatar.blue  { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+.up-avatar.green { background: linear-gradient(135deg, #4ade80, #22c55e); }
+.up-avatar.purple { background: linear-gradient(135deg, #c084fc, #a855f7); }
+.up-avatar.pink  { background: linear-gradient(135deg, #f472b6, #ec4899); }
+.up-avatar.red   { background: linear-gradient(135deg, #f87171, #ef4444); }
+.up-info { flex: 1; min-width: 0; }
+.up-info .n { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-info .m { font-size: 12px; color: var(--text-muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.up-info .m .pipe { color: var(--text-faint); margin: 0 6px; }
+.up-status {
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 4px 10px; border-radius: 999px;
+  flex-shrink: 0;
+}
+.up-status.pendente { background: var(--accent-glow); color: var(--accent); }
+.up-status.confirmado { background: var(--info-bg); color: var(--info); }
+.up-status.realizado { background: var(--success-bg); color: var(--success); }
+.up-status.cancelado { background: var(--danger-bg); color: var(--danger); }
+.up-status.ausente { background: var(--pink-bg); color: var(--pink); }
+
+/* ============ Dashboard: Link Action ============ */
+.link-action {
+  font-size: 12.5px; font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+  display: inline-flex; align-items: center; gap: 4px;
+  transition: color 150ms;
+  white-space: nowrap;
+}
+.link-action:hover { color: var(--accent-hover); }
+
+/* ============ Dashboard: Resumo do Dia ============ */
+.revenue-period-label {
+  font-size: 12px;
+  color: var(--text-faint);
+  font-weight: 500;
+}
+
+/* ============ Dashboard: Donut Legend / Resumo ============ */
+.donut-wrap { display: flex; align-items: center; gap: 28px; }
+.donut-legend { display: flex; flex-direction: column; gap: 4px; width: 100%; }
+.donut-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.donut-row:last-child { border-bottom: none; }
+.donut-row .swatch {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.donut-row .name { font-size: 13px; color: var(--text-muted); flex: 1; }
+.donut-row .pct {
+  font-size: 14px; font-weight: 700;
+  text-align: right;
+}
+.donut-row .pct a { font-size: 12px; }
+.revenue-currency {
+  font-size: 16px; font-weight: 600;
+  color: var(--text-muted);
+  vertical-align: super;
+  margin-right: 2px;
+}
+.revenue-delta {
+  font-size: 13px; font-weight: 600;
+  color: var(--text-muted);
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+/* ============ Dashboard: Ranking / Quick Actions ============ */
+.ranking-list { display: flex; flex-direction: column; }
+.rank-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  transition: background 150ms;
+}
+.rank-row:last-child { border-bottom: none; }
+.rank-row:hover .name { color: var(--accent); }
+.rank-pos {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: grid; place-items: center;
+  flex-shrink: 0;
+  background: var(--border);
+  color: var(--text-muted);
+}
+.rank-pos.gold { background: var(--accent-glow); color: var(--accent); }
+.rank-info { flex: 1; min-width: 0; }
+.rank-info .name { font-size: 14px; font-weight: 600; transition: color 150ms; }
+.rank-info .meta { font-size: 12px; color: var(--text-faint); margin-top: 2px; }
+.rank-val { font-size: 14px; font-weight: 700; text-align: right; }
+
 /* ============ Form Elements ============ */
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .form-grid.full { grid-template-columns: 1fr; }

@@ -64,6 +64,31 @@ class PermissionSeeder extends Seeder
             Permission::where('guard_name', 'barbeiro')->where('name', 'agendamento.cancelar')->first(),
         ]);
 
+        // Secretaria role (web guard) - similar to funcionario but on admin side
+        $secretaria = Role::firstOrCreate(['name' => 'secretaria', 'guard_name' => 'web']);
+        $secretaria->syncPermissions([
+            Permission::where('guard_name', 'web')->where('name', 'agendamento.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'agendamento.create')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'agendamento.edit')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'agendamento.confirmar')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'agendamento.realizar')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'agendamento.cancelar')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'cliente.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'cliente.create')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'cliente.edit')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'servico.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'bloqueio.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'bloqueio.create')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'bloqueio.delete')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'despesa.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'despesa.create')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'despesa.edit')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'caixa.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'caixa.abrir')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'caixa.fechar')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'relatorio.view')->first(),
+        ]);
+
         $this->command->info('Permissões criadas com sucesso!');
     }
 }

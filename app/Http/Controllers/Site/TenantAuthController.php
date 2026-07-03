@@ -14,11 +14,20 @@ class TenantAuthController extends Controller
         if (Auth::guard('web')->check()) {
             return redirect()->route('tenant.admin.dashboard', $barbearia->slug);
         }
+
+        if (!$barbearia->isAtiva()) {
+            abort(404);
+        }
+
         return view('admin.tenant-login', compact('barbearia'));
     }
 
     public function login(Request $request, Barbearia $barbearia)
     {
+        if (!$barbearia->isAtiva()) {
+            abort(404);
+        }
+
         $credentials = $request->validate([
             'email' => 'required|email',
             'password' => 'required',
@@ -27,7 +36,7 @@ class TenantAuthController extends Controller
         if (Auth::guard('web')->attempt($credentials, $request->filled('remember'))) {
             $user = Auth::guard('web')->user();
 
-            if ($user->isSuperAdmin() || $barbearia->owner_id === $user->id || $user->hasAnyRole(['proprietario', 'admin'])) {
+            if ($user->isSuperAdmin() || $barbearia->owner_id === $user->id || $user->hasAnyRole(['proprietario', 'admin', 'secretaria'])) {
                 $request->session()->regenerate();
                 return redirect()->route('tenant.admin.dashboard', $barbearia->slug);
             }

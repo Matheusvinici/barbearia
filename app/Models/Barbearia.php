@@ -40,7 +40,17 @@ class Barbearia extends Model
         'horario_fechamento',
         'intervalo_minutos',
         'dias_funcionamento',
+        'ativo',
+        'data_expiracao',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'ativo' => 'boolean',
+            'data_expiracao' => 'date',
+        ];
+    }
 
     public function barbeiros()
     {
@@ -128,5 +138,27 @@ class Barbearia extends Model
     public function avaliacoesAprovadas()
     {
         return $this->hasMany(Avaliacao::class)->whereNotNull('resposta');
+    }
+
+    public function usuarios()
+    {
+        return $this->belongsToMany(User::class, 'barbearia_user')
+            ->withPivot('ativo');
+    }
+
+    public function isAtiva(): bool
+    {
+        if (!$this->ativo) return false;
+        if ($this->data_expiracao && $this->data_expiracao->isBefore(now()->startOfDay())) {
+            static::withoutEvents(fn () => static::where('id', $this->id)->update(['ativo' => false]));
+            return false;
+        }
+        return true;
+    }
+
+    public function getDiasParaExpiracaoAttribute(): ?int
+    {
+        if (!$this->data_expiracao) return null;
+        return (int) now()->startOfDay()->diffInDays($this->data_expiracao, false);
     }
 }

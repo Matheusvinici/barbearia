@@ -99,9 +99,9 @@
                         </td>
                         <td>
                             <div class="d-flex gap-1">
-                                <a href="{{ route('admin.agendamentos.show', $ag) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
-                                <a href="{{ route('admin.agendamentos.edit', $ag) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
-                                <button onclick="confirmarExclusao('{{ route('admin.agendamentos.destroy', $ag) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
+                                <a href="{{ $slug ? route('tenant.admin.agendamentos.show', [$slug, $ag]) : route('admin.agendamentos.show', $ag) }}" class="btn btn-sm btn-info"><i class="fas fa-eye"></i></a>
+                                <a href="{{ $slug ? route('tenant.admin.agendamentos.edit', [$slug, $ag]) : route('admin.agendamentos.edit', $ag) }}" class="btn btn-sm btn-warning"><i class="fas fa-edit"></i></a>
+                                <button onclick="confirmarExclusao('{{ $slug ? route('tenant.admin.agendamentos.destroy', [$slug, $ag]) : route('admin.agendamentos.destroy', $ag) }}')" class="btn btn-sm btn-danger"><i class="fas fa-trash"></i></button>
                             </div>
                         </td>
                     </tr>

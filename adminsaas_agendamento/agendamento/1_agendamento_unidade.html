@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agendamento — Studio Barber</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    --bg: #0d0d12;
+    --bg-elevated: #14141b;
+    --card: rgba(20, 20, 27, 0.65);
+    --card-solid: #16161e;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.11);
+    --text: #f4f4f6;
+    --text-muted: #8a8a94;
+    --text-faint: #55555f;
+    --accent: #f5b544;
+    --accent-hover: #ffc554;
+    --accent-soft: #e89538;
+    --accent-glow: rgba(245, 181, 68, 0.16);
+    --success: #4ade80;
+    --success-bg: rgba(74, 222, 128, 0.12);
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.12);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.12);
+    --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 22px;
+  }
+
+  [data-bs-theme="light"] {
+    --bg: #f6f6f8;
+    --bg-elevated: #ffffff;
+    --card: rgba(255, 255, 255, 0.75);
+    --card-solid: #ffffff;
+    --border: rgba(0, 0, 0, 0.07);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --text: #14141a;
+    --text-muted: #6b6b75;
+    --text-faint: #a0a0aa;
+    --accent: #c47a06;
+    --accent-hover: #d97706;
+    --accent-soft: #b45309;
+    --accent-glow: rgba(217, 119, 6, 0.12);
+    --success: #16a34a;
+    --success-bg: rgba(22, 163, 74, 0.1);
+    --danger: #dc2626;
+    --danger-bg: rgba(220, 38, 38, 0.1);
+    --info: #2563eb;
+    --info-bg: rgba(37, 99, 235, 0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(900px 600px at 85% -10%, var(--accent-glow), transparent 60%),
+      radial-gradient(700px 500px at 0% 110%, rgba(96, 165, 250, 0.05), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .icon { width: 22px; height: 22px; display: inline-flex; flex-shrink: 0; }
+  .icon-sm { width: 18px; height: 18px; }
+  .icon-xs { width: 15px; height: 15px; }
+
+  /* ============ Public Navbar ============ */
+  .navbar-public {
+    position: sticky; top: 0; z-index: 1000;
+    background: rgba(13, 13, 18, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+    transition: background-color 300ms ease, border-color 300ms ease;
+  }
+  [data-bs-theme="light"] .navbar-public { background: rgba(255, 255, 255, 0.85); }
+  .nav-container {
+    max-width: 1100px; margin: 0 auto;
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--text);
+    font-weight: 800; font-size: 18px; letter-spacing: -0.02em;
+  }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    display: grid; place-items: center; color: #0d0d12;
+    box-shadow: 0 8px 22px -8px var(--accent-glow);
+  }
+  .brand-logo span { color: var(--text-muted); font-weight: 500; }
+  
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+  
+  .nav-link-public {
+    color: var(--text-muted); text-decoration: none;
+    font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color 150ms;
+  }
+  .nav-link-public:hover { color: var(--accent); }
+
+  .theme-toggle-public {
+    width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--card-solid);
+    color: var(--text-muted);
+    display: grid; place-items: center;
+    cursor: pointer; transition: all 180ms;
+  }
+  .theme-toggle-public:hover {
+    color: var(--accent); border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  /* ============ Main Container ============ */
+  .main-content {
+    flex: 1;
+    max-width: 1100px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 24px 120px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ============ Steps Indicator ============ */
+  .steps {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin-bottom: 48px;
+  }
+  .step-item {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--text-faint); font-size: 13px; font-weight: 600;
+  }
+  .step-num {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--card-solid); border: 1px solid var(--border-strong);
+    display: grid; place-items: center; font-size: 12px; font-weight: 700;
+    transition: all 200ms;
+  }
+  .step-item.active { color: var(--text); }
+  .step-item.active .step-num {
+    background: var(--accent); color: #0d0d12; border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+  .step-divider {
+    width: 40px; height: 2px; background: var(--border-strong);
+    border-radius: 2px;
+  }
+
+  /* ============ Header ============ */
+  .page-header {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+  .page-title {
+    font-size: 36px; font-weight: 800;
+    letter-spacing: -0.035em; line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  .page-subtitle {
+    font-size: 16px; color: var(--text-muted);
+    max-width: 500px; margin: 0 auto;
+  }
+
+  /* ============ Search Bar ============ */
+  .search-bar {
+    max-width: 500px; margin: 0 auto 40px;
+    position: relative;
+  }
+  .search-bar .icon {
+    position: absolute; left: 16px; top: 50%;
+    transform: translateY(-50%); color: var(--text-faint);
+  }
+  .search-bar input {
+    width: 100%; height: 52px; padding: 0 18px 0 48px;
+    border-radius: 14px; border: 1px solid var(--border-strong);
+    background: var(--card); backdrop-filter: blur(20px);
+    color: var(--text); font-family: inherit; font-size: 15px;
+    transition: all 180ms;
+  }
+  .search-bar input:focus {
+    outline: none; border-color: var(--accent);
+    box-shadow: 0 0 0 4px var(--accent-glow);
+  }
+
+  /* ============ Shops Grid ============ */
+  .shops-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+  }
+  .shop-card {
+    background: var(--card); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: 24px; cursor: pointer; transition: all 250ms;
+    position: relative; overflow: hidden;
+  }
+  .shop-card:hover {
+    border-color: var(--border-strong);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 30px -10px rgba(0,0,0,0.3);
+  }
+  .shop-card.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent), 0 12px 30px -10px var(--accent-glow);
+  }
+  
+  .shop-check {
+    position: absolute; top: 20px; right: 20px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--bg); border: 2px solid var(--border-strong);
+    display: grid; place-items: center;
+    transition: all 200ms; z-index: 2;
+  }
+  .shop-check svg { color: #0d0d12; opacity: 0; transition: opacity 150ms; }
+  .shop-card.selected .shop-check {
+    background: var(--accent); border-color: var(--accent);
+  }
+  .shop-card.selected .shop-check svg { opacity: 1; }
+
+  .shop-header {
+    display: flex; align-items: flex-start; gap: 14px;
+    margin-bottom: 16px; padding-right: 40px;
+  }
+  .shop-logo {
+    width: 56px; height: 56px; border-radius: 14px;
+    display: grid; place-items: center; color: white;
+    font-weight: 700; font-size: 20px; flex-shrink: 0;
+    box-shadow: 0 4px 12px -4px rgba(0,0,0,0.3);
+  }
+  .shop-logo.amber { background: linear-gradient(135deg, #f5b544, #e89538); }
+  .shop-logo.blue { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+  .shop-logo.green { background: linear-gradient(135deg, #4ade80, #22c55e); }
+  .shop-logo.purple { background: linear-gradient(135deg, #c084fc, #a855f7); }
+  
+  .shop-info { flex: 1; min-width: 0; }
+  .shop-name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .shop-status {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 999px;
+  }
+  .shop-status.open { background: var(--success-bg); color: var(--success); }
+  .shop-status.closed { background: var(--danger-bg); color: var(--danger); }
+  .shop-status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .shop-status.open::before { animation: pulse-dot 2s infinite; }
+
+  .shop-details {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .detail-row {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13.5px; color: var(--text-muted);
+  }
+  .detail-row svg { color: var(--text-faint); flex-shrink: 0; }
+  
+  .shop-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 16px; border-top: 1px solid var(--border);
+  }
+  .shop-rating {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 600; color: var(--text);
+  }
+  .shop-rating svg { color: var(--accent); }
+  .shop-distance {
+    font-size: 12px; color: var(--text-faint); font-weight: 500;
+  }
+
+  /* ============ Action Bar (Footer) ============ */
+  .action-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(13, 13, 18, 0.9);
+    backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    padding: 16px 0;
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 300ms ease;
+  }
+  [data-bs-theme="light"] .action-bar { background: rgba(255, 255, 255, 0.9); }
+  .action-bar.show { transform: translateY(0); }
+  .action-container {
+    max-width: 1100px; margin: 0 auto; padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .selected-info { display: flex; flex-direction: column; gap: 2px; }
+  .selected-info .label { font-size: 11px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+  .selected-info .value { font-size: 15px; font-weight: 700; color: var(--text); }
+  
+  .btn-primary-c {
+    height: 48px; padding: 0 28px;
+    border-radius: 12px;
+    background: var(--accent); color: #0d0d12;
+    border: none; font-weight: 700; font-size: 15px;
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; transition: all 180ms;
+    box-shadow: 0 8px 22px -8px var(--accent-glow);
+    font-family: inherit;
+  }
+  .btn-primary-c:hover { background: var(--accent-hover); transform: translateY(-1px); }
+  .btn-primary-c:disabled {
+    background: var(--border-strong); color: var(--text-faint);
+    box-shadow: none; cursor: not-allowed; transform: none;
+  }
+
+  /* ============ Toast ============ */
+  .toast-c { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(120%); background: var(--card-solid); border: 1px solid var(--border-strong); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); z-index: 1000; transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1); max-width: 360px; }
+  .toast-c.show { transform: translateX(-50%) translateY(0); }
+  .toast-c .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+  .toast-c .ic.success { background: var(--success-bg); color: var(--success); }
+  .toast-c strong { display: block; font-size: 13.5px; font-weight: 700; }
+  .toast-c span { font-size: 12.5px; color: var(--text-muted); }
+
+  @keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 currentColor; }
+    70% { box-shadow: 0 0 0 5px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  /* ============ Mobile ============ */
+  @media (max-width: 768px) {
+    .main-content { padding: 32px 16px 120px; }
+    .page-title { font-size: 28px; }
+    .shops-grid { grid-template-columns: 1fr; }
+    .steps { flex-wrap: wrap; gap: 4px; }
+    .step-divider { width: 20px; }
+    .action-container { flex-direction: column; align-items: stretch; gap: 12px; }
+    .btn-primary-c { width: 100%; justify-content: center; }
+    .selected-info { text-align: center; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG Icon Library ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-scissor" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M8.12 7.88L20 18M8.12 16.12L20 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-map-pin" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5V12l3 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7l3-7z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 18l6-6-6-6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none"><circle cx="11.5" cy="11.5" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none"><path d="M3.27 12.31c.43 4.6 4.34 8.21 8.95 8.41 3.16.13 5.97-1.18 7.86-3.34.62-.71.27-1.32-.69-1.21-.55.06-1.11.04-1.69-.06-3.58-.6-6.32-3.45-6.65-7.06-.12-1.34.07-2.62.5-3.79.34-.92-.31-1.39-1.22-1.04-4.21 1.61-7.04 5.71-6.69 10.09z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ===== Navbar ===== -->
+<nav class="navbar-public">
+  <div class="nav-container">
+    <a href="#" class="brand-logo">
+      <div class="brand-mark"><svg class="icon" style="width:20px;height:20px"><use href="#i-scissor"/></svg></div>
+      Studio Barber <span>Pro</span>
+    </a>
+    <div class="nav-actions">
+      <a href="#" class="nav-link-public">
+        <svg class="icon icon-sm"><use href="#i-user"/></svg>
+        Meus Agendamentos
+      </a>
+      <button class="theme-toggle-public" id="themeToggle" title="Alternar tema">
+        <svg class="icon"><use href="#i-sun"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== Main Content ===== -->
+<main class="main-content">
+  
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step-item active">
+      <div class="step-num">1</div>
+      <span>Unidade</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item">
+      <div class="step-num">2</div>
+      <span>Serviço</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item">
+      <div class="step-num">3</div>
+      <span>Profissional</span>
+    </div>
+    <div class="step-divider"></div>
+    <div class="step-item">
+      <div class="step-num">4</div>
+      <span>Data/Hora</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header">
+    <h1 class="page-title">Escolha a Unidade</h1>
+    <p class="page-subtitle">Selecione a barbearia onde você deseja ser atendido.</p>
+  </div>
+
+  <!-- Search -->
+  <div class="search-bar">
+    <svg class="icon"><use href="#i-search"/></svg>
+    <input type="text" placeholder="Buscar por nome ou bairro..." />
+  </div>
+
+  <!-- Shops Grid -->
+  <div class="shops-grid" id="shopsGrid">
+    
+    <div class="shop-card" data-name="Studio Barber - Consolação" data-address="Rua Augusta, 1250 - Consolação, São Paulo">
+      <div class="shop-check"><svg class="icon icon-sm"><use href="#i-check"/></svg></div>
+      <div class="shop-header">
+        <div class="shop-logo amber">SB</div>
+        <div class="shop-info">
+          <div class="shop-name">Studio Barber - Consolação</div>
+          <span class="shop-status open">Aberto agora</span>
+        </div>
+      </div>
+      <div class="shop-details">
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-map-pin"/></svg>
+          Rua Augusta, 1250 - Consolação, São Paulo
+        </div>
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+          Fecha às 20:00 · Seg a Sáb
+        </div>
+      </div>
+      <div class="shop-footer">
+        <div class="shop-rating">
+          <svg class="icon-sm"><use href="#i-star"/></svg>
+          4.9 (312 avaliações)
+        </div>
+        <div class="shop-distance">2,5 km de você</div>
+      </div>
+    </div>
+
+    <div class="shop-card" data-name="Studio Barber - Pinheiros" data-address="Rua dos Pinheiros, 880 - Pinheiros, São Paulo">
+      <div class="shop-check"><svg class="icon icon-sm"><use href="#i-check"/></svg></div>
+      <div class="shop-header">
+        <div class="shop-logo blue">SB</div>
+        <div class="shop-info">
+          <div class="shop-name">Studio Barber - Pinheiros</div>
+          <span class="shop-status open">Aberto agora</span>
+        </div>
+      </div>
+      <div class="shop-details">
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-map-pin"/></svg>
+          Rua dos Pinheiros, 880 - Pinheiros, São Paulo
+        </div>
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+          Fecha às 19:00 · Seg a Sex
+        </div>
+      </div>
+      <div class="shop-footer">
+        <div class="shop-rating">
+          <svg class="icon-sm"><use href="#i-star"/></svg>
+          4.8 (198 avaliações)
+        </div>
+        <div class="shop-distance">5,1 km de você</div>
+      </div>
+    </div>
+
+    <div class="shop-card" data-name="Studio Barber - Vila Madalena" data-address="Rua Aspicuelta, 421 - Vila Madalena, São Paulo">
+      <div class="shop-check"><svg class="icon icon-sm"><use href="#i-check"/></svg></div>
+      <div class="shop-header">
+        <div class="shop-logo green">SB</div>
+        <div class="shop-info">
+          <div class="shop-name">Studio Barber - Vila Madalena</div>
+          <span class="shop-status closed">Fechado</span>
+        </div>
+      </div>
+      <div class="shop-details">
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-map-pin"/></svg>
+          Rua Aspicuelta, 421 - Vila Madalena, São Paulo
+        </div>
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+          Abre amanhã às 09:00
+        </div>
+      </div>
+      <div class="shop-footer">
+        <div class="shop-rating">
+          <svg class="icon-sm"><use href="#i-star"/></svg>
+          4.9 (245 avaliações)
+        </div>
+        <div class="shop-distance">4,2 km de você</div>
+      </div>
+    </div>
+
+    <div class="shop-card" data-name="Studio Barber - Itaim Bibi" data-address="Rua Joaquim Floriano, 210 - Itaim Bibi, São Paulo">
+      <div class="shop-check"><svg class="icon icon-sm"><use href="#i-check"/></svg></div>
+      <div class="shop-header">
+        <div class="shop-logo purple">SB</div>
+        <div class="shop-info">
+          <div class="shop-name">Studio Barber - Itaim Bibi</div>
+          <span class="shop-status open">Aberto agora</span>
+        </div>
+      </div>
+      <div class="shop-details">
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-map-pin"/></svg>
+          Rua Joaquim Floriano, 210 - Itaim Bibi, São Paulo
+        </div>
+        <div class="detail-row">
+          <svg class="icon icon-sm"><use href="#i-clock"/></svg>
+          Fecha às 21:00 · Seg a Sáb
+        </div>
+      </div>
+      <div class="shop-footer">
+        <div class="shop-rating">
+          <svg class="icon sm"><use href="#i-star"/></svg>
+          4.7 (156 avaliações)
+        </div>
+        <div class="shop-distance">6,8 km de você</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ===== Action Bar ===== -->
+<div class="action-bar" id="actionBar">
+  <div class="action-container">
+    <div class="selected-info">
+      <span class="label">Unidade Selecionada</span>
+      <span class="value" id="selectedShopName">Nenhuma selecionada</span>
+    </div>
+    <button class="btn-primary-c" id="continueBtn" disabled>
+      Continuar
+      <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-c" id="toast">
+  <div class="ic success"><svg class="icon"><use href="#i-check"/></svg></div>
+  <div>
+    <strong id="toastTitle">Tudo certo</strong>
+    <span id="toastMsg">Ação executada com sucesso.</span>
+  </div>
+</div>
+
+<script>
+  /* ============ Shop Selection ============ */
+  const shops = document.querySelectorAll('.shop-card');
+  const actionBar = document.getElementById('actionBar');
+  const continueBtn = document.getElementById('continueBtn');
+  const selectedShopName = document.getElementById('selectedShopName');
+  let currentSelected = null;
+
+  shops.forEach(shop => {
+    shop.addEventListener('click', () => {
+      // Remove selected from all
+      shops.forEach(s => s.classList.remove('selected'));
+      
+      // Add selected to clicked
+      shop.classList.add('selected');
+      currentSelected = shop;
+
+      // Update action bar
+      selectedShopName.textContent = shop.dataset.name;
+      actionBar.classList.add('show');
+      continueBtn.disabled = false;
+    });
+  });
+
+  /* ============ Continue Action ============ */
+  continueBtn.addEventListener('click', () => {
+    if (!currentSelected) return;
+    showToast('Redirecionando...', `Indo para a seleção de serviços em ${currentSelected.dataset.name}.`);
+  });
+
+  /* ============ Search Filter ============ */
+  document.querySelector('.search-bar input').addEventListener('input', (e) => {
+    const q = e.target.value.toLowerCase();
+    shops.forEach(shop => {
+      const name = shop.dataset.name.toLowerCase();
+      const address = shop.dataset.address.toLowerCase();
+      if (name.includes(q) || address.includes(q)) {
+        shop.style.display = 'block';
+      } else {
+        shop.style.display = 'none';
+      }
+    });
+  });
+
+  /* ============ Theme Toggle ============ */
+  const themeToggle = document.getElementById('themeToggle');
+  const html = document.documentElement;
+  themeToggle.addEventListener('click', () => {
+    const isDark = html.getAttribute('data-bs-theme') === 'dark';
+    html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
+    themeToggle.innerHTML = isDark ? '<svg class="icon"><use href="#i-moon"/></svg>' : '<svg class="icon"><use href="#i-sun"/></svg>';
+  });
+
+  /* ============ Toast ============ */
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(title, msg) {
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastMsg').textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

@@ -61,7 +61,7 @@
 </div>
 <button class="icon-btn" id="themeToggle" title="Alternar tema"><svg class="icon"><use href="#i-sun"/></svg></button>
 <button class="icon-btn"><svg class="icon"><use href="#i-bell"/></svg><span class="dot-notif" id="notif-count"></span></button>
-<a href="{{ route('admin.despesas.create') }}" class="btn-primary-c"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Nova Despesa</a>
+<a href="{{ $tenantSlug ? route('tenant.admin.despesas.create', $tenantSlug) : route('admin.despesas.create') }}" class="btn-primary-c"><svg class="icon icon-sm"><use href="#i-plus"/></svg>Nova Despesa</a>
 @endsection
 
 @section('content')
@@ -157,6 +157,7 @@
                     <th>Valor</th>
                     <th>Vencimento</th>
                     <th>Forma Pagamento</th>
+                    <th>Unidade</th>
                     <th>Status</th>
                     <th class="right">Ações</th>
                 </tr>
@@ -179,6 +180,7 @@
                     <td class="amount-cell out">R$ {{ number_format($d->valor, 2, ',', '.') }}</td>
                     <td>{{ $d->data_vencimento->format('d/m/Y') }}</td>
                     <td>{{ $d->forma_pagamento ?? '-' }}</td>
+                    <td>{{ $d->barbearia?->nome ?? 'Todas as unidades' }}</td>
                     <td>
                         <span class="badge-c {{ $d->pago ? 'green' : 'amber' }}">
                             {{ $d->pago ? 'Pago' : 'Pendente' }}
@@ -186,14 +188,14 @@
                     </td>
                     <td>
                         <div style="display:flex;gap:4px;">
-                            <button onclick="togglePago('{{ route('admin.despesas.toggle-pago', $d) }}')" class="action-btn {{ $d->pago ? 'danger' : 'success' }}" style="font-size:12px;">
+                            <button onclick="togglePago('{{ $tenantSlug ? route('tenant.admin.despesas.toggle-pago', [$tenantSlug, $d]) : route('admin.despesas.toggle-pago', $d) }}')" class="action-btn {{ $d->pago ? 'danger' : 'success' }}" style="font-size:12px;">
                                 <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="{{ $d->pago ? 'M5 12l5 5L20 7' : 'M5 12l5 5L20 7' }}"/></svg>
                                 {{ $d->pago ? 'Reverter' : 'Pagar' }}
                             </button>
-                            <a href="{{ route('admin.despesas.edit', $d) }}" class="action-btn edit" title="Editar">
+                            <a href="{{ $tenantSlug ? route('tenant.admin.despesas.edit', [$tenantSlug, $d]) : route('admin.despesas.edit', $d) }}" class="action-btn edit" title="Editar">
                                 <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7M18.5 1.5a2.12 2.12 0 0 1 3 3L12 14l-4 1 1-4 9.5-9.5z"/></svg>Editar
                             </a>
-                            <button onclick="confirmarExclusao('{{ route('admin.despesas.destroy', $d) }}')" class="action-btn danger" title="Excluir">
+                            <button onclick="confirmarExclusao('{{ $tenantSlug ? route('tenant.admin.despesas.destroy', [$tenantSlug, $d]) : route('admin.despesas.destroy', $d) }}')" class="action-btn danger" title="Excluir">
                                 <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13c0 1 .5 2 2 2h8c1.5 0 2-1 2-2l1-13M9 7V4c0-1 .5-1 1-1h4c.5 0 1 0 1 1v3"/></svg>Excluir
                             </button>
                         </div>
@@ -201,7 +203,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" style="text-align:center; padding:40px; color:var(--text-muted);">
+                    <td colspan="8" style="text-align:center; padding:40px; color:var(--text-muted);">
                         <svg class="icon" style="width:40px;height:40px; margin-bottom:12px; opacity:0.4;"><use href="#i-receipt"/></svg>
                         <div style="font-size:16px; font-weight:600;">Nenhuma despesa encontrada</div>
                         <div style="font-size:13px; margin-top:4px;">Cadastre sua primeira despesa para começar</div>

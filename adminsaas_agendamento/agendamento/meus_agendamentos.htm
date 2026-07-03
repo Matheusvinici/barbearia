@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meus Agendamentos — Studio Barber</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    --bg: #0d0d12;
+    --bg-elevated: #14141b;
+    --card: rgba(20, 20, 27, 0.65);
+    --card-solid: #16161e;
+    --border: rgba(255, 255, 255, 0.06);
+    --border-strong: rgba(255, 255, 255, 0.11);
+    --text: #f4f4f6;
+    --text-muted: #8a8a94;
+    --text-faint: #55555f;
+    --accent: #f5b544;
+    --accent-hover: #ffc554;
+    --accent-soft: #e89538;
+    --accent-glow: rgba(245, 181, 68, 0.16);
+    --success: #4ade80;
+    --success-bg: rgba(74, 222, 128, 0.12);
+    --danger: #f87171;
+    --danger-bg: rgba(248, 113, 113, 0.12);
+    --info: #60a5fa;
+    --info-bg: rgba(96, 165, 250, 0.12);
+    --r-sm: 10px; --r-md: 14px; --r-lg: 18px; --r-xl: 22px;
+  }
+
+  [data-bs-theme="light"] {
+    --bg: #f6f6f8;
+    --bg-elevated: #ffffff;
+    --card: rgba(255, 255, 255, 0.75);
+    --card-solid: #ffffff;
+    --border: rgba(0, 0, 0, 0.07);
+    --border-strong: rgba(0, 0, 0, 0.12);
+    --text: #14141a;
+    --text-muted: #6b6b75;
+    --text-faint: #a0a0aa;
+    --accent: #c47a06;
+    --accent-hover: #d97706;
+    --accent-soft: #b45309;
+    --accent-glow: rgba(217, 119, 6, 0.12);
+    --success: #16a34a;
+    --success-bg: rgba(22, 163, 74, 0.1);
+    --danger: #dc2626;
+    --danger-bg: rgba(220, 38, 38, 0.1);
+    --info: #2563eb;
+    --info-bg: rgba(37, 99, 235, 0.1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.01em;
+    overflow-x: hidden;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: background-color 300ms ease, color 300ms ease;
+  }
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(900px 600px at 85% -10%, var(--accent-glow), transparent 60%),
+      radial-gradient(700px 500px at 0% 110%, rgba(96, 165, 250, 0.05), transparent 60%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .icon { width: 22px; height: 22px; display: inline-flex; flex-shrink: 0; }
+  .icon-sm { width: 18px; height: 18px; }
+  .icon-xs { width: 15px; height: 15px; }
+
+  /* ============ Public Navbar ============ */
+  .navbar-public {
+    position: sticky; top: 0; z-index: 1000;
+    background: rgba(13, 13, 18, 0.8);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+    transition: background-color 300ms ease, border-color 300ms ease;
+  }
+  [data-bs-theme="light"] .navbar-public { background: rgba(255, 255, 255, 0.85); }
+  .nav-container {
+    max-width: 900px; margin: 0 auto;
+    padding: 0 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand-logo {
+    display: flex; align-items: center; gap: 10px;
+    text-decoration: none; color: var(--text);
+    font-weight: 800; font-size: 18px; letter-spacing: -0.02em;
+  }
+  .brand-mark {
+    width: 38px; height: 38px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+    display: grid; place-items: center; color: #0d0d12;
+    box-shadow: 0 8px 22px -8px var(--accent-glow);
+  }
+  .brand-logo span { color: var(--text-muted); font-weight: 500; }
+  
+  .nav-actions { display: flex; align-items: center; gap: 12px; }
+  
+  .nav-link-public {
+    color: var(--text-muted); text-decoration: none;
+    font-size: 14px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color 150ms;
+  }
+  .nav-link-public:hover { color: var(--accent); }
+
+  .theme-toggle-public {
+    width: 38px; height: 38px; border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: var(--card-solid);
+    color: var(--text-muted);
+    display: grid; place-items: center;
+    cursor: pointer; transition: all 180ms;
+  }
+  .theme-toggle-public:hover {
+    color: var(--accent); border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  /* ============ Main Container ============ */
+  .main-content {
+    flex: 1;
+    max-width: 900px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ============ Header ============ */
+  .page-header {
+    display: flex; justify-content: space-between; align-items: flex-end;
+    margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+  }
+  .header-text h1 {
+    font-size: 32px; font-weight: 800;
+    letter-spacing: -0.03em; line-height: 1.1; margin-bottom: 4px;
+  }
+  .header-text p {
+    font-size: 15px; color: var(--text-muted);
+  }
+  .btn-primary-c {
+    height: 44px; padding: 0 20px;
+    border-radius: 12px;
+    background: var(--accent); color: #0d0d12;
+    border: none; font-weight: 700; font-size: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+    cursor: pointer; transition: all 180ms;
+    box-shadow: 0 8px 22px -8px var(--accent-glow);
+    font-family: inherit;
+    text-decoration: none;
+  }
+  .btn-primary-c:hover { background: var(--accent-hover); transform: translateY(-1px); }
+
+  /* ============ Tabs ============ */
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 32px;
+    background: var(--card-solid);
+    border: 1px solid var(--border-strong);
+    padding: 6px; border-radius: 12px;
+    width: fit-content;
+  }
+  .tab-btn {
+    padding: 10px 20px; border-radius: 8px;
+    background: transparent; border: none;
+    color: var(--text-muted); font-weight: 600; font-size: 14px;
+    cursor: pointer; transition: all 180ms; font-family: inherit;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    background: var(--accent-glow); color: var(--accent);
+  }
+  .tab-btn .count {
+    background: var(--border-strong); color: var(--text-muted);
+    font-size: 11px; padding: 2px 7px; border-radius: 5px; font-weight: 700;
+  }
+  .tab-btn.active .count { background: var(--accent); color: #0d0d12; }
+
+  /* ============ Appointment Card ============ */
+  .appt-list { display: flex; flex-direction: column; gap: 16px; }
+  
+  .appt-card {
+    background: var(--card); backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: var(--r-lg);
+    padding: 20px; display: flex; gap: 20px;
+    transition: all 200ms;
+  }
+  .appt-card:hover { border-color: var(--border-strong); }
+
+  .appt-date {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--bg); border: 1px solid var(--border);
+    border-radius: var(--r-md); padding: 12px 16px;
+    min-width: 80px; text-align: center;
+  }
+  .appt-date .weekday {
+    font-size: 11px; font-weight: 700; text-transform: uppercase;
+    color: var(--accent); letter-spacing: 0.05em;
+  }
+  .appt-date .day {
+    font-size: 24px; font-weight: 800; color: var(--text);
+    letter-spacing: -0.03em; line-height: 1.1; margin: 2px 0;
+  }
+  .appt-date .time {
+    font-size: 13px; font-weight: 600; color: var(--text-muted);
+  }
+
+  .appt-info {
+    flex: 1; display: flex; flex-direction: column; gap: 8px;
+    border-right: 1px solid var(--border); padding-right: 20px;
+  }
+  .appt-service { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .appt-meta {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 13.5px; color: var(--text-muted);
+  }
+  .appt-meta svg { color: var(--text-faint); }
+
+  .appt-actions {
+    display: flex; flex-direction: column; gap: 8px; justify-content: center;
+    min-width: 120px;
+  }
+  
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 999px;
+    width: fit-content; margin-bottom: 4px;
+  }
+  .status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .status-upcoming { background: var(--info-bg); color: var(--info); }
+  .status-upcoming::before { animation: pulse-dot 2s infinite; }
+  .status-completed { background: var(--success-bg); color: var(--success); }
+  .status-canceled { background: var(--danger-bg); color: var(--danger); }
+
+  .btn-action {
+    height: 36px; padding: 0 14px;
+    border-radius: 9px; border: 1px solid var(--border-strong);
+    background: transparent; color: var(--text-muted);
+    font-weight: 600; font-size: 13px;
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    cursor: pointer; transition: all 150ms; font-family: inherit;
+    width: 100%;
+  }
+  .btn-action:hover { color: var(--text); border-color: var(--accent); background: var(--accent-glow); }
+  .btn-action.primary { background: var(--accent); color: #0d0d12; border-color: var(--accent); }
+  .btn-action.primary:hover { background: var(--accent-hover); }
+  .btn-action.danger { color: var(--danger); border-color: rgba(248, 113, 113, 0.3); }
+  .btn-action.danger:hover { background: var(--danger-bg); border-color: var(--danger); }
+
+  /* ============ Empty State ============ */
+  .empty-state {
+    text-align: center; padding: 60px 20px;
+    background: var(--card); border: 1px dashed var(--border-strong);
+    border-radius: var(--r-lg);
+  }
+  .empty-icon {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: var(--bg); border: 1px solid var(--border);
+    display: grid; place-items: center; margin: 0 auto 20px;
+    color: var(--text-faint);
+  }
+  .empty-state h3 { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .empty-state p { font-size: 14px; color: var(--text-muted); margin-bottom: 20px; }
+
+  /* ============ Toast ============ */
+  .toast-c { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(120%); background: var(--card-solid); border: 1px solid var(--border-strong); border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.3); z-index: 1000; transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1); max-width: 360px; }
+  .toast-c.show { transform: translateX(-50%) translateY(0); }
+  .toast-c .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; flex-shrink: 0; }
+  .toast-c .ic.success { background: var(--success-bg); color: var(--success); }
+  .toast-c .ic.info { background: var(--info-bg); color: var(--info); }
+  .toast-c .ic.danger { background: var(--danger-bg); color: var(--danger); }
+  .toast-c strong { display: block; font-size: 13.5px; font-weight: 700; }
+  .toast-c span { font-size: 12.5px; color: var(--text-muted); }
+
+  @keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 currentColor; }
+    70% { box-shadow: 0 0 0 5px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+
+  /* ============ Mobile ============ */
+  @media (max-width: 768px) {
+    .main-content { padding: 32px 16px 80px; }
+    .page-header h1 { font-size: 26px; }
+    .tabs { width: 100%; overflow-x: auto; }
+    .appt-card { flex-direction: column; gap: 16px; }
+    .appt-info { border-right: none; border-bottom: 1px solid var(--border); padding-right: 0; padding-bottom: 16px; }
+    .appt-actions { flex-direction: row; width: 100%; }
+    .btn-action { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ===== SVG Icon Library ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-scissor" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M8.12 7.88L20 18M8.12 16.12L20 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none"><path d="M6 12h12M12 6v12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-sun" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+    <symbol id="i-moon" viewBox="0 0 24 24" fill="none"><path d="M3.27 12.31c.43 4.6 4.34 8.21 8.95 8.41 3.16.13 5.97-1.18 7.86-3.34.62-.71.27-1.32-.69-1.21-.55.06-1.11.04-1.69-.06-3.58-.6-6.32-3.45-6.65-7.06-.12-1.34.07-2.62.5-3.79.34-.92-.31-1.39-1.22-1.04-4.21 1.61-7.04 5.71-6.69 10.09z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none"><path d="M8 2v3M16 2v3M3.5 9.09h17M22 19c0 .75-.21 1.46-.58 2.06a3.42 3.42 0 0 1-2.91 1.64H5.49C3.26 22.7 1.7 21.07 1.7 19V8.06c0-2.13 1.56-3.79 3.79-3.79h13.02c2.13 0 3.79 1.66 3.79 3.79V16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-map-pin" viewBox="0 0 24 24" fill="none"><path d="M12 21s-7-5.5-7-11a7 7 0 0 1 14 0c0 5.5-7 11-7 11z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.5" stroke="currentColor" stroke-width="1.6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-5.5 4.5L18 21l-6-4-6 4 1.5-7.5L2 9h7l3-7z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6"/><path d="M12 7.5V12l3 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none"><circle cx="11.5" cy="11.5" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M21 21l-4.35-4.35" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></symbol>
+  </defs>
+</svg>
+
+<!-- ===== Navbar ===== -->
+<nav class="navbar-public">
+  <div class="nav-container">
+    <a href="#" class="brand-logo">
+      <div class="brand-mark"><svg class="icon" style="width:20px;height:20px"><use href="#i-scissor"/></svg></div>
+      Studio Barber <span>Pro</span>
+    </a>
+    <div class="nav-actions">
+      <a href="#" class="nav-link-public">
+        <svg class="icon icon-sm"><use href="#i-user"/></svg>
+        Olá, Pedro
+      </a>
+      <button class="theme-toggle-public" id="themeToggle" title="Alternar tema">
+        <svg class="icon"><use href="#i-sun"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ===== Main Content ===== -->
+<main class="main-content">
+  
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-text">
+      <h1>Meus Agendamentos</h1>
+      <p>Gerencie seus horários e histórico de atendimentos.</p>
+    </div>
+    <a href="#" class="btn-primary-c">
+      <svg class="icon icon-sm"><use href="#i-plus"/></svg>
+      Novo Agendamento
+    </a>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs" id="tabs">
+    <button class="tab-btn active" data-filter="upcoming">
+      Próximos <span class="count">2</span>
+    </button>
+    <button class="tab-btn" data-filter="completed">
+      Concluídos <span class="count">1</span>
+    </button>
+    <button class="tab-btn" data-filter="canceled">
+      Cancelados <span class="count">0</span>
+    </button>
+  </div>
+
+  <!-- Appointment List -->
+  <div class="appt-list" id="apptList">
+    <!-- Appointments injected via JS -->
+  </div>
+
+</main>
+
+<!-- Toast -->
+<div class="toast-c" id="toast">
+  <div class="ic success"><svg class="icon"><use href="#i-check"/></svg></div>
+  <div>
+    <strong id="toastTitle">Tudo certo</strong>
+    <span id="toastMsg">Ação executada com sucesso.</span>
+  </div>
+</div>
+
+<script>
+  /* ============ Mock Data ============ */
+  const appointments = [
+    {
+      id: 'AG-4821',
+      status: 'upcoming',
+      service: 'Corte + Barba',
+      barber: 'Alessandro Silva',
+      shop: 'Studio Barber - Consolação',
+      date: { weekday: 'Qua', day: '10', month: 'Jul', time: '10:00' }
+    },
+    {
+      id: 'AG-4830',
+      status: 'upcoming',
+      service: 'Corte Social',
+      barber: 'Marcos Oliveira',
+      shop: 'Studio Barber - Pinheiros',
+      date: { weekday: 'Seg', day: '15', month: 'Jul', time: '14:00' }
+    },
+    {
+      id: 'AG-4790',
+      status: 'completed',
+      service: 'Corte Degradê',
+      barber: 'Rafael Costa',
+      shop: 'Studio Barber - Consolação',
+      date: { weekday: 'Sex', day: '20', month: 'Jun', time: '11:00' }
+    }
+  ];
+
+  const statusMap = {
+    upcoming: { label: 'Próximo', cls: 'status-upcoming' },
+    completed: { label: 'Concluído', cls: 'status-completed' },
+    canceled: { label: 'Cancelado', cls: 'status-canceled' }
+  };
+
+  const apptList = document.getElementById('apptList');
+
+  function renderAppointments(filter = 'upcoming') {
+    const list = appointments.filter(a => a.status === filter);
+
+    if (list.length === 0) {
+      apptList.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg class="icon" style="width:32px;height:32px"><use href="#i-calendar"/></svg>
+          </div>
+          <h3>Nenhum agendamento encontrado</h3>
+          <p>Você não tem agendamentos nesta categoria ainda.</p>
+        </div>
+      `;
+      return;
+    }
+
+    apptList.innerHTML = list.map(a => {
+      const s = statusMap[a.status];
+      let actionsHtml = '';
+
+      if (a.status === 'upcoming') {
+        actionsHtml = `
+          <span class="status-badge ${s.cls}">${s.label}</span>
+          <button class="btn-action danger" data-action="cancel" data-id="${a.id}">
+            <svg class="icon icon-xs"><use href="#i-x"/></svg> Cancelar
+          </button>
+        `;
+      } else if (a.status === 'completed') {
+        actionsHtml = `
+          <span class="status-badge ${s.cls}">${s.label}</span>
+          <button class="btn-action primary" data-action="rate" data-id="${a.id}">
+            <svg class="icon icon-xs"><use href="#i-star"/></svg> Avaliar
+          </button>
+        `;
+      } else {
+        actionsHtml = `<span class="status-badge ${s.cls}">${s.label}</span>`;
+      }
+
+      return `
+        <div class="appt-card" data-id="${a.id}">
+          <div class="appt-date">
+            <span class="weekday">${a.date.weekday}</span>
+            <span class="day">${a.date.day}</span>
+            <span class="time">${a.date.time}</span>
+          </div>
+          <div class="appt-info">
+            <div class="appt-service">${a.service}</div>
+            <div class="appt-meta">
+              <svg class="icon icon-sm"><use href="#i-user"/></svg> ${a.barber}
+            </div>
+            <div class="appt-meta">
+              <svg class="icon icon-sm"><use href="#i-map-pin"/></svg> ${a.shop}
+            </div>
+          </div>
+          <div class="appt-actions">
+            ${actionsHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    // Wire action buttons
+    apptList.querySelectorAll('.btn-action').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        const appt = appointments.find(a => a.id === id);
+        
+        if (action === 'cancel') {
+          showToast('Agendamento cancelado', `Seu horário para ${appt.service} foi cancelado.`, 'danger');
+          // In a real app, you would update the status and re-render
+          appt.status = 'canceled';
+          setTimeout(() => renderAppointments('upcoming'), 1000);
+        } else if (action === 'rate') {
+          showToast('Avaliação enviada', `Obrigado por avaliar o atendimento de ${appt.barber}!`, 'success');
+        }
+      });
+    });
+  }
+
+  renderAppointments('upcoming');
+
+  /* ============ Tabs ============ */
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAppointments(btn.dataset.filter);
+    });
+  });
+
+  /* ============ Theme Toggle ============ */
+  const themeToggle = document.getElementById('themeToggle');
+  const html = document.documentElement;
+  themeToggle.addEventListener('click', () => {
+    const isDark = html.getAttribute('data-bs-theme') === 'dark';
+    html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
+    themeToggle.innerHTML = isDark ? '<svg class="icon"><use href="#i-moon"/></svg>' : '<svg class="icon"><use href="#i-sun"/></svg>';
+  });
+
+  /* ============ Toast ============ */
+  const toast = document.getElementById('toast');
+  let toastTimer;
+  function showToast(title, msg, type = 'success') {
+    document.getElementById('toastTitle').textContent = title;
+    document.getElementById('toastMsg').textContent = msg;
+    
+    const ic = toast.querySelector('.ic');
+    ic.className = `ic ${type}`;
+    ic.innerHTML = type === 'danger' 
+      ? '<svg class="icon"><use href="#i-x"/></svg>' 
+      : '<svg class="icon"><use href="#i-check"/></svg>';
+
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

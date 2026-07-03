@@ -91,6 +91,45 @@
 
 @livewireScripts
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+@if($__tenant && $__tenant->data_expiracao && Auth::guard('web')->check())
+@php
+    $__dias = $__tenant->dias_para_expiracao;
+@endphp
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (sessionStorage.getItem('exp_warn_shown')) return;
+    var dias = {{ $__dias ?? 'null' }};
+    if (dias === null) return;
+    sessionStorage.setItem('exp_warn_shown', '1');
+    if (dias < 0) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Assinatura vencida',
+            text: 'A assinatura da sua barbearia venceu há ' + Math.abs(dias) + ' dia' + (Math.abs(dias) !== 1 ? 's' : '') + '. Entre em contato com o administrador para regularizar.',
+            confirmButtonText: 'Entendi',
+            confirmButtonColor: '#ef4444',
+            allowOutsideClick: false,
+        });
+    } else if (dias === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Último dia de assinatura',
+            text: 'Sua assinatura vence hoje. Renove para não perder o acesso.',
+            confirmButtonText: 'OK, entendi',
+            confirmButtonColor: '#f59e0b',
+        });
+    } else if (dias <= 5) {
+        Swal.fire({
+            icon: 'info',
+            title: 'Assinatura próxima do vencimento',
+            text: 'Sua assinatura vence em ' + dias + ' dia' + (dias !== 1 ? 's' : '') + '. Renove para não perder o acesso.',
+            confirmButtonText: 'OK, entendi',
+            confirmButtonColor: '#3b82f6',
+        });
+    }
+});
+</script>
+@endif
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 

@@ -5,7 +5,7 @@
 @section('breadcrumb')
 <svg class="icon icon-sm"><use href="#i-home"/></svg>
 <span class="sep">/</span>
-<a href="{{ route('admin.despesas.index') }}" style="color:inherit; text-decoration:none;">Financeiro</a>
+<a href="{{ $backRoute }}" style="color:inherit; text-decoration:none;">Financeiro</a>
 <span class="sep">/</span>
 <span class="current">{{ $edit ? 'Editar' : 'Nova' }} Despesa</span>
 @endsection
@@ -19,7 +19,7 @@
 <button class="mobile-menu-btn" id="mobileMenuBtn"><svg class="icon"><use href="#i-menu"/></svg></button>
 <button class="icon-btn" id="themeToggle" title="Alternar tema"><svg class="icon"><use href="#i-sun"/></svg></button>
 <button class="icon-btn"><svg class="icon"><use href="#i-bell"/></svg><span class="dot-notif"></span></button>
-<a href="{{ route('admin.despesas.index') }}" class="btn-ghost-c"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Voltar</a>
+<a href="{{ $backRoute }}" class="btn-ghost-c"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Voltar</a>
 @endsection
 
 @section('content')
@@ -36,7 +36,7 @@
                 </div>
             </div>
             <div class="panel-body">
-                <form action="{{ $edit ? route('admin.despesas.update', $despesa) : route('admin.despesas.store') }}" method="POST">
+                <form action="{{ $edit ? $updateRoute : $storeRoute }}" method="POST">
                     @csrf
                     @if($edit) @method('PUT') @endif
 
@@ -96,6 +96,16 @@
                             </select>
                         </div>
 
+                        <div class="form-group">
+                            <label class="form-label">Unidade</label>
+                            <select name="barbearia_id" class="form-select">
+                                <option value="">Todas as unidades</option>
+                                @foreach($barbearias as $b)
+                                <option value="{{ $b->id }}" {{ $edit && $despesa->barbearia_id == $b->id ? 'selected' : '' }}>{{ $b->nome }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+
                         <div class="form-group" style="grid-column: 1 / -1;">
                             <label class="form-label">Observações <span class="mut">(opcional)</span></label>
                             <textarea name="observacoes" class="form-textarea" placeholder="Adicione uma observação interna...">{{ old('observacoes', $edit ? $despesa->observacoes : '') }}</textarea>
@@ -104,7 +114,7 @@
 
                     <div style="display:flex; gap:10px; margin-top:24px; padding-top:20px; border-top:1px solid var(--border);">
                         <button type="submit" class="btn-primary-c"><svg class="icon icon-sm"><use href="#i-check"/></svg>{{ $edit ? 'Atualizar' : 'Salvar' }}</button>
-                        <a href="{{ route('admin.despesas.index') }}" class="btn-ghost-c">Cancelar</a>
+                        <a href="{{ $backRoute }}" class="btn-ghost-c">Cancelar</a>
                     </div>
                 </form>
             </div>

@@ -21,6 +21,7 @@ use App\Http\Controllers\Admin\BarbeariaController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AvaliacaoController;
+use App\Http\Controllers\Admin\SecretariaController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -171,6 +172,16 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             Route::put('/{clientesPlano}', [ClientePlanoController::class, 'update'])->name('update');
             Route::delete('/{clientesPlano}', [ClientePlanoController::class, 'destroy'])->name('destroy');
         });
+
+        Route::resource('secretarias', SecretariaController::class)->names([
+            'index' => 'secretarias.index',
+            'create' => 'secretarias.create',
+            'store' => 'secretarias.store',
+            'edit' => 'secretarias.edit',
+            'update' => 'secretarias.update',
+            'destroy' => 'secretarias.destroy',
+        ]);
+        Route::patch('/secretarias/{secretaria}/toggle-ativo', [SecretariaController::class, 'toggleAtivo'])->name('secretarias.toggle-ativo');
     });
 
     Route::get('/notificacoes', [NotificationController::class, 'index'])->name('notificacoes.index');
@@ -322,6 +333,16 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             Route::put('/{clientesPlano}', [ClientePlanoController::class, 'update'])->name('update');
             Route::delete('/{clientesPlano}', [ClientePlanoController::class, 'destroy'])->name('destroy');
         });
+
+        Route::resource('secretarias', SecretariaController::class)->names([
+            'index' => 'secretarias.index',
+            'create' => 'secretarias.create',
+            'store' => 'secretarias.store',
+            'edit' => 'secretarias.edit',
+            'update' => 'secretarias.update',
+            'destroy' => 'secretarias.destroy',
+        ]);
+        Route::patch('/secretarias/{secretaria}/toggle-ativo', [SecretariaController::class, 'toggleAtivo'])->name('secretarias.toggle-ativo');
 
         // Notifications
         Route::get('/notificacoes', [NotificationController::class, 'index'])->name('notificacoes.index');

@@ -20,10 +20,17 @@ class DespesaController extends Controller
         $query = Despesa::with('barbearia')->orderBy('data_vencimento', 'desc');
         $query = $this->applyTenantScope($query);
 
+        if (!$this->isTenantContext()) {
+            $query = $this->applyOwnedScope($query);
+        }
+
         $despesas = $query->paginate(15);
 
         $allQuery = Despesa::query();
         $allQuery = $this->applyTenantScope($allQuery);
+        if (!$this->isTenantContext()) {
+            $allQuery = $this->applyOwnedScope($allQuery);
+        }
 
         $totalMes = (clone $allQuery)->whereMonth('data_vencimento', now()->month)
             ->whereYear('data_vencimento', now()->year)->sum('valor');
@@ -52,16 +59,32 @@ class DespesaController extends Controller
             ];
         }
 
+        $tenantSlug = $this->isTenantContext() ? $this->getTenant()->slug : null;
+
         return view('admin.despesas.index', compact(
             'despesas', 'totalMes', 'qtdMes', 'totalPago', 'qtdPago',
-            'totalPendente', 'qtdPendente', 'totalVencido', 'qtdVencido', 'chartData'
+            'totalPendente', 'qtdPendente', 'totalVencido', 'qtdVencido',
+            'chartData', 'tenantSlug'
         ));
     }
 
     public function create()
     {
         $barbearias = $this->getTenantBarbearias();
-        return view('admin.despesas.form', ['edit' => false, 'barbearias' => $barbearias]);
+        $tenantSlug = $this->isTenantContext() ? $this->getTenant()->slug : null;
+        $storeRoute = $tenantSlug
+            ? route('tenant.admin.despesas.store', $tenantSlug)
+            : route('admin.despesas.store');
+        $backRoute = $tenantSlug
+            ? route('tenant.admin.despesas.index', $tenantSlug)
+            : route('admin.despesas.index');
+        return view('admin.despesas.form', [
+            'edit' => false,
+            'barbearias' => $barbearias,
+            'storeRoute' => $storeRoute,
+            'backRoute' => $backRoute,
+            'tenantSlug' => $tenantSlug,
+        ]);
     }
 
     public function store(Request $request)
@@ -100,7 +123,21 @@ class DespesaController extends Controller
     public function edit(Despesa $despesa)
     {
         $barbearias = $this->getTenantBarbearias();
-        return view('admin.despesas.form', ['edit' => true, 'despesa' => $despesa, 'barbearias' => $barbearias]);
+        $tenantSlug = $this->isTenantContext() ? $this->getTenant()->slug : null;
+        $updateRoute = $tenantSlug
+            ? route('tenant.admin.despesas.update', [$tenantSlug, $despesa])
+            : route('admin.despesas.update', $despesa);
+        $backRoute = $tenantSlug
+            ? route('tenant.admin.despesas.index', $tenantSlug)
+            : route('admin.despesas.index');
+        return view('admin.despesas.form', [
+            'edit' => true,
+            'despesa' => $despesa,
+            'barbearias' => $barbearias,
+            'updateRoute' => $updateRoute,
+            'backRoute' => $backRoute,
+            'tenantSlug' => $tenantSlug,
+        ]);
     }
 
     public function update(Request $request, Despesa $despesa)
@@ -155,18 +192,24 @@ class DespesaController extends Controller
     {
         $data = $despesa->data_pagamento ? \Carbon\Carbon::parse($despesa->data_pagamento) : now();
 
+        $barbeariaId = $despesa->barbearia_id;
+
+        if (!$barbeariaId && $this->isTenantContext()) {
+            $barbeariaId = $this->tenantId();
+        }
+
         $caixaQuery = Caixa::whereDate('data', $data->format('Y-m-d'));
-        if ($despesa->barbearia_id) {
-            $caixaQuery->where('barbearia_id', $despesa->barbearia_id);
-        } elseif ($this->isTenantContext()) {
-            $caixaQuery->where('barbearia_id', $this->tenantId());
+        if ($barbeariaId) {
+            $caixaQuery->where('barbearia_id', $barbeariaId);
+        } else {
+            $caixaQuery->whereNull('barbearia_id');
         }
 
         $caixa = $caixaQuery->first();
 
         if (!$caixa) {
             $caixa = Caixa::create([
-                'barbearia_id' => $despesa->barbearia_id ?? $this->tenantId(),
+                'barbearia_id' => $barbeariaId,
                 'data' => $data->format('Y-m-d'),
                 'saldo_inicial' => 0,
                 'user_id_abertura' => Auth::guard('web')->id(),
@@ -189,6 +232,26 @@ class DespesaController extends Controller
                 'user_id' => Auth::guard('web')->id(),
             ]);
         }
+    }
+
+    private function applyOwnedScope($query)
+    {
+        $user = Auth::guard('web')->user();
+        if ($user && $user->isSuperAdmin()) {
+            return $query;
+        }
+
+        $ids = $user?->ownedBarbearias()->get()
+            ->flatMap(fn($b) => $b->tenantTreeIds())
+            ->unique()->values()->toArray() ?? [];
+
+        if (!empty($ids)) {
+            return $query->where(function ($q) use ($ids) {
+                $q->whereIn('barbearia_id', $ids)->orWhereNull('barbearia_id');
+            });
+        }
+
+        return $query;
     }
 
     private function getTenantBarbearias()

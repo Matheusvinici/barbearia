@@ -11,6 +11,11 @@ class LandingController extends Controller
     {
         $barbearias = Barbearia::whereNull('parent_id')
             ->whereNotNull('slug')
+            ->where('ativo', true)
+            ->where(function ($q) {
+                $q->whereNull('data_expiracao')
+                  ->orWhere('data_expiracao', '>=', now()->startOfDay());
+            })
             ->orderBy('nome')
             ->get();
 
@@ -21,6 +26,11 @@ class LandingController extends Controller
     {
         $barbearias = Barbearia::whereNull('parent_id')
             ->whereNotNull('slug')
+            ->where('ativo', true)
+            ->where(function ($q) {
+                $q->whereNull('data_expiracao')
+                  ->orWhere('data_expiracao', '>=', now()->startOfDay());
+            })
             ->orderBy('nome')
             ->get();
 

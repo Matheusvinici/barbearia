@@ -47,4 +47,15 @@ class User extends Authenticatable
     {
         return $this->hasAnyRole(['Admin', 'super-admin', 'admin']);
     }
+
+    public function barbearias()
+    {
+        return $this->belongsToMany(Barbearia::class, 'barbearia_user')
+            ->withPivot('ativo');
+    }
+
+    public function isSecretaria(): bool
+    {
+        return $this->hasRole('secretaria');
+    }
 }

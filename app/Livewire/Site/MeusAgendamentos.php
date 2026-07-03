@@ -78,7 +78,7 @@ class MeusAgendamentos extends Component
             'avaliacao_comentario' => 'nullable|string|max:500',
         ]);
 
-        $agendamento = Agendamento::find($this->avaliacao_agendamento_id);
+        $agendamento = Agendamento::with('barbeiro')->find($this->avaliacao_agendamento_id);
         if (!$agendamento || $agendamento->cliente_id !== $this->cliente?->id) {
             session()->flash('error', 'Agendamento inválido.');
             return;
@@ -92,8 +92,16 @@ class MeusAgendamentos extends Component
             return;
         }
 
+        $barbeariaId = $agendamento->barbearia_id
+            ?? $agendamento->barbeiro?->barbearia_id;
+
+        if (!$barbeariaId) {
+            session()->flash('error', 'Erro ao identificar a barbearia. Tente novamente.');
+            return;
+        }
+
         Avaliacao::create([
-            'barbearia_id' => $agendamento->barbearia_id,
+            'barbearia_id' => $barbeariaId,
             'cliente_id' => $this->cliente->id,
             'agendamento_id' => $agendamento->id,
             'cliente_nome' => $this->cliente->nome,

@@ -67,8 +67,10 @@
                 <tr>
                     <th>Nome</th>
                     <th>Tipo</th>
+                    <th>Status</th>
+                    <th>Expira em</th>
                     <th>Matriz</th>
-                    <th>Filial</th>
+                    <th>Filiais</th>
                     <th>Proprietário</th>
                     <th>Bairro</th>
                     <th>Cidade</th>
@@ -77,6 +79,7 @@
             </thead>
             <tbody>
                 @forelse($barbearias as $b)
+                @php $dias = $b->dias_para_expiracao; @endphp
                 <tr>
                     <td>
                         <div class="avatar-row">
@@ -92,6 +95,29 @@
                         <span class="badge-c badge-info">Matriz</span>
                         @else
                         <span class="badge-c badge-success">Filial</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($b->isAtiva())
+                        <span class="badge-c green"><svg class="icon icon-xs"><use href="#i-check"/></svg>Ativa</span>
+                        @else
+                        <span class="badge-c red"><svg class="icon icon-xs"><use href="#i-alert"/></svg>Inativa</span>
+                        @endif
+                    </td>
+                    <td>
+                        @if($b->data_expiracao)
+                            @if($dias !== null && $dias >= 0)
+                            <span class="badge-c {{ $dias <= 7 ? 'red' : ($dias <= 30 ? 'amber' : 'blue') }}">
+                                {{ $dias }} dia(s)
+                            </span>
+                            <div style="font-size:10.5px;color:var(--text-faint);margin-top:2px;">
+                                {{ $b->data_expiracao->format('d/m/Y') }}
+                            </div>
+                            @elseif($dias !== null && $dias < 0)
+                            <span class="badge-c red">Vencida</span>
+                            @endif
+                        @else
+                        <span class="badge-c gray">—</span>
                         @endif
                     </td>
                     <td>{{ $b->parent?->nome ?? '-' }}</td>
@@ -110,7 +136,7 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">
+                    <td colspan="10" style="text-align:center;padding:40px;color:var(--text-muted);">
                         <svg class="icon" style="width:40px;height:40px;margin-bottom:12px;opacity:0.3;" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M9.02 2.84L4.04 6.74c-.68.54-1.17 1.71-1.17 2.58v7.04c0 1.83 1.49 3.34 3.32 3.34h11.62c1.83 0 3.32-1.49 3.32-3.33V9.4c0-.93-.53-2.07-1.23-2.6l-5.71-4.04c-1.01-.72-2.55-.69-3.54.06z"/><path d="M12 17.5v-3"/></svg>
                         <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Nenhuma barbearia encontrada</div>
                         <div style="font-size:13px;">Clique em "Nova Barbearia" para começar.</div>

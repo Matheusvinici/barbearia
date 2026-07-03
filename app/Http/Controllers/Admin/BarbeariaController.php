@@ -150,6 +150,8 @@ class BarbeariaController extends Controller
             'owner_id' => 'nullable|exists:users,id',
             'owner_email' => 'nullable|email',
             'owner_password' => 'nullable|min:6',
+            'ativo' => 'boolean',
+            'data_expiracao' => 'nullable|date',
         ]);
 
         if ($request->filled('owner_id')) {
@@ -184,11 +186,13 @@ class BarbeariaController extends Controller
             $data['background_image'] = $request->file('background_image')->store('barbearias/backgrounds', 'public');
         }
 
+        if (!Auth::guard('web')->user()->isSuperAdmin()) {
+            unset($data['ativo'], $data['data_expiracao']);
+        }
+
         $barbearia->update($data);
 
-        $route = $this->isTenantContext()
-            ? route('tenant.admin.barbearias.index', $this->getTenant()->slug)
-            : route('admin.barbearias.index');
+        $route = route('admin.barbearias.index');
 
         return redirect()->to($route)->with('success', 'Barbearia atualizada com sucesso!');
     }

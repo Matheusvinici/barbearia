@@ -31,13 +31,17 @@ class TenantMiddleware
             abort(404);
         }
 
+        if (!$barbearia->isAtiva()) {
+            abort(404);
+        }
+
         $request->merge(['tenant' => $barbearia]);
 
         View::share('tenant', $barbearia);
 
         if (Auth::guard('web')->check()) {
             $user = Auth::guard('web')->user();
-            if (!$user->isSuperAdmin() && $barbearia->owner_id !== $user->id && !$user->hasAnyRole(['proprietario', 'admin'])) {
+            if (!$user->isSuperAdmin() && $barbearia->owner_id !== $user->id && !$user->hasAnyRole(['proprietario', 'admin', 'secretaria'])) {
                 abort(403, 'Você não tem acesso a esta barbearia.');
             }
         } elseif (Auth::guard('barbeiro')->check()) {
