@@ -75,6 +75,7 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             'update' => 'servicos.update',
             'destroy' => 'servicos.destroy',
         ]);
+        Route::post('/servicos/{servico}/replicar', [ServicoController::class, 'replicar'])->name('servicos.replicar');
 
         Route::resource('clientes', ClienteController::class)->names([
             'index' => 'clientes.index',
@@ -243,6 +244,7 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             'update' => 'servicos.update',
             'destroy' => 'servicos.destroy',
         ]);
+        Route::post('/servicos/{servico}/replicar', [ServicoController::class, 'replicar'])->name('servicos.replicar');
 
         Route::resource('clientes', ClienteController::class)->names([
             'index' => 'clientes.index',

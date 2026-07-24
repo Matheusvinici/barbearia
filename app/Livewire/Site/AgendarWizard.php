@@ -74,14 +74,31 @@ class AgendarWizard extends Component
                 ->latest()
                 ->take(10)
                 ->get();
+            $this->servicos = Servico::where('ativo', true)
+                ->whereIn('barbearia_id', $ids)
+                ->get();
         } else {
             $this->barbearias = Barbearia::whereHas('barbeiros', function ($q) {
                 $q->where('ativo', true);
             })->orWhereDoesntHave('barbeiros')->orderBy('nome')->get();
             $this->avaliacoes = collect();
+            $this->servicos = Servico::where('ativo', true)->get();
         }
+    }
 
-        $this->servicos = Servico::where('ativo', true)->get();
+    private function carregarServicos(int $barbeariaId)
+    {
+        $barbearia = Barbearia::find($barbeariaId);
+        if ($barbearia) {
+            $ids = collect([$barbearia->id])->merge($barbearia->filiais->pluck('id'));
+            $this->servicos = Servico::where('ativo', true)
+                ->whereIn('barbearia_id', $ids)
+                ->get();
+        } else {
+            $this->servicos = Servico::where('ativo', true)
+                ->where('barbearia_id', $barbeariaId)
+                ->get();
+        }
     }
 
     public function iniciarAgendamento()
@@ -99,6 +116,8 @@ class AgendarWizard extends Component
         $this->hora = null;
         $this->horarios = null;
         $this->dias = null;
+
+        $this->carregarServicos($id);
 
         $this->barbeiros = Barbeiro::where('ativo', true)
             ->where('barbearia_id', $id)
@@ -120,6 +139,11 @@ class AgendarWizard extends Component
         $this->data = null;
         $this->hora = null;
         $this->horarios = null;
+
+        $this->servicos = Servico::where('ativo', true)
+            ->whereHas('barbeiros', fn($q) => $q->where('barbeiro_id', $id))
+            ->get();
+
         $this->carregarDias();
         $this->step = 4;
     }

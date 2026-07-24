@@ -43,4 +43,10 @@ class Servico extends Model
     {
         return $this->belongsTo(Barbearia::class);
     }
+
+    public function barbeiros()
+    {
+        return $this->belongsToMany(Barbeiro::class, 'barbeiro_servico')
+            ->withTimestamps();
+    }
 }

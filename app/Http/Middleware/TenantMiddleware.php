@@ -27,10 +27,6 @@ class TenantMiddleware
             abort(404);
         }
 
-        if (!$barbearia->isMatriz()) {
-            abort(404);
-        }
-
         if (!$barbearia->isAtiva()) {
             abort(404);
         }

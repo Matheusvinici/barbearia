@@ -166,7 +166,7 @@
                     <th>Preço</th>
                     <th>Comissão Barbeiro</th>
                     <th>Status</th>
-                    <th style="width:100px;">Ações</th>
+                    <th style="width:140px;">Ações</th>
                 </tr>
             </thead>
             <tbody>
@@ -202,13 +202,21 @@
                     <td>
                         <div class="svc-actions" style="display:flex;gap:4px;">
                             <a href="{{ route('admin.servicos.edit', $s) }}" class="action-btn edit" title="Editar"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7M18.5 1.5a2.12 2.12 0 0 1 3 3L12 14l-4 1 1-4 9.5-9.5z"/></svg>Editar</a>
+                            @if(request()->route('barbearia')?->isMatriz())
+                            <form action="{{ route('tenant.admin.servicos.replicar', [request()->route('barbearia')->slug, $s]) }}" method="POST" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="action-btn edit" title="Replicar para filiais" onclick="return confirm('Replicar este serviço para todas as filiais?')">
+                                    <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>Replicar
+                                </button>
+                            </form>
+                            @endif
                             <button class="action-btn danger" title="Excluir" onclick="confirmarExclusao('{{ route('admin.servicos.destroy', $s) }}')"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13c0 1 .5 2 2 2h8c1.5 0 2-1 2-2l1-13M9 7V4c0-1 .5-1 1-1h4c.5 0 1 0 1 1v3"/></svg>Excluir</button>
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted);">
+                    <td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">
                         <svg class="icon" style="width:40px;height:40px;margin-bottom:12px;opacity:0.3;" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.12 7.88L20 18M8.12 16.12L20 6"/></svg>
                         <div style="font-size:15px;font-weight:600;margin-bottom:4px;">Nenhum serviço encontrado</div>
                         <div style="font-size:13px;">Clique em "Novo Serviço" para começar.</div>

@@ -71,4 +71,9 @@ class Barbeiro extends Authenticatable
     {
         return $this->belongsToMany(Barbearia::class, 'barbeiro_barbearia');
     }
+
+    public function servicos()
+    {
+        return $this->belongsToMany(Servico::class, 'barbeiro_servico');
+    }
 }

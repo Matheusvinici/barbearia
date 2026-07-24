@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Bot;
 
 use App\Http\Controllers\Controller;
+use App\Models\Barbearia;
 use App\Models\Barbeiro;
 use App\Models\Servico;
 use App\Models\Cliente;
@@ -23,9 +24,19 @@ class WebhookController extends Controller
         return response()->json($barbeiros);
     }
 
-    public function servicos()
+    public function servicos(Request $request)
     {
-        $servicos = Servico::where('ativo', true)->get(['id', 'nome', 'preco', 'duracao_minutos']);
+        $query = Servico::where('ativo', true);
+        if ($request->has('barbearia_id')) {
+            $barbearia = Barbearia::find($request->barbearia_id);
+            if ($barbearia) {
+                $ids = collect([$barbearia->id])->merge($barbearia->filiais->pluck('id'));
+                $query->whereIn('barbearia_id', $ids);
+            } else {
+                $query->where('barbearia_id', $request->barbearia_id);
+            }
+        }
+        $servicos = $query->get(['id', 'nome', 'preco', 'duracao_minutos']);
         return response()->json($servicos);
     }
 
