@@ -107,8 +107,13 @@
         <div style="display:flex;flex-direction:column;gap:8px;">
             @foreach($servicos as $s)
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
-                <div><strong style="font-size:14px;">{{ $s->nome }}</strong>@if($s->descricao)<br><small style="font-size:12px;color:var(--text-muted);">{{ $s->descricao }}</small>@endif</div>
-                <div style="font-size:15px;font-weight:700;color:var(--accent);">R$ {{ number_format($s->preco, 2, ',', '.') }}</div>
+                <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                    @if($s->foto)
+                    <img src="{{ $s->foto_url }}" alt="{{ $s->nome }}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border-strong);">
+                    @endif
+                    <div style="min-width:0;"><strong style="font-size:14px;">{{ $s->nome }}</strong>@if($s->descricao)<br><small style="font-size:12px;color:var(--text-muted);">{{ $s->descricao }}</small>@endif</div>
+                </div>
+                <div style="font-size:15px;font-weight:700;color:var(--accent);white-space:nowrap;">R$ {{ number_format($s->preco, 2, ',', '.') }}</div>
             </div>
             @endforeach
         </div>
@@ -328,24 +333,26 @@
             Voltar
         </button>
     </div>
-    <div class="grid-2">
+    <div class="grid-2 grid-servicos">
         @foreach($servicos as $s)
-        <div class="card-base card-hover {{ $servico_id == $s->id ? 'card-selected' : '' }}" wire:click="selectServico({{ $s->id }})" style="padding:20px;">
+        <div class="card-base card-hover card-servico {{ $servico_id == $s->id ? 'card-selected' : '' }}" wire:click="selectServico({{ $s->id }})">
             <div class="check-circle"><svg class="icon icon-sm"><use href="#i-check"/></svg></div>
-            <div style="display:flex;align-items:flex-start;gap:14px;">
-                <div style="width:48px;height:48px;border-radius:12px;background:var(--accent-glow);color:var(--accent);display:grid;place-items:center;flex-shrink:0;">
-                    <svg class="icon"><use href="#i-scissors-2"/></svg>
-                </div>
-                <div style="flex:1;min-width:0;">
-                    <div style="font-size:16px;font-weight:700;margin-bottom:4px;">{{ $s->nome }}</div>
-                    @if($s->descricao)<div style="font-size:13px;color:var(--text-muted);">{{ $s->descricao }}</div>@endif
-                </div>
+            <div class="servico-thumb">
+                @if($s->foto)
+                <img src="{{ $s->foto_url }}" alt="{{ $s->nome }}">
+                @else
+                <div class="servico-thumb-ph"><svg class="icon"><use href="#i-scissors-2"/></svg></div>
+                @endif
             </div>
-            <div style="display:flex;align-items:center;justify-content:space-between;padding-top:14px;margin-top:14px;border-top:1px solid var(--border);">
-                <div style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);">
-                    <svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ $s->duracao_minutos }}min
+            <div class="servico-body">
+                <div class="servico-nome">{{ $s->nome }}</div>
+                @if($s->descricao)<div class="servico-desc">{{ $s->descricao }}</div>@endif
+                <div class="servico-footer">
+                    <div class="servico-duracao">
+                        <svg class="icon icon-sm"><use href="#i-clock"/></svg> {{ $s->duracao_minutos }}min
+                    </div>
+                    <div class="servico-preco">R$ {{ number_format($s->preco, 2, ',', '.') }}</div>
                 </div>
-                <div style="font-size:18px;font-weight:800;color:var(--text);">R$ {{ number_format($s->preco, 2, ',', '.') }}</div>
             </div>
         </div>
         @endforeach
@@ -471,6 +478,82 @@
     @endif
     @endif
 <style>
+.card-servico {
+    background: var(--card-solid);
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--border-strong);
+    display: flex;
+    flex-direction: column;
+}
+.card-servico.card-selected {
+    border-color: var(--accent) !important;
+    box-shadow: 0 0 0 1px var(--accent), 0 14px 40px -12px var(--accent-glow) !important;
+}
+.servico-thumb {
+    height: 180px;
+    background: var(--bg-elevated);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+.servico-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 250ms ease;
+}
+.card-servico:hover .servico-thumb img {
+    transform: scale(1.04);
+}
+.servico-thumb-ph {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    background: linear-gradient(135deg, var(--accent-glow), transparent 70%);
+}
+.servico-body {
+    padding: 18px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+.servico-nome {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+}
+.servico-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.45;
+}
+.servico-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    margin-top: auto;
+    border-top: 1px solid var(--border);
+    gap: 10px;
+}
+.servico-duracao {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+.servico-preco {
+    font-size: 19px;
+    font-weight: 800;
+    color: var(--accent);
+    white-space: nowrap;
+}
 @keyframes pop-in {
     0% { transform: scale(0); opacity: 0; }
     70% { transform: scale(1.1); }
