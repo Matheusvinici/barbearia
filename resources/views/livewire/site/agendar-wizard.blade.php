@@ -109,7 +109,7 @@
             <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
                 <div style="display:flex;align-items:center;gap:12px;min-width:0;">
                     @if($s->foto)
-                    <img src="{{ $s->foto_url }}" alt="{{ $s->nome }}" style="width:44px;height:44px;border-radius:10px;object-fit:cover;flex-shrink:0;border:1px solid var(--border-strong);">
+                    <img src="{{ $s->foto_url }}" alt="{{ $s->nome }}" style="width:80px;height:80px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid var(--border-strong);">
                     @endif
                     <div style="min-width:0;"><strong style="font-size:14px;">{{ $s->nome }}</strong>@if($s->descricao)<br><small style="font-size:12px;color:var(--text-muted);">{{ $s->descricao }}</small>@endif</div>
                 </div>
@@ -491,7 +491,7 @@
     box-shadow: 0 0 0 1px var(--accent), 0 14px 40px -12px var(--accent-glow) !important;
 }
 .servico-thumb {
-    height: 180px;
+    height: 220px;
     background: var(--bg-elevated);
     border-bottom: 1px solid var(--border);
     position: relative;
