@@ -38,4 +38,9 @@ class CaixaMovimentacao extends Model
     {
         return $this->belongsTo(Barbearia::class);
     }
+
+    public function origem()
+    {
+        return $this->morphTo();
+    }
 }
