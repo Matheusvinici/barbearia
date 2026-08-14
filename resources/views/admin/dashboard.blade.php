@@ -67,7 +67,7 @@
         <symbol id="i-scissors-2" viewBox="0 0 24 24" fill="none"><circle cx="6" cy="6" r="3" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.6"/><path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
         <symbol id="i-activity" viewBox="0 0 24 24" fill="none"><path d="M2 12h4l3-9 6 18 3-9h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
         <symbol id="i-coffee" viewBox="0 0 24 24" fill="none"><path d="M5 8h13v5c0 3.31-2.91 6-6.5 6S5 16.31 5 13V8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 9h2.5a2.5 2.5 0 0 1 0 5H18M8 2v2M11 2v2M14 2v2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
-        <symbol id="i-cake" viewBox="0 0 24 24" fill="none"><path d="M3 18.5c0-1.5 1-2.5 2.5-2.5H18c1.5 0 3 1 3 2.5V21H3v-2.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 16c1.5 0 1.5-1.5 3-1.5s1.5 1.5 3 1.5 1.5-1.5 3-1.5 1.5 1.5 3 1.5M12 8V4M12 4l-1.5-1.5M12 4l1.5-1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+        <symbol id="i-cake" viewBox="0 0 24 24" fill="none"><path d="M3 18.5c0-1.5 1-2.5 2.5-2.5H18c1.5 0 3 1 3 2.5V21H3v-2.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M5 16c1.5 0 1.5-1.5 3-1.5s1.5 1.5 3 1.5 1.5-1.5 3-1.5 1.5 1.5 3 1.5 1.5-1.5 3-1.5 1.5 1.5 3 1.5M12 8V4M12 4l-1.5-1.5M12 4l1.5-1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
         <symbol id="i-info" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
         <symbol id="i-dollar" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6"/><path d="M12 6v12M8 9h5.5a2.5 2.5 0 0 1 0 5H8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
         <linearGradient id="bar-gradient" x1="0" y1="0" x2="0" y2="1">
@@ -81,63 +81,48 @@
     </defs>
 </svg>
 
-<section class="stats-grid">
-    <div class="stat-card fade-in d1">
-        <div class="stat-top">
-            <div class="stat-icon amber"><svg class="icon"><use href="#i-calendar-tick"/></svg></div>
-            <span class="stat-delta up"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>{{ $agendamentosHoje->count() > 0 ? round(($confirmados + $realizados) / max($agendamentosHoje->count(), 1) * 100) : 0 }}%</span>
-        </div>
-        <div class="stat-label">Agendamentos Hoje</div>
-        <div class="stat-value">{{ $agendamentosHoje->count() }}</div>
-        <div class="stat-sub">{{ $confirmados }} confirmados · {{ $pendentes }} pendentes</div>
-        <svg class="stat-spark" width="80" height="32" viewBox="0 0 80 32"><polyline points="0,20 12,22 24,16 36,18 48,12 60,14 72,8 80,6" fill="none" stroke="#f5b544" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<section class="stq-stats">
+    <div class="stq-card amber">
+        <div class="stq-trend trend-up"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>{{ $agendamentosHoje->count() > 0 ? round(($confirmados + $realizados) / max($agendamentosHoje->count(), 1) * 100) : 0 }}%</div>
+        <div class="stq-icon"><svg class="icon"><use href="#i-calendar-tick"/></svg></div>
+        <div class="stq-value">{{ $agendamentosHoje->count() }}</div>
+        <div class="stq-label">Agendamentos Hoje</div>
+        <div class="stq-sub">{{ $confirmados }} confirmados · {{ $pendentes }} pendentes</div>
     </div>
-    <div class="stat-card fade-in d2">
-        <div class="stat-top">
-            <div class="stat-icon green"><svg class="icon"><use href="#i-wallet"/></svg></div>
-            <span class="stat-delta up"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>{{ $totalFaturamentoHoje > 0 ? 'Ativo' : '—' }}</span>
-        </div>
-        <div class="stat-label">Receita Hoje</div>
-        <div class="stat-value"><small style="font-size:16px;font-weight:600;color:var(--text-muted)">R$</small>{{ number_format($totalFaturamentoHoje, 2, ',', '.') }}</div>
-        <div class="stat-sub">{{ $realizados }} serviços realizados</div>
-        <svg class="stat-spark" width="80" height="32" viewBox="0 0 80 32"><polyline points="0,24 12,20 24,22 36,14 48,16 60,8 72,10 80,4" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="stq-card green">
+        <div class="stq-trend {{ $totalFaturamentoHoje > 0 ? 'trend-up' : 'trend-neutral' }}"><svg class="icon icon-xs"><use href="#i-arrow-up"/></svg>Hoje</div>
+        <div class="stq-icon"><svg class="icon"><use href="#i-wallet"/></svg></div>
+        <div class="stq-value"><span class="stq-currency">R$</span>{{ number_format($totalFaturamentoHoje, 2, ',', '.') }}</div>
+        <div class="stq-label">Receita Hoje</div>
+        <div class="stq-sub">{{ $realizados }} serviços realizados</div>
     </div>
-    <div class="stat-card fade-in d3">
-        <div class="stat-top">
-            <div class="stat-icon blue"><svg class="icon"><use href="#i-clock"/></svg></div>
-            <span class="stat-delta {{ $pendentes > 0 ? 'up' : 'down' }}"><svg class="icon icon-xs"><use href="#i-arrow-{{ $pendentes > 0 ? 'up' : 'down' }}"/></svg>{{ $pendentes }}</span>
-        </div>
-        <div class="stat-label">Pendentes</div>
-        <div class="stat-value">{{ $pendentes }}</div>
-        <div class="stat-sub">{{ $realizados }} realizados · {{ $agendamentosSemana }} nos próximos 7 dias</div>
-        <svg class="stat-spark" width="80" height="32" viewBox="0 0 80 32"><polyline points="0,28 12,26 24,24 36,20 48,16 60,12 72,8 80,4" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="stq-card blue">
+        <div class="stq-trend {{ $pendentes > 0 ? 'trend-up' : 'trend-neutral' }}"><svg class="icon icon-xs"><use href="#i-arrow-{{ $pendentes > 0 ? 'up' : 'check' }}"/></svg>{{ $pendentes }}</div>
+        <div class="stq-icon"><svg class="icon"><use href="#i-clock"/></svg></div>
+        <div class="stq-value">{{ $pendentes }}</div>
+        <div class="stq-label">Pendentes</div>
+        <div class="stq-sub">{{ $realizados }} realizados · {{ $agendamentosSemana }} próximos 7 dias</div>
     </div>
-    <div class="stat-card fade-in d4">
-        <div class="stat-top">
-            <div class="stat-icon purple"><svg class="icon"><use href="#i-receipt"/></svg></div>
-            <span class="stat-delta down"><svg class="icon icon-xs"><use href="#i-arrow-down"/></svg>Vencidas</span>
-        </div>
-        <div class="stat-label">Despesas Vencidas</div>
-        <div class="stat-value"><small style="font-size:16px;font-weight:600;color:var(--text-muted)">R$</small>{{ number_format($despesasVencidas, 2, ',', '.') }}</div>
-        <div class="stat-sub">R$ {{ number_format($despesasPendentes, 2, ',', '.') }} em aberto</div>
-        <svg class="stat-spark" width="80" height="32" viewBox="0 0 80 32"><polyline points="0,12 12,8 24,14 36,10 48,18 60,16 72,22 80,20" fill="none" stroke="#c084fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    <div class="stq-card purple">
+        <div class="stq-trend trend-down">Vencidas</div>
+        <div class="stq-icon"><svg class="icon"><use href="#i-receipt"/></svg></div>
+        <div class="stq-value"><span class="stq-currency">R$</span>{{ number_format($despesasVencidas, 2, ',', '.') }}</div>
+        <div class="stq-label">Despesas Vencidas</div>
+        <div class="stq-sub">R$ {{ number_format($despesasPendentes, 2, ',', '.') }} em aberto</div>
     </div>
 </section>
 
-<section class="main-grid">
-    <div class="col-stack">
-        <div class="panel fade-in d5">
-            <div class="panel-header">
-                <div class="panel-title-wrap">
-                    <div class="panel-title-icon"><svg class="icon"><use href="#i-trend-up"/></svg></div>
-                    <div>
-                        <h2 class="panel-title">Agendamentos de Hoje</h2>
-                        <div class="panel-subtitle">{{ now()->format('d/m/Y') }} · {{ $agendamentosHoje->count() }} agendamentos</div>
-                    </div>
+<section class="stq-layout">
+    <div class="stq-col">
+        <div class="premium-card">
+            <div class="premium-card-header">
+                <div>
+                    <h2 class="premium-card-title">Agendamentos de Hoje</h2>
+                    <div class="premium-card-sub">{{ now()->format('d/m/Y') }} · {{ $agendamentosHoje->count() }} agendamentos</div>
                 </div>
-                <a href="{{ optional(request()->route('barbearia'))?->slug ? route('tenant.admin.agendamentos.index', optional(request()->route('barbearia'))?->slug) : route('admin.agendamentos.index') }}" class="link-action">Ver todos <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg></a>
+                <a href="{{ optional(request()->route('barbearia'))?->slug ? route('tenant.admin.agendamentos.index', optional(request()->route('barbearia'))?->slug) : route('admin.agendamentos.index') }}" class="stq-link">Ver todos <svg class="icon icon-sm"><use href="#i-arrow-right"/></svg></a>
             </div>
-            <div class="upcoming-list">
+            <div class="premium-card-body stq-list-wrap">
                 @forelse($agendamentosHoje as $ag)
                 @php
                     $temPlanoDash = $ag->cliente && ($ag->cliente->relationLoaded('planos')
@@ -145,14 +130,13 @@
                         : ($ag->cliente->planoAtivo ? true : false));
                     $pagamentoDash = $ag->forma_pagamento ?? '';
                 @endphp
-                <div class="upcoming-item">
-                    <div class="up-time">
+                <div class="stq-item">
+                    <div class="stq-time">
                         <div class="h">{{ $ag->hora_inicio->format('H:i') }}</div>
                         <div class="d">{{ $ag->hora_fim ? $ag->hora_inicio->diffInMinutes($ag->hora_fim) . 'min' : '—' }}</div>
                     </div>
-                    <div class="up-divider"></div>
-                    <div class="up-avatar av-{{ ['amber','blue','green','purple','pink','red'][$loop->index % 6] }}">{{ mb_substr($ag->cliente->nome ?? '?', 0, 2, 'UTF-8') }}</div>
-                    <div class="up-info">
+                    <div class="stq-avatar av-{{ ['amber','blue','green','purple','pink','red'][$loop->index % 6] }}">{{ mb_substr($ag->cliente->nome ?? '?', 0, 2, 'UTF-8') }}</div>
+                    <div class="stq-info">
                         <div class="n">{{ $ag->cliente->nome ?? 'Cliente removido' }}
                             @if($temPlanoDash)<span class="badge-c gold" style="font-size:9px;padding:0 5px;margin-left:3px;vertical-align:middle;">Plano</span>@endif
                         </div>
@@ -160,52 +144,75 @@
                             @if($pagamentoDash)<span class="pipe">·</span>{{ $pagamentoDash }}@endif
                         </div>
                     </div>
-                    <span class="up-status {{ $ag->status }}">{{ ucfirst($ag->status) }}</span>
+                    <span class="stq-pill {{ $ag->status }}">{{ ucfirst($ag->status) }}</span>
                 </div>
                 @empty
-                <div class="upcoming-item"><div class="up-info" style="text-align:center;width:100%;color:var(--text-muted);padding:20px 0;">Nenhum agendamento para hoje</div></div>
+                <div class="stq-item" style="justify-content:center;"><div style="color:var(--text-muted);font-size:14px;padding:20px 0;">Nenhum agendamento para hoje</div></div>
                 @endforelse
             </div>
         </div>
 
-        <div class="panel fade-in d6">
-            <div class="panel-header">
-                <div class="panel-title-wrap">
-                    <div class="panel-title-icon"><svg class="icon"><use href="#i-wallet"/></svg></div>
-                    <div>
-                        <h2 class="panel-title">Resumo do Dia</h2>
-                        <div class="panel-subtitle">Status dos agendamentos e caixa</div>
+        <div class="premium-card">
+            <div class="premium-card-header">
+                <div>
+                    <h2 class="premium-card-title">Despesas</h2>
+                    <div class="premium-card-sub">Vencidas e em aberto</div>
+                </div>
+            </div>
+            <div class="premium-card-body">
+                <div class="stq-legend">
+                    <div class="stq-row">
+                        <span class="swatch" style="background:var(--danger)"></span>
+                        <span class="name">Vencidas</span>
+                        <span class="pct">R$ {{ number_format($despesasVencidas, 2, ',', '.') }}</span>
+                    </div>
+                    <div class="stq-row">
+                        <span class="swatch" style="background:var(--warning)"></span>
+                        <span class="name">Em aberto (futuras)</span>
+                        <span class="pct">R$ {{ number_format($despesasPendentes, 2, ',', '.') }}</span>
+                    </div>
+                    <div class="stq-row">
+                        <span class="swatch" style="background:var(--accent)"></span>
+                        <span class="name">Total pendente</span>
+                        <span class="pct" style="font-weight:800;">R$ {{ number_format($despesasVencidas + $despesasPendentes, 2, ',', '.') }}</span>
                     </div>
                 </div>
             </div>
-            <div class="panel-body">
-                <div class="revenue-stats">
-                    <span class="revenue-total"><span class="revenue-currency">R$</span>{{ number_format($totalFaturamentoHoje, 2, ',', '.') }}</span>
-                    <span class="revenue-delta"><svg class="icon icon-xs"><use href="#i-check"/></svg> {{ $realizados }} realizados</span>
+        </div>
+    </div>
+
+    <div class="stq-col">
+        <div class="premium-card">
+            <div class="premium-card-header">
+                <div>
+                    <h2 class="premium-card-title">Resumo do Dia</h2>
+                    <div class="premium-card-sub">Status dos agendamentos e caixa</div>
                 </div>
-                <div class="revenue-period-label" style="margin-bottom:16px;">Faturamento total de hoje</div>
-                <div class="donut-legend" style="width:100%;">
-                    <div class="donut-row">
+                <span class="stq-total"><small style="font-size:13px;font-weight:700;color:var(--text-muted)">R$</small> {{ number_format($totalFaturamentoHoje, 2, ',', '.') }}</span>
+            </div>
+            <div class="premium-card-body">
+                <div class="stq-legend">
+                    <div class="stq-row">
                         <span class="swatch" style="background:var(--info)"></span>
                         <span class="name">Confirmados</span>
                         <span class="pct">{{ $confirmados }}</span>
                     </div>
-                    <div class="donut-row">
+                    <div class="stq-row">
                         <span class="swatch" style="background:var(--success)"></span>
                         <span class="name">Realizados</span>
                         <span class="pct">{{ $realizados }}</span>
                     </div>
-                    <div class="donut-row">
+                    <div class="stq-row">
                         <span class="swatch" style="background:var(--warning)"></span>
                         <span class="name">Pendentes</span>
                         <span class="pct">{{ $pendentes }}</span>
                     </div>
-                    <div class="donut-row">
+                    <div class="stq-row">
                         <span class="swatch" style="background:var(--text-faint)"></span>
                         <span class="name">Próximos 7 dias</span>
                         <span class="pct">{{ $agendamentosSemana }}</span>
                     </div>
-                    <div class="donut-row">
+                    <div class="stq-row">
                         <span class="swatch" style="background:var(--accent)"></span>
                         <span class="name">Caixa</span>
                         <span class="pct">
@@ -219,73 +226,29 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <div class="col-stack">
-        <div class="panel fade-in d5">
-            <div class="panel-header">
-                <div class="panel-title-wrap">
-                    <div class="panel-title-icon"><svg class="icon"><use href="#i-dollar"/></svg></div>
-                    <div>
-                        <h2 class="panel-title">Despesas</h2>
-                        <div class="panel-subtitle">Vencidas e em aberto</div>
-                    </div>
+        <div class="premium-card">
+            <div class="premium-card-header">
+                <div>
+                    <h2 class="premium-card-title">Ações Rápidas</h2>
+                    <div class="premium-card-sub">Atalhos do sistema</div>
                 </div>
             </div>
-            <div class="panel-body">
-                <div class="donut-wrap">
-                    <div style="flex:1;display:flex;flex-direction:column;gap:10px;width:100%;">
-                        <div class="donut-row">
-                            <span class="swatch" style="background:var(--danger)"></span>
-                            <span class="name">Vencidas</span>
-                            <span class="pct">R$ {{ number_format($despesasVencidas, 2, ',', '.') }}</span>
-                        </div>
-                        <div class="donut-row">
-                            <span class="swatch" style="background:var(--warning)"></span>
-                            <span class="name">Em aberto (futuras)</span>
-                            <span class="pct">R$ {{ number_format($despesasPendentes, 2, ',', '.') }}</span>
-                        </div>
-                        <div class="donut-row" style="border-bottom:none;">
-                            <span class="swatch" style="background:var(--accent)"></span>
-                            <span class="name">Total pendente</span>
-                            <span class="pct" style="font-weight:800;">R$ {{ number_format($despesasVencidas + $despesasPendentes, 2, ',', '.') }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="panel fade-in d6">
-            <div class="panel-header">
-                <div class="panel-title-wrap">
-                    <div class="panel-title-icon"><svg class="icon"><use href="#i-activity"/></svg></div>
-                    <div>
-                        <h2 class="panel-title">Ações Rápidas</h2>
-                        <div class="panel-subtitle">Atalhos do sistema</div>
-                    </div>
-                </div>
-            </div>
-            <div class="panel-body">
-                <div class="ranking-list">
+            <div class="premium-card-body">
+                <div class="stq-actions">
                     @php
                         $quickActions = [
-                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.agendamentos.index', optional(request()->route('barbearia'))?->slug) : route('admin.agendamentos.index')), 'label' => 'Novo Agendamento', 'icon' => 'i-plus', 'color' => 'var(--accent)'],
-                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.relatorios.index', optional(request()->route('barbearia'))?->slug) : route('admin.relatorios.index')), 'label' => 'Relatório de Faturamento', 'icon' => 'i-chart', 'color' => 'var(--info)'],
-                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.caixa.index', optional(request()->route('barbearia'))?->slug) : route('admin.caixa.index')), 'label' => 'Gerenciar Caixa', 'icon' => 'i-wallet', 'color' => 'var(--success)'],
-                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.clientes.index', optional(request()->route('barbearia'))?->slug) : route('admin.clientes.index')), 'label' => 'Clientes', 'icon' => 'i-people', 'color' => 'var(--purple)'],
+                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.agendamentos.index', optional(request()->route('barbearia'))?->slug) : route('admin.agendamentos.index')), 'label' => 'Novo Agendamento', 'icon' => 'i-plus', 'color' => 'var(--accent)', 'bg' => 'var(--accent-glow)'],
+                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.relatorios.index', optional(request()->route('barbearia'))?->slug) : route('admin.relatorios.index')), 'label' => 'Relatório de Faturamento', 'icon' => 'i-chart', 'color' => 'var(--info)', 'bg' => 'var(--info-bg)'],
+                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.caixa.index', optional(request()->route('barbearia'))?->slug) : route('admin.caixa.index')), 'label' => 'Gerenciar Caixa', 'icon' => 'i-wallet', 'color' => 'var(--success)', 'bg' => 'var(--success-bg)'],
+                            ['route' => (optional(request()->route('barbearia'))?->slug ? route('tenant.admin.clientes.index', optional(request()->route('barbearia'))?->slug) : route('admin.clientes.index')), 'label' => 'Clientes', 'icon' => 'i-people', 'color' => 'var(--purple)', 'bg' => 'var(--purple-bg)'],
                         ];
                     @endphp
                     @foreach($quickActions as $action)
-                    <a href="{{ $action['route'] }}" style="text-decoration:none;color:inherit;">
-                        <div class="rank-row">
-                            <div class="rank-pos gold"><svg class="icon icon-sm"><use href="#{{ $action['icon'] }}"/></svg></div>
-                            <div class="rank-info">
-                                <div class="name">{{ $action['label'] }}</div>
-                            </div>
-                            <div class="rank-val">
-                                <svg class="icon icon-sm" style="color:var(--text-faint)"><use href="#i-arrow-right"/></svg>
-                            </div>
-                        </div>
+                    <a href="{{ $action['route'] }}" class="stq-action">
+                        <span class="a-icon" style="background:{{ $action['bg'] }};color:{{ $action['color'] }};"><svg class="icon icon-sm"><use href="#{{ $action['icon'] }}"/></svg></span>
+                        <span class="a-label">{{ $action['label'] }}</span>
+                        <svg class="icon icon-sm a-arrow"><use href="#i-arrow-right"/></svg>
                     </a>
                     @endforeach
                 </div>

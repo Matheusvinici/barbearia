@@ -319,6 +319,17 @@ class BarbeiroController extends Controller
         return response()->json(['success' => true, 'message' => 'Barbeiro excluído com sucesso']);
     }
 
+    public function toggleAtivo(Barbearia $barbearia, int $id)
+    {
+        $barbeiro = Barbeiro::findOrFail($id);
+        $barbeiro->ativo = !$barbeiro->ativo;
+        $barbeiro->save();
+        return response()->json([
+            'success' => true,
+            'message' => $barbeiro->ativo ? 'Barbeiro ativado com sucesso' : 'Barbeiro desativado com sucesso',
+        ]);
+    }
+
     private function getTenantBarbearias()
     {
         if ($this->isTenantContext()) {

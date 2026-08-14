@@ -6,6 +6,7 @@ use App\Models\Agendamento;
 use App\Models\Avaliacao;
 use App\Models\Barbearia;
 use App\Models\Barbeiro;
+use App\Models\BarbeiroHorario;
 use App\Models\BloqueioAgenda;
 use App\Models\Cliente;
 use App\Models\Configuracao;
@@ -120,7 +121,9 @@ class AgendarWizard extends Component
         $this->carregarServicos($id);
 
         $this->barbeiros = Barbeiro::where('ativo', true)
-            ->where('barbearia_id', $id)
+            ->where(function ($q) use ($id) {
+                $q->where('barbearia_id', $id)->orWhereNull('barbearia_id');
+            })
             ->get()
             ->map(function ($b) {
                 $b->avg_rating = Avaliacao::whereHas('agendamento', fn($q) => $q->where('barbeiro_id', $b->id))
@@ -290,8 +293,13 @@ class AgendarWizard extends Component
         if ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
             $diasArray = $horariosBarbeiro->pluck('dia_semana')->unique()->values()->toArray();
         } else {
-            $diasFuncionamento = Configuracao::get('dias_funcionamento', '1,2,3,4,5,6');
-            $diasArray = array_map('intval', explode(',', $diasFuncionamento));
+            $horariosDaBarbearia = $this->horariosDaBarbearia();
+            if ($horariosDaBarbearia->isNotEmpty()) {
+                $diasArray = $horariosDaBarbearia->pluck('dia_semana')->unique()->values()->toArray();
+            } else {
+                $diasFuncionamento = Configuracao::get('dias_funcionamento', '1,2,3,4,5,6');
+                $diasArray = array_map('intval', explode(',', $diasFuncionamento));
+            }
         }
 
         $dias = [];
@@ -341,9 +349,12 @@ class AgendarWizard extends Component
             $this->horarios = [];
             return;
         } else {
-            $abertura = Configuracao::get('horario_abertura', '08:00');
-            $fechamento = Configuracao::get('horario_fechamento', '18:00');
-            $faixas[] = ['inicio' => $abertura, 'fim' => $fechamento];
+            $faixas = $this->faixasDaBarbearia($diaSemana);
+            if (empty($faixas)) {
+                $abertura = Configuracao::get('horario_abertura', '08:00');
+                $fechamento = Configuracao::get('horario_fechamento', '18:00');
+                $faixas[] = ['inicio' => $abertura, 'fim' => $fechamento];
+            }
         }
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
@@ -394,6 +405,62 @@ class AgendarWizard extends Component
         $this->horarios = $horarios;
     }
 
+    private function horariosDaBarbearia(?int $diaSemana = null)
+    {
+        $query = BarbeiroHorario::where('ativo', true)
+            ->whereHas('barbeiro', function ($q) {
+                $q->where('ativo', true)
+                    ->where(function ($q2) {
+                        $q2->where('barbearia_id', $this->barbearia_id)->orWhereNull('barbearia_id');
+                    });
+            });
+        if ($diaSemana !== null) {
+            $query->where('dia_semana', $diaSemana);
+        }
+        return $query->get(['dia_semana', 'hora_inicio', 'hora_fim']);
+    }
+
+    public function horariosDaUnidade()
+    {
+        $barbeariaId = $this->barbeariaAtual?->id;
+        if ($barbeariaId) {
+            $horarios = BarbeiroHorario::where('ativo', true)
+                ->whereHas('barbeiro', function ($q) use ($barbeariaId) {
+                    $q->where('ativo', true)
+                        ->where(function ($q2) use ($barbeariaId) {
+                            $q2->where('barbearia_id', $barbeariaId)->orWhereNull('barbearia_id');
+                        });
+                })
+                ->get(['dia_semana', 'hora_inicio', 'hora_fim']);
+            if ($horarios->isNotEmpty()) {
+                return [
+                    'dias' => $horarios->pluck('dia_semana')->unique()->sort()->values()->toArray(),
+                    'abertura' => Carbon::parse($horarios->min('hora_inicio'))->format('H:i'),
+                    'fechamento' => Carbon::parse($horarios->max('hora_fim'))->format('H:i'),
+                ];
+            }
+        }
+
+        $barbearia = $this->barbeariaAtual;
+        $hrDias = $barbearia ? explode(',', $barbearia->dias_funcionamento ?? '1,2,3,4,5,6') : explode(',', Configuracao::get('dias_funcionamento', '1,2,3,4,5,6'));
+        return [
+            'dias' => array_map('intval', $hrDias),
+            'abertura' => $barbearia?->horario_abertura ?? Configuracao::get('horario_abertura', '08:00'),
+            'fechamento' => $barbearia?->horario_fechamento ?? Configuracao::get('horario_fechamento', '18:00'),
+        ];
+    }
+
+    private function faixasDaBarbearia(?int $diaSemana = null)
+    {
+        $horarios = $this->horariosDaBarbearia($diaSemana);
+        if ($horarios->isEmpty()) {
+            return [];
+        }
+        $inicio = Carbon::parse($horarios->min('hora_inicio'))->format('H:i');
+        $fim = Carbon::parse($horarios->max('hora_fim'))->format('H:i');
+        return [['inicio' => $inicio, 'fim' => $fim]];
+    }
+
     private function temHorariosDisponiveis($barbeiroId, $data)
     {
         $agendamentos = Agendamento::where('barbeiro_id', $barbeiroId)
@@ -418,9 +485,12 @@ class AgendarWizard extends Component
         } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
             return false;
         } else {
-            $abertura = Configuracao::get('horario_abertura', '08:00');
-            $fechamento = Configuracao::get('horario_fechamento', '18:00');
-            $faixas[] = ['inicio' => $abertura, 'fim' => $fechamento];
+            $faixas = $this->faixasDaBarbearia($diaSemana);
+            if (empty($faixas)) {
+                $abertura = Configuracao::get('horario_abertura', '08:00');
+                $fechamento = Configuracao::get('horario_fechamento', '18:00');
+                $faixas[] = ['inicio' => $abertura, 'fim' => $fechamento];
+            }
         }
 
         $intervalo = (int) Configuracao::get('intervalo_minutos', '30');

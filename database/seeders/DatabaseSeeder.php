@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
 {
     public function run(): void
     {
+        $this->call(CategoriaProdutoSeeder::class);
+
         Configuracao::set('horario_abertura', '08:00');
         Configuracao::set('horario_fechamento', '18:00');
         Configuracao::set('intervalo_minutos', '30');

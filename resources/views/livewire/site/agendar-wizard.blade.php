@@ -121,9 +121,10 @@
     @endif
 
     @php
-        $hrAbertura = $barbeariaAtual?->horario_abertura ?? \App\Models\Configuracao::get('horario_abertura', '08:00');
-        $hrFechamento = $barbeariaAtual?->horario_fechamento ?? \App\Models\Configuracao::get('horario_fechamento', '18:00');
-        $hrDias = $barbeariaAtual ? explode(',', $barbeariaAtual->dias_funcionamento ?? '1,2,3,4,5,6') : explode(',', \App\Models\Configuracao::get('dias_funcionamento', '1,2,3,4,5,6'));
+        $horariosUnidade = $this->horariosDaUnidade();
+        $hrAbertura = $horariosUnidade['abertura'];
+        $hrFechamento = $horariosUnidade['fechamento'];
+        $hrDias = $horariosUnidade['dias'];
         $diasSemana = [0=>'Dom',1=>'Seg',2=>'Ter',3=>'Qua',4=>'Qui',5=>'Sex',6=>'Sab'];
         $diasNomes = [];
         foreach ($hrDias as $d) { if (isset($diasSemana[(int)$d])) $diasNomes[] = $diasSemana[(int)$d]; }

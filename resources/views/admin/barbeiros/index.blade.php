@@ -14,44 +14,33 @@
 
 @push('styles')
 <style>
-.action-btn {
-    height: 32px;
-    padding: 0 12px;
-    border-radius: 8px;
-    border: 1.5px solid;
-    background: transparent;
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    cursor: pointer;
-    transition: all 150ms;
-    font-size: 12.5px;
-    font-weight: 600;
-    font-family: inherit;
-    text-decoration: none;
-    white-space: nowrap;
-}
-.action-btn.view {
-    color: var(--info);
-    border-color: var(--info);
-}
-.action-btn.view:hover {
-    background: var(--info-bg);
-}
-.action-btn.edit {
-    color: var(--accent);
-    border-color: var(--accent);
-}
-.action-btn.edit:hover {
-    background: var(--accent-glow);
-}
-.action-btn.delete {
-    color: var(--danger);
-    border-color: var(--danger);
-}
-.action-btn.delete:hover {
-    background: var(--danger-bg);
-}
+.stat-card { background: var(--card-solid); border: 1px solid var(--border); border-radius: 20px; padding: 1.75rem; position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.stat-card:hover { border-color: var(--border-strong); transform: translateY(-4px); }
+.stat-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow), transparent 70%); opacity: 0; transition: opacity 220ms; }
+.stat-card:hover::after { opacity: 1; }
+.stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; }
+.stat-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; transition: transform 0.3s ease; }
+.stat-card:hover .stat-icon { transform: scale(1.08) rotate(-5deg); }
+.stat-icon.amber { background: var(--accent-glow); color: var(--accent); }
+.stat-icon.green { background: var(--success-bg); color: var(--success); }
+.stat-icon.blue { background: var(--info-bg); color: var(--info); }
+.stat-icon.purple { background: var(--purple-bg); color: var(--purple); }
+.stat-label { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+.stat-value { font-size: 2.4rem; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+
+.panel { background: var(--card-solid); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden; }
+.panel-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.panel-title { font-size: 1.1rem; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+.panel-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+.panel-footer { padding: 0.5rem 2rem 1.5rem; display: flex; justify-content: center; }
+
+.data-table th { text-align: center; padding: 4px 16px 10px; }
+.data-table td { text-align: center; }
+.data-table td:first-child { text-align: left; }
+.data-table td:last-child { text-align: center; }
+
+.action-btn { height: 34px; min-width: 100px; padding: 0 12px; border-radius: 9px; border: 1.5px solid var(--border-strong); background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 150ms; font-size: 12px; font-weight: 600; font-family: inherit; white-space: nowrap; text-decoration: none; }
+.action-btn:hover { color: var(--text); border-color: var(--text-faint); background: var(--bg-input); }
 </style>
 @endpush
 
@@ -159,14 +148,11 @@ Total de {{ $barbeiros->total() }} profissionais
                         @endif
                     </td>
                     <td>
-                        <a href="{{ barbeiroRoute('barbeiros.show', $b) }}" class="action-btn view" title="Visualizar">
-                            Visualizar
-                        </a>
-                        <a href="{{ barbeiroRoute('barbeiros.edit', $b) }}" class="action-btn edit" title="Editar">
+                        <a href="{{ barbeiroRoute('barbeiros.edit', $b) }}" class="action-btn" title="Editar">
                             Editar
                         </a>
-                        <button type="button" onclick="confirmarExclusao('{{ barbeiroRoute('barbeiros.destroy', $b) }}')" class="action-btn delete" title="Excluir">
-                            Excluir
+                        <button type="button" onclick="alternarStatus('{{ barbeiroRoute('barbeiros.toggle', $b) }}')" class="action-btn" title="{{ $b->ativo ? 'Desativar profissional' : 'Ativar profissional' }}">
+                            {{ $b->ativo ? 'Desativar' : 'Ativar' }}
                         </button>
                     </td>
                 </tr>
@@ -188,17 +174,21 @@ Total de {{ $barbeiros->total() }} profissionais
 
 @push('scripts')
 <script>
-function confirmarExclusao(url) {
-    Swal.fire({
-        title: 'Confirmar exclusão?',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#f87171',
-        cancelButtonText: 'Cancelar',
-        confirmButtonText: 'Sim, excluir!'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            $.ajax({ url, method: 'DELETE', data: { _token: '{{ csrf_token() }}' }, success: () => location.reload() });
+function alternarStatus(url) {
+    $.ajax({
+        url,
+        method: 'POST',
+        data: { _token: '{{ csrf_token() }}' },
+        success: function(r) {
+            Swal.fire({
+                icon: 'success',
+                title: r.message || 'Status atualizado!',
+                timer: 1500,
+                showConfirmButton: false
+            }).then(() => location.reload());
+        },
+        error: function() {
+            Swal.fire({ icon: 'error', title: 'Erro ao atualizar status', confirmButtonText: 'OK' });
         }
     });
 }

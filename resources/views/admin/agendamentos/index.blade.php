@@ -46,9 +46,8 @@ $pendentes = $agendamentos->where('status', 'pendente')->count();
 $confirmados = $agendamentos->where('status', 'confirmado')->count();
 $realizados = $agendamentos->where('status', 'realizado')->count();
 $cancelados = $agendamentos->where('status', 'cancelado')->count();
-$faturamento = $agendamentos->whereIn('status', ['confirmado', 'realizado'])->sum('total');
+$totalServicosHoje = $agendamentos->sum(fn ($ag) => $ag->servicos->count());
 $avatarClasses = ['av-amber', 'av-blue', 'av-green', 'av-purple', 'av-pink', 'av-red'];
-$barberColors = ['#f5b544', '#60a5fa', '#4ade80', '#c084fc', '#f472b6', '#f87171'];
 $statusMap = [
     'pendente' => ['label' => 'Pendente', 'cls' => 'status-pending'],
     'confirmado' => ['label' => 'Confirmado', 'cls' => 'status-confirmed'],
@@ -57,11 +56,13 @@ $statusMap = [
     'ausente' => ['label' => 'Ausente', 'cls' => 'status-canceled'],
 ];
 
-function getInitials($name) {
-    $parts = explode(' ', trim($name));
-    $i = mb_substr($parts[0], 0, 1);
-    if (isset($parts[1])) $i .= mb_substr($parts[1], 0, 1);
-    return strtoupper($i);
+if (!function_exists('getInitials')) {
+    function getInitials($name) {
+        $parts = explode(' ', trim($name));
+        $i = mb_substr($parts[0], 0, 1);
+        if (isset($parts[1])) $i .= mb_substr($parts[1], 0, 1);
+        return strtoupper($i);
+    }
 }
 @endphp
 
@@ -85,27 +86,28 @@ function getInitials($name) {
 .btn-primary-c { height: 44px; padding: 0 18px; border-radius: 12px; background: var(--accent); color: #0d0d12; border: none; font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: all 180ms; box-shadow: 0 8px 22px -8px var(--accent-glow); font-family: inherit; }
 .btn-primary-c:hover { background: var(--accent-hover); transform: translateY(-1px); box-shadow: 0 12px 28px -8px var(--accent-glow); }
 
-.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; margin-bottom: 28px; }
-.stat-card { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 22px; position: relative; overflow: hidden; transition: all 220ms; }
-.stat-card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.5rem; margin-bottom: 2.5rem; }
+.stat-card { background: var(--card-solid); border: 1px solid var(--border); border-radius: 20px; padding: 1.75rem; position: relative; overflow: hidden; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+.stat-card:hover { border-color: var(--border-strong); transform: translateY(-4px); }
 .stat-card::after { content: ''; position: absolute; top: -40px; right: -40px; width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, var(--accent-glow), transparent 70%); opacity: 0; transition: opacity 220ms; }
 .stat-card:hover::after { opacity: 1; }
-.stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-.stat-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; }
+.stat-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.4rem; }
+.stat-icon { width: 52px; height: 52px; border-radius: 14px; display: grid; place-items: center; transition: transform 0.3s ease; }
+.stat-card:hover .stat-icon { transform: scale(1.08) rotate(-5deg); }
 .stat-icon.amber { background: var(--accent-glow); color: var(--accent); }
 .stat-icon.green { background: var(--success-bg); color: var(--success); }
 .stat-icon.blue { background: var(--info-bg); color: var(--info); }
 .stat-icon.red { background: var(--danger-bg); color: var(--danger); }
-.stat-label { font-size: 12.5px; color: var(--text-muted); font-weight: 500; margin-bottom: 6px; }
-.stat-value { font-size: 28px; font-weight: 800; letter-spacing: -0.025em; line-height: 1; }
-.stat-sub { font-size: 11.5px; color: var(--text-faint); margin-top: 10px; font-weight: 500; }
+.stat-label { font-size: 0.875rem; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; }
+.stat-value { font-size: 2.4rem; font-weight: 800; letter-spacing: -1.5px; line-height: 1; }
+.stat-sub { font-size: 0.78rem; color: var(--text-faint); margin-top: 10px; font-weight: 500; }
 
-.panel { background: var(--card); backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
-.panel-header { padding: 22px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.panel { background: var(--card-solid); border: 1px solid var(--border); border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); overflow: hidden; }
+.panel-header { padding: 1.5rem 2rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .panel-title-wrap { display: flex; align-items: center; gap: 14px; }
 .panel-title-icon { width: 40px; height: 40px; border-radius: 11px; background: var(--accent-glow); color: var(--accent); display: grid; place-items: center; }
-.panel-title { font-size: 17px; font-weight: 700; margin: 0; letter-spacing: -0.015em; }
-.panel-subtitle { font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+.panel-title { font-size: 1.1rem; font-weight: 700; margin: 0; letter-spacing: -0.02em; }
+.panel-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
 
 .status-tabs { display: flex; gap: 3px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; overflow-x: auto; scrollbar-width: none; }
 .status-tabs::-webkit-scrollbar { display: none; }
@@ -115,22 +117,33 @@ function getInitials($name) {
 .status-tab .count { background: var(--border-strong); padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; min-width: 22px; text-align: center; }
 .status-tab.active .count { background: var(--accent); color: #0d0d12; }
 
-.toolbar { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: rgba(0,0,0,0.02); }
+.toolbar { padding: 1rem 2rem; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .toolbar-spacer { flex: 1; }
 .result-count { font-size: 13px; color: var(--text-muted); }
 .result-count strong { color: var(--text); font-weight: 700; }
 
-.table-wrap { overflow-x: auto; }
-.appointments-table { width: 100%; border-collapse: collapse; min-width: 920px; }
-.appointments-table thead th { text-align: left; font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--text-faint); padding: 14px 22px; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.04); white-space: nowrap; }
-.appointments-table thead th.right { text-align: right; }
-.appointments-table tbody td { padding: 18px 22px; border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
-.appointments-table tbody tr { transition: background 150ms; }
-.appointments-table tbody tr:hover { background: rgba(245, 181, 68, 0.03); }
-.appointments-table tbody tr:last-child td { border-bottom: none; }
+.table-wrap { overflow-x: auto; padding: 0 1.5rem; }
+.appointments-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; min-width: 920px; }
+.appointments-table thead th { text-align: center; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); padding: 0 22px 8px; border-bottom: none; background: transparent; white-space: nowrap; }
+.appointments-table thead th.right { text-align: center; }
+.appointments-table tbody td { padding: 1rem 22px; border-bottom: none; font-size: 14px; vertical-align: middle; }
+.appointments-table tbody tr { background: var(--bg-input); transition: all 0.2s ease; }
+.appointments-table tbody tr:hover { background: var(--card-hover); transform: translateX(4px); }
+.appointments-table tbody td:first-child { border-radius: 14px 0 0 14px; }
+.appointments-table tbody td:last-child { border-radius: 0 14px 14px 0; }
 
-.time-cell { font-weight: 700; font-size: 14.5px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
-.time-cell .duration { display: flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; color: var(--text-faint); margin-top: 4px; }
+.time-cell {
+    font-weight: 800; font-size: 17px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+    color: var(--accent);
+    background: var(--accent-glow);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: inline-flex;
+    flex-direction: column;
+    min-width: 74px;
+    text-align: center;
+}
+.time-cell .duration { display: flex; align-items: center; justify-content: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--accent); margin-top: 3px; opacity: 0.75; }
 .time-cell .duration .icon { width: 12px; height: 12px; }
 
 .client-cell { display: flex; align-items: center; gap: 12px; }
@@ -143,6 +156,8 @@ function getInitials($name) {
 .av-pink { background: linear-gradient(135deg, #f472b6, #ec4899); }
 .client-name { font-weight: 600; font-size: 14px; line-height: 1.2; }
 .client-meta { font-size: 12px; color: var(--text-muted); margin-top: 3px; display: flex; align-items: center; gap: 5px; }
+.client-sell-btn { height: 32px; min-width: 100px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--success); background: var(--success-bg); color: var(--success); display: inline-flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; font-weight: 700; text-decoration: none; white-space: nowrap; transition: all 150ms; flex-shrink: 0; align-self: center; }
+.client-sell-btn:hover { background: var(--success); color: #fff; transform: translateY(-1px); box-shadow: 0 6px 16px -6px var(--success); }
 
 .barber-cell { display: flex; align-items: center; gap: 10px; }
 .barber-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
@@ -166,16 +181,17 @@ function getInitials($name) {
 .value-cell { font-weight: 700; font-size: 14.5px; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; text-align: right; }
 .value-cell .sub { display: block; font-size: 11.5px; color: var(--text-faint); font-weight: 500; margin-top: 3px; }
 
-.actions-cell { display: flex; gap: 4px; justify-content: flex-end; flex-wrap: wrap; }
-.action-btn { height: 34px; padding: 0 10px; border-radius: 9px; border: 1px solid var(--border); background: transparent; color: var(--text-muted); display: inline-flex; align-items: center; gap: 5px; cursor: pointer; transition: all 150ms; font-size: 12px; font-weight: 600; font-family: inherit; white-space: nowrap; }
-.action-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-glow); }
-.action-btn.danger:hover { color: var(--danger); border-color: var(--danger); background: var(--danger-bg); }
-.action-btn.info:hover { color: var(--info); border-color: var(--info); background: var(--info-bg); }
-.action-btn.success:hover { color: var(--success); border-color: var(--success); background: var(--success-bg); }
+.actions-cell { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+.action-btn { height: 34px; min-width: 100px; padding: 0 12px; border-radius: 9px; border: none; background: var(--info); color: #fff; display: inline-flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; transition: all 150ms; font-size: 12px; font-weight: 700; font-family: inherit; white-space: nowrap; text-decoration: none; }
+.action-btn:hover { color: #fff; opacity: 0.88; transform: translateY(-1px); box-shadow: 0 6px 16px -6px currentColor; }
+.action-btn.warning { background: var(--warning); }
+.action-btn.success { background: var(--success); }
+.action-btn.danger { background: var(--danger); }
+.action-btn.info { background: var(--info); }
 .action-btn .icon { width: 16px; height: 16px; }
 .action-label { font-size: 12px; }
 
-.panel-footer { padding: 14px 24px; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.panel-footer { padding: 0.5rem 2rem 1.5rem; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .result-info { font-size: 13px; color: var(--text-muted); }
 .result-info strong { color: var(--text); font-weight: 700; }
 
@@ -187,7 +203,7 @@ function getInitials($name) {
 .d1 { animation-delay: 50ms; } .d2 { animation-delay: 100ms; } .d3 { animation-delay: 150ms; } .d4 { animation-delay: 200ms; } .d5 { animation-delay: 250ms; }
 
 @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2, 1fr); } .search-box { width: 220px; } }
-@media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .appointments-table thead { display: none; } .appointments-table, .appointments-table tbody, .appointments-table tr, .appointments-table td { display: block; width: 100%; } .appointments-table tr { padding: 14px 18px; border-bottom: 1px solid var(--border); } .appointments-table tbody td { padding: 6px 0; border: none; display: flex; justify-content: space-between; align-items: center; } .appointments-table tbody td::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px; flex-shrink: 0; } .actions-cell { justify-content: flex-end; flex-wrap: wrap; gap: 6px; } }
+@media (max-width: 768px) { .stats-grid { grid-template-columns: 1fr; } .table-wrap { padding: 0 1rem; } .appointments-table thead { display: none; } .appointments-table, .appointments-table tbody, .appointments-table tr, .appointments-table td { display: block; width: 100%; } .appointments-table tr { padding: 16px 18px; border: 1px solid var(--border); border-radius: 16px; margin-bottom: 12px; background: var(--bg-input); } .appointments-table tbody td { padding: 6px 0; border: none; display: flex; justify-content: space-between; align-items: center; } .appointments-table tbody td::before { content: attr(data-label); font-size: 11px; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 12px; flex-shrink: 0; } .actions-cell { justify-content: flex-end; flex-wrap: wrap; gap: 6px; } }
 </style>
 @endpush
 
@@ -245,10 +261,10 @@ $slug = request()->route('barbearia')?->slug;
     </div>
     <div class="stat-card fade-in d2">
         <div class="stat-top">
-            <div class="stat-icon green"><svg class="icon"><use href="#i-wallet"/></svg></div>
+            <div class="stat-icon green"><svg class="icon"><use href="#i-scissor"/></svg></div>
         </div>
-        <div class="stat-label">Faturamento previsto</div>
-        <div class="stat-value">R$ {{ number_format($faturamento, 2, ',', '.') }}</div>
+        <div class="stat-label">Serviços hoje</div>
+        <div class="stat-value">{{ $totalServicosHoje }}</div>
         <div class="stat-sub">{{ $realizados }} realizados hoje</div>
     </div>
     <div class="stat-card fade-in d3">
@@ -278,18 +294,11 @@ $slug = request()->route('barbearia')?->slug;
                 <div class="panel-subtitle" id="panelDate">{{ \Carbon\Carbon::parse($data)->translatedFormat('j \d\e F · l') }}</div>
             </div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px;">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
             <button class="btn-ghost-c" style="height:32px;padding:0 10px;font-size:12px;" onclick="mudarData(-1)">&larr; Dia anterior</button>
             <button class="btn-ghost-c" style="height:32px;padding:0 10px;font-size:12px;" onclick="mudarData(0)">Hoje</button>
             <button class="btn-ghost-c" style="height:32px;padding:0 10px;font-size:12px;" onclick="mudarData(1)">Próximo dia &rarr;</button>
             <input type="date" id="datePicker" value="{{ $data }}" onchange="irParaData(this.value)" style="height:32px;padding:0 8px;border-radius:8px;border:1px solid var(--border-strong);background:var(--card-solid);color:var(--text);font-family:inherit;font-size:13px;">
-        </div>
-        <div class="status-tabs" id="statusTabs">
-            <button class="status-tab active" data-status="all">Todos <span class="count">{{ $totalHoje }}</span></button>
-            <button class="status-tab" data-status="pendente">Pendente <span class="count">{{ $pendentes }}</span></button>
-            <button class="status-tab" data-status="confirmado">Confirmado <span class="count">{{ $confirmados }}</span></button>
-            <button class="status-tab" data-status="realizado">Realizado <span class="count">{{ $realizados }}</span></button>
-            <button class="status-tab" data-status="cancelado">Cancelado <span class="count">{{ $cancelados }}</span></button>
         </div>
     </div>
 
@@ -316,28 +325,25 @@ $slug = request()->route('barbearia')?->slug;
                 <tr>
                     <th style="width:110px">Hora</th>
                     <th>Cliente</th>
-                    <th>Barbeiro</th>
                     <th>Serviços</th>
-                    <th>Status</th>
-                    <th class="right">Valor</th>
                     <th class="right" style="width:120px">Ações</th>
                 </tr>
             </thead>
             <tbody id="appointmentsBody">
                 @forelse($agendamentos as $agendamento)
                 @php
-                    $s = $statusMap[$agendamento->status] ?? ['label' => ucfirst($agendamento->status), 'cls' => 'status-pending'];
                     $avClass = $avatarClasses[$agendamento->cliente_id % 6];
-                    $barberColor = $barberColors[$agendamento->barbeiro_id % 6];
                     $diff = Carbon::parse($agendamento->hora_inicio)->diffInMinutes(Carbon::parse($agendamento->hora_fim));
                     $durationLabel = $diff >= 60 ? floor($diff / 60) . 'h ' . ($diff % 60) . 'min' : $diff . ' min';
                     $serviceNames = $agendamento->servicos->pluck('nome')->implode(', ');
                     $serviceMeta = $agendamento->servicos->count() . ' serviço(s)';
-                    $pagamento = $agendamento->forma_pagamento ?? '—';
                     $temPlano = $agendamento->cliente->relationLoaded('planos')
                         ? $agendamento->cliente->planos->where('ativo', true)->isNotEmpty()
                         : ($agendamento->cliente->planoAtivo ? true : false);
                     $initials = getInitials($agendamento->cliente->nome);
+                    $venderUrl = $slug
+                        ? route('tenant.admin.vendas.create', [$slug, 'agendamento_id' => $agendamento->id])
+                        : route('admin.vendas.create', ['agendamento_id' => $agendamento->id]);
                 @endphp
                 <tr data-status="{{ $agendamento->status }}">
                     <td data-label="Hora">
@@ -350,15 +356,9 @@ $slug = request()->route('barbearia')?->slug;
                                 <div class="client-name">{{ $agendamento->cliente->nome }} @if($temPlano)<span class="badge-c gold" style="font-size:10px;padding:1px 6px;margin-left:4px;">Plano</span>@endif</div>
                                 <div class="client-meta"><svg class="icon icon-sm"><use href="#i-call"/></svg>{{ $agendamento->cliente->telefone }}</div>
                             </div>
-                        </div>
-                    </td>
-                    <td data-label="Barbeiro">
-                        <div class="barber-cell">
-                            <span class="barber-dot" style="background:{{ $barberColor }}"></span>
-                            <div>
-                                <div class="barber-name">{{ $agendamento->barbeiro->nome }}</div>
-                                <div class="barber-role">Barbeiro</div>
-                            </div>
+                            <a href="{{ $venderUrl }}" class="client-sell-btn" title="Vender produtos para este cliente">
+                                Vender
+                            </a>
                         </div>
                     </td>
                     <td data-label="Serviços">
@@ -367,8 +367,6 @@ $slug = request()->route('barbearia')?->slug;
                             <div class="svc-meta">{{ $serviceMeta }}</div>
                         </div>
                     </td>
-                    <td data-label="Status"><span class="status-badge {{ $s['cls'] }}">{{ $s['label'] }}</span></td>
-                    <td data-label="Valor" class="value-cell">R$ {{ number_format($agendamento->total, 2, ',', '.') }}@if($pagamento !== '—')<span class="badge-c outlined" style="font-size:10px;padding:1px 5px;margin-top:2px;">{{ $pagamento }}</span>@endif</td>
                     <td data-label="Ações">
                         <div class="actions-cell">
                             @php
@@ -379,28 +377,33 @@ $slug = request()->route('barbearia')?->slug;
                             @php $horaAgd = $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio; @endphp
                             @if(in_array($agendamento->status, ['pendente', 'confirmado']))
                             <button class="action-btn warning" data-action="{{ $realizarUrl }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
-                                <svg class="icon"><use href="#i-check-double"/></svg>
                                 <span class="action-label">Realizar</span>
                             </button>
                             @endif
+                            {{-- Vender (movido para a coluna do cliente)
+                            <a href="{{ $venderUrl }}" class="action-btn success" title="Vender produtos para este cliente">
+                                <svg class="icon"><use href="#i-receipt"/></svg>
+                                <span class="action-label">Vender</span>
+                            </a>
+                            --}}
                             <a href="{{ $slug ? route('tenant.admin.agendamentos.edit', [$slug, $agendamento]) : route('admin.agendamentos.edit', $agendamento) }}" class="action-btn">
-                                <svg class="icon"><use href="#i-edit"/></svg>
                                 <span class="action-label">Editar</span>
                             </a>
                             <a href="https://wa.me/55{{ preg_replace('/[^0-9]/', '', $agendamento->cliente->telefone) }}" class="action-btn success" target="_blank">
-                                <svg class="icon"><use href="#i-message"/></svg>
                                 <span class="action-label">WhatsApp</span>
                             </a>
+                            {{-- Excluir (removido das ações)
                             <button class="action-btn danger" onclick="confirmarExclusao('{{ $slug ? route('tenant.admin.agendamentos.destroy', [$slug, $agendamento]) : route('admin.agendamentos.destroy', $agendamento) }}')">
                                 <svg class="icon"><use href="#i-close"/></svg>
                                 <span class="action-label">Excluir</span>
                             </button>
+                            --}}
                         </div>
                     </td>
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="7" style="text-align:center;padding:40px 22px;color:var(--text-muted);">Nenhum agendamento encontrado para esta data.</td>
+                    <td colspan="4" style="text-align:center;padding:40px 22px;color:var(--text-muted);">Nenhum agendamento encontrado para esta data.</td>
                 </tr>
                 @endforelse
             </tbody>
@@ -583,28 +586,6 @@ $('#barbeiroSelect').change(function() {
             res.forEach(function(h) { select.append('<option value="' + h + '">' + h + '</option>'); });
         });
     }
-});
-
-const statusTabs = document.querySelectorAll('.status-tab');
-const rows = document.querySelectorAll('#appointmentsBody tr[data-status]');
-const resultCount = document.getElementById('resultCount');
-const showingCount = document.getElementById('showingCount');
-
-statusTabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-        statusTabs.forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-        const filter = this.dataset.status;
-        let visible = 0;
-        rows.forEach(row => {
-            const match = filter === 'all' || row.dataset.status === filter;
-            row.style.display = match ? '' : 'none';
-            if (match) visible++;
-        });
-        const total = rows.length;
-        resultCount.innerHTML = '<strong>' + visible + '</strong> de <strong>' + total + '</strong> resultados';
-        showingCount.textContent = visible;
-    });
 });
 
 const themeToggle = document.getElementById('themeToggle');

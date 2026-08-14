@@ -22,6 +22,8 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AvaliacaoController;
 use App\Http\Controllers\Admin\SecretariaController;
+use App\Http\Controllers\Admin\ProdutoController;
+use App\Http\Controllers\Admin\VendaController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -65,6 +67,7 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             'update' => 'barbeiros.update',
             'destroy' => 'barbeiros.destroy',
         ]);
+        Route::post('/barbeiros/{barbeiro}/toggle', [BarbeiroController::class, 'toggleAtivo'])->name('barbeiros.toggle');
 
         Route::resource('servicos', ServicoController::class)->names([
             'index' => 'servicos.index',
@@ -76,6 +79,20 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             'destroy' => 'servicos.destroy',
         ]);
         Route::post('/servicos/{servico}/replicar', [ServicoController::class, 'replicar'])->name('servicos.replicar');
+
+        Route::resource('produtos', ProdutoController::class)->names([
+            'index' => 'produtos.index',
+            'store' => 'produtos.store',
+            'update' => 'produtos.update',
+            'destroy' => 'produtos.destroy',
+        ]);
+
+        Route::get('/vendas', [VendaController::class, 'index'])->name('vendas.index');
+        Route::get('/vendas/create', [VendaController::class, 'create'])->name('vendas.create');
+        Route::post('/vendas', [VendaController::class, 'store'])->name('vendas.store');
+        Route::get('/vendas/{venda}/edit', [VendaController::class, 'edit'])->name('vendas.edit');
+        Route::put('/vendas/{venda}', [VendaController::class, 'update'])->name('vendas.update');
+        Route::delete('/vendas/{venda}', [VendaController::class, 'destroy'])->name('vendas.destroy');
 
         Route::resource('clientes', ClienteController::class)->names([
             'index' => 'clientes.index',
@@ -208,6 +225,14 @@ Route::prefix('barbeiro')->name('barbeiro.')->group(function () {
         Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
         Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
         Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
+
+        Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
+        Route::get('/vendas', [VendaController::class, 'index'])->name('vendas.index');
+        Route::get('/vendas/create', [VendaController::class, 'create'])->name('vendas.create');
+        Route::post('/vendas', [VendaController::class, 'store'])->name('vendas.store');
+        Route::get('/vendas/{venda}/edit', [VendaController::class, 'edit'])->name('vendas.edit');
+        Route::put('/vendas/{venda}', [VendaController::class, 'update'])->name('vendas.update');
+        Route::delete('/vendas/{venda}', [VendaController::class, 'destroy'])->name('vendas.destroy');
     });
 });
 
@@ -234,6 +259,7 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             'update' => 'barbeiros.update',
             'destroy' => 'barbeiros.destroy',
         ]);
+        Route::post('/barbeiros/{barbeiro}/toggle', [BarbeiroController::class, 'toggleAtivo'])->name('barbeiros.toggle');
 
         Route::resource('servicos', ServicoController::class)->names([
             'index' => 'servicos.index',
@@ -245,6 +271,20 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             'destroy' => 'servicos.destroy',
         ]);
         Route::post('/servicos/{servico}/replicar', [ServicoController::class, 'replicar'])->name('servicos.replicar');
+
+        Route::resource('produtos', ProdutoController::class)->names([
+            'index' => 'produtos.index',
+            'store' => 'produtos.store',
+            'update' => 'produtos.update',
+            'destroy' => 'produtos.destroy',
+        ]);
+
+        Route::get('/vendas', [VendaController::class, 'index'])->name('vendas.index');
+        Route::get('/vendas/create', [VendaController::class, 'create'])->name('vendas.create');
+        Route::post('/vendas', [VendaController::class, 'store'])->name('vendas.store');
+        Route::get('/vendas/{venda}/edit', [VendaController::class, 'edit'])->name('vendas.edit');
+        Route::put('/vendas/{venda}', [VendaController::class, 'update'])->name('vendas.update');
+        Route::delete('/vendas/{venda}', [VendaController::class, 'destroy'])->name('vendas.destroy');
 
         Route::resource('clientes', ClienteController::class)->names([
             'index' => 'clientes.index',
@@ -370,6 +410,14 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             Route::get('/bloqueios', [BloqueioController::class, 'index'])->name('bloqueios.index');
             Route::post('/bloqueios', [BloqueioController::class, 'store'])->name('bloqueios.store');
             Route::delete('/bloqueios/{bloqueio}', [BloqueioController::class, 'destroy'])->name('bloqueios.destroy');
+
+            Route::get('/produtos', [ProdutoController::class, 'index'])->name('produtos.index');
+            Route::get('/vendas', [VendaController::class, 'index'])->name('vendas.index');
+            Route::get('/vendas/create', [VendaController::class, 'create'])->name('vendas.create');
+            Route::post('/vendas', [VendaController::class, 'store'])->name('vendas.store');
+            Route::get('/vendas/{venda}/edit', [VendaController::class, 'edit'])->name('vendas.edit');
+            Route::put('/vendas/{venda}', [VendaController::class, 'update'])->name('vendas.update');
+            Route::delete('/vendas/{venda}', [VendaController::class, 'destroy'])->name('vendas.destroy');
         });
     });
 

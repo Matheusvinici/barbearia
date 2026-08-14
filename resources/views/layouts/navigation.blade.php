@@ -3,24 +3,30 @@
     $user = $isWeb ? Auth::guard('web')->user() : Auth::guard('barbeiro')->user();
     $__tenant = request()->route('barbearia');
     $__tenantSlug = $__tenant ? $__tenant->slug : null;
-    function navRoute($name, $params = []) {
-        $__tenantSlug = request()->route('barbearia')?->slug;
-        return $__tenantSlug
-            ? route('tenant.admin.' . $name, array_merge([$__tenantSlug], $params))
-            : route('admin.' . $name, $params);
-    }
-    function barbeiroNavRoute($name, $params = []) {
-        $__tenantSlug = request()->route('barbearia')?->slug;
-        return $__tenantSlug
-            ? route('tenant.barbeiro.' . $name, array_merge([$__tenantSlug], $params))
-            : route('barbeiro.' . $name, $params);
-    }
-    function isActive($patterns) {
-        $path = request()->path();
-        foreach ((array)$patterns as $p) {
-            if (str_starts_with($path, $p)) return true;
+    if (!function_exists('navRoute')) {
+        function navRoute($name, $params = []) {
+            $__tenantSlug = request()->route('barbearia')?->slug;
+            return $__tenantSlug
+                ? route('tenant.admin.' . $name, array_merge([$__tenantSlug], $params))
+                : route('admin.' . $name, $params);
         }
-        return false;
+    }
+    if (!function_exists('barbeiroNavRoute')) {
+        function barbeiroNavRoute($name, $params = []) {
+            $__tenantSlug = request()->route('barbearia')?->slug;
+            return $__tenantSlug
+                ? route('tenant.barbeiro.' . $name, array_merge([$__tenantSlug], $params))
+                : route('barbeiro.' . $name, $params);
+        }
+    }
+    if (!function_exists('isActive')) {
+        function isActive($patterns) {
+            $path = request()->path();
+            foreach ((array)$patterns as $p) {
+                if (str_starts_with($path, $p)) return true;
+            }
+            return false;
+        }
     }
 @endphp
 
@@ -68,6 +74,26 @@
     </a>
     @endif
 </div>
+
+@if($user->can('produto.view') || $user->can('venda.view'))
+<div class="nav-section">
+    <div class="nav-label">Vendas</div>
+
+    @if($user->can('venda.view'))
+    <a href="{{ $isWeb ? navRoute('vendas.index') : barbeiroNavRoute('vendas.index') }}" class="nav-item {{ isActive(['admin/vendas', 'barbeiro/vendas']) ? 'active' : '' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5c0-1.1.9-2 2-2h12c1.1 0 2 .9 2 2v15.5l-2.5-1.5L15 20.5 12.5 19 10 20.5 7.5 19 5 20.5 4 19.5V5z"/><path d="M8 8h8M8 11.5h8M8 15h5"/></svg>
+        <span>Vendas</span>
+    </a>
+    @endif
+
+    @if($user->can('produto.view'))
+    <a href="{{ $isWeb ? navRoute('produtos.index') : barbeiroNavRoute('produtos.index') }}" class="nav-item {{ isActive(['admin/produtos', 'barbeiro/produtos']) ? 'active' : '' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="M3.29 7L12 12l8.71-5M12 22V12"/></svg>
+        <span>Produtos</span>
+    </a>
+    @endif
+</div>
+@endif
 
 @if($user->can('despesa.view') || $user->can('caixa.view') || $user->can('relatorio.view'))
 <div class="nav-section">

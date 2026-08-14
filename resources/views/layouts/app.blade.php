@@ -14,12 +14,13 @@
 <title>@yield('title', $__tenant?->nome ?? Configuracao::get('nome_barbearia', 'Barber Control')) — Barber Control Pro</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ asset('css/studio-barber.css') }}">
+<link rel="stylesheet" href="{{ asset('css/studio-barber.css') }}?v={{ filemtime(public_path('css/studio-barber.css')) }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 @livewireStyles
 @stack('styles')
 </head>
 <body>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="sidebar">
     <div class="brand">
         <div class="brand-mark">
@@ -38,7 +39,7 @@
     @include('layouts.navigation')
     </div>
     <div class="sidebar-footer">
-        <div class="user-card" onclick="document.getElementById('user-dropdown').classList.toggle('show')">
+        <div class="user-card">
             <div class="user-avatar">{{ $__userInitial }}</div>
             <div class="user-info">
                 <strong>{{ $__userName }}</strong>
@@ -67,14 +68,19 @@
             @yield('topbar')
         @else
         <div class="topbar">
-            <div>
-                @hasSection('breadcrumb')
-                <div class="breadcrumb-trail">@yield('breadcrumb')</div>
-                @endif
-                <h1 class="page-title">@yield('title', 'Dashboard')</h1>
-                @hasSection('subtitle')
-                <div class="page-subtitle">@yield('subtitle')</div>
-                @endif
+            <div style="display:flex;align-items:center;gap:14px;min-width:0;">
+                <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+                </button>
+                <div style="min-width:0;">
+                    @hasSection('breadcrumb')
+                    <div class="breadcrumb-trail">@yield('breadcrumb')</div>
+                    @endif
+                    <h1 class="page-title">@yield('title', 'Dashboard')</h1>
+                    @hasSection('subtitle')
+                    <div class="page-subtitle">@yield('subtitle')</div>
+                    @endif
+                </div>
             </div>
             <div class="topbar-actions">
                 @yield('topbar-actions')
@@ -132,6 +138,37 @@ document.addEventListener('DOMContentLoaded', function() {
 @endif
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+(function() {
+    var toggle = document.getElementById('menuToggle');
+    var overlay = document.getElementById('sidebarOverlay');
+    var sidebar = document.querySelector('.sidebar');
+
+    function fecharSidebar() {
+        if (sidebar) sidebar.classList.remove('open');
+        if (overlay) overlay.classList.remove('show');
+    }
+
+    if (toggle && sidebar) {
+        toggle.addEventListener('click', function() {
+            sidebar.classList.toggle('open');
+            if (overlay) overlay.classList.toggle('show');
+        });
+        sidebar.querySelectorAll('a.nav-item').forEach(function(link) {
+            link.addEventListener('click', fecharSidebar);
+        });
+    }
+    if (overlay) overlay.addEventListener('click', fecharSidebar);
+
+    var userCard = document.querySelector('.user-card');
+    if (userCard) {
+        userCard.addEventListener('click', function() {
+            document.getElementById('user-dropdown').classList.toggle('show');
+        });
+    }
+})();
+</script>
 
 <script>
 (function() {

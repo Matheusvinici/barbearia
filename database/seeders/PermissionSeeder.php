@@ -25,6 +25,8 @@ class PermissionSeeder extends Seeder
             'configuracao.edit',
             'despesa.view', 'despesa.create', 'despesa.edit', 'despesa.delete',
             'caixa.view', 'caixa.abrir', 'caixa.fechar',
+            'produto.view', 'produto.create', 'produto.edit', 'produto.delete',
+            'venda.view', 'venda.create', 'venda.edit', 'venda.delete',
         ];
 
         // Admin guard permissions
@@ -62,6 +64,10 @@ class PermissionSeeder extends Seeder
             Permission::where('guard_name', 'barbeiro')->where('name', 'agendamento.confirmar')->first(),
             Permission::where('guard_name', 'barbeiro')->where('name', 'agendamento.realizar')->first(),
             Permission::where('guard_name', 'barbeiro')->where('name', 'agendamento.cancelar')->first(),
+            Permission::where('guard_name', 'barbeiro')->where('name', 'produto.view')->first(),
+            Permission::where('guard_name', 'barbeiro')->where('name', 'venda.view')->first(),
+            Permission::where('guard_name', 'barbeiro')->where('name', 'venda.create')->first(),
+            Permission::where('guard_name', 'barbeiro')->where('name', 'venda.edit')->first(),
         ]);
 
         // Secretaria role (web guard) - similar to funcionario but on admin side
@@ -87,6 +93,12 @@ class PermissionSeeder extends Seeder
             Permission::where('guard_name', 'web')->where('name', 'caixa.abrir')->first(),
             Permission::where('guard_name', 'web')->where('name', 'caixa.fechar')->first(),
             Permission::where('guard_name', 'web')->where('name', 'relatorio.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'produto.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'produto.create')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'produto.edit')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'venda.view')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'venda.create')->first(),
+            Permission::where('guard_name', 'web')->where('name', 'venda.edit')->first(),
         ]);
 
         $this->command->info('Permissões criadas com sucesso!');
