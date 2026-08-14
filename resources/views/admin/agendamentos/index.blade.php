@@ -117,6 +117,14 @@ if (!function_exists('getInitials')) {
 .status-tab .count { background: var(--border-strong); padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; min-width: 22px; text-align: center; }
 .status-tab.active .count { background: var(--accent); color: #0d0d12; }
 
+.status-toggle { display: flex; gap: 3px; padding: 4px; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; }
+.status-toggle-btn { padding: 8px 14px; border-radius: 9px; font-size: 13px; font-weight: 600; color: var(--text-muted); background: transparent; border: none; cursor: pointer; transition: all 180ms; display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-family: inherit; }
+.status-toggle-btn:hover { color: var(--text); }
+.status-toggle-btn.active { background: var(--card-solid); color: var(--text); box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+.status-toggle-btn .count { background: var(--border-strong); padding: 1px 7px; border-radius: 6px; font-size: 11px; font-weight: 700; min-width: 22px; text-align: center; }
+.status-toggle-btn.active .count { background: var(--accent); color: #0d0d12; }
+.status-toggle-btn.active svg { color: var(--accent); }
+
 .toolbar { padding: 1rem 2rem; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .toolbar-spacer { flex: 1; }
 .result-count { font-size: 13px; color: var(--text-muted); }
@@ -316,6 +324,18 @@ $slug = request()->route('barbearia')?->slug;
             @endforeach
         </select>
         <div class="toolbar-spacer"></div>
+        <div class="status-toggle" id="statusToggle">
+            <button type="button" class="status-toggle-btn active" id="btnPendentes" onclick="toggleLista('pendentes')">
+                <svg class="icon icon-xs"><use href="#i-clock"/></svg>
+                Pendentes
+                <span class="count" id="countPendentes"></span>
+            </button>
+            <button type="button" class="status-toggle-btn" id="btnRealizados" onclick="toggleLista('realizados')">
+                <svg class="icon icon-xs"><use href="#i-check"/></svg>
+                Realizados
+                <span class="count" id="countRealizados"></span>
+            </button>
+        </div>
         <div class="result-count" id="resultCount"><strong>{{ $totalHoje }}</strong> de <strong>{{ $totalHoje }}</strong> resultados</div>
     </div>
 
@@ -622,5 +642,51 @@ document.getElementById('searchInput')?.addEventListener('input', function() {
         row.style.display = text.includes(q) ? '' : 'none';
     });
 });
+
+let listMode = 'pendentes';
+const statusPriority = { pendente: 0, confirmado: 1, cancelado: 2, ausente: 2, realizado: 3 };
+
+function toggleLista(mode) {
+    listMode = mode;
+    document.getElementById('btnPendentes').classList.toggle('active', mode === 'pendentes');
+    document.getElementById('btnRealizados').classList.toggle('active', mode === 'realizados');
+    renderLista();
+}
+
+function renderLista() {
+    const tbody = document.getElementById('appointmentsBody');
+    const rows = [...tbody.querySelectorAll('tr[data-status]')];
+
+    const shown = listMode === 'pendentes'
+        ? rows.filter(r => statusPriority[r.dataset.status] < 3)
+        : rows.filter(r => r.dataset.status === 'realizado');
+
+    shown.sort((a, b) => (statusPriority[a.dataset.status] - statusPriority[b.dataset.status]) || 0);
+
+    tbody.querySelectorAll('tr:not([data-status])').forEach(r => r.remove());
+    rows.forEach(r => tbody.appendChild(r));
+    rows.forEach(r => r.style.display = 'none');
+    shown.forEach(r => { r.style.display = ''; tbody.appendChild(r); });
+
+    if (!shown.length) {
+        const empty = document.createElement('tr');
+        empty.id = 'emptyRow';
+        empty.innerHTML = '<td colspan="4" style="text-align:center;padding:40px 22px;color:var(--text-muted);">' +
+            (listMode === 'pendentes'
+                ? 'Nenhum agendamento pendente para esta data.'
+                : 'Nenhum agendamento realizado para esta data.') + '</td>';
+        tbody.appendChild(empty);
+    }
+
+    document.getElementById('showingCount').textContent = shown.length;
+    document.getElementById('resultCount').innerHTML = '<strong>' + shown.length + '</strong> de <strong>' + rows.length + '</strong> resultados';
+}
+
+(function initLista() {
+    const rows = document.querySelectorAll('#appointmentsBody tr[data-status]');
+    document.getElementById('countPendentes').textContent = [...rows].filter(r => statusPriority[r.dataset.status] < 3).length;
+    document.getElementById('countRealizados').textContent = [...rows].filter(r => r.dataset.status === 'realizado').length;
+    renderLista();
+})();
 </script>
 @endpush

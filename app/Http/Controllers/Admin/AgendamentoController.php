@@ -48,7 +48,10 @@ class AgendamentoController extends Controller
             $query->where('barbeiro_id', $barbeiroId);
         }
 
-        $agendamentos = $query->orderBy('hora_inicio')->get();
+        $agendamentos = $query
+            ->orderByRaw("CASE status WHEN 'pendente' THEN 0 WHEN 'confirmado' THEN 1 WHEN 'cancelado' THEN 2 WHEN 'ausente' THEN 2 ELSE 3 END")
+            ->orderBy('hora_inicio')
+            ->get();
 
         $barbeirosQuery = Barbeiro::where('ativo', true);
         $barbeariasQuery = Barbearia::orderBy('nome');
