@@ -641,7 +641,7 @@ body::before {
   .brand-panel { display: none; }
   .settings-grid { grid-template-columns: 1fr; }
 }
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .sidebar {
     width: var(--sidebar-w);
     padding: 26px 18px;
@@ -931,6 +931,6 @@ select.form-control option { background: var(--bg-elevated); color: var(--text);
 .text-white { color: #fff !important; }
 .text-dark { color: var(--text) !important; }
 
-@media (max-width: 768px) {
+@media (max-width: 992px) {
   .card-body > .table, .card-body.p-0 > .table { display: block; width: 100%; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
 }

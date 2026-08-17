@@ -137,16 +137,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 @endif
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <script>
 (function() {
     var sidebar = document.querySelector('.sidebar');
     var overlay = document.getElementById('sidebarOverlay');
     var body = document.body;
 
-    function isMobile() { return window.innerWidth <= 768; }
+    function isMobile() { return window.innerWidth <= 992; }
 
     function fecharSidebar() {
         if (sidebar) sidebar.classList.remove('open');
@@ -179,6 +176,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     if (overlay) overlay.addEventListener('click', fecharSidebar);
 
+    document.addEventListener('click', function(e) {
+        if (isMobile() && sidebar && sidebar.classList.contains('open')) {
+            if (!sidebar.contains(e.target) && !e.target.closest('#menuToggle, .menu-toggle, #mobileMenuBtn, .mobile-menu-btn')) {
+                fecharSidebar();
+            }
+        }
+    });
+
     window.addEventListener('resize', function() {
         if (isMobile()) {
             body.classList.remove('sidebar-collapsed');
@@ -195,6 +200,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 })();
 </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+
 
 <script>
 (function() {
