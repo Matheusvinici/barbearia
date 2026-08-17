@@ -13,6 +13,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>@yield('title', $__tenant?->nome ?? Configuracao::get('nome_barbearia', 'Barber Control')) — Barber Control Pro</title>
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ asset('css/studio-barber.css') }}?v={{ filemtime(public_path('css/studio-barber.css')) }}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
@@ -141,25 +142,50 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <script>
 (function() {
-    var toggle = document.getElementById('menuToggle');
-    var overlay = document.getElementById('sidebarOverlay');
     var sidebar = document.querySelector('.sidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    var body = document.body;
+
+    function isMobile() { return window.innerWidth <= 768; }
 
     function fecharSidebar() {
         if (sidebar) sidebar.classList.remove('open');
         if (overlay) overlay.classList.remove('show');
     }
 
-    if (toggle && sidebar) {
-        toggle.addEventListener('click', function() {
+    function toggleSidebar() {
+        if (!sidebar) return;
+        if (isMobile()) {
             sidebar.classList.toggle('open');
             if (overlay) overlay.classList.toggle('show');
-        });
+        } else {
+            body.classList.toggle('sidebar-collapsed');
+            sidebar.querySelectorAll('a.nav-item span').forEach(function(span) {
+                var link = span.closest('a');
+                if (link && !link.getAttribute('title') && span.textContent.trim()) {
+                    link.setAttribute('title', span.textContent.trim());
+                }
+            });
+        }
+    }
+
+    document.querySelectorAll('#menuToggle, #mobileMenuBtn, .menu-toggle, .mobile-menu-btn').forEach(function(btn) {
+        btn.addEventListener('click', toggleSidebar);
+    });
+    if (sidebar) {
         sidebar.querySelectorAll('a.nav-item').forEach(function(link) {
             link.addEventListener('click', fecharSidebar);
         });
     }
     if (overlay) overlay.addEventListener('click', fecharSidebar);
+
+    window.addEventListener('resize', function() {
+        if (isMobile()) {
+            body.classList.remove('sidebar-collapsed');
+        } else {
+            fecharSidebar();
+        }
+    });
 
     var userCard = document.querySelector('.user-card');
     if (userCard) {
