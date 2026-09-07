@@ -277,6 +277,9 @@ class AgendarWizard extends Component
 
         $this->agendamento = $ag;
         $this->success = true;
+
+        // Dispara evento para tocar alerta sonoro no frontend
+        $this->dispatch('agendamento-confirmado');
     }
 
     public function novoAgendamento()

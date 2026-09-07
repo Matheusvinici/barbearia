@@ -7,64 +7,75 @@
     @endphp
 
     {{-- ============================================================ --}}
-    {{-- SUCCESS SCREEN --}}
+    {{-- SUCCESS SCREEN — Tela Grande de Confirmação --}}
     {{-- ============================================================ --}}
     @if($success)
-    <div class="steps">
-        @foreach(['Unidade', 'Serviço', 'Profissional', 'Data/Hora', 'Confirmação'] as $si)
-        <div class="step-item done">
-            <div class="step-num"><svg class="icon icon-xs"><use href="#i-check"/></svg></div>
-            <span>{{ $si }}</span>
-        </div>
-        @if(!$loop->last)<div class="step-divider"></div>@endif
-        @endforeach
-    </div>
-
-    <div style="display:flex;flex-direction:column;align-items:center;max-width:600px;margin:0 auto;">
-        <div style="width:80px;height:80px;border-radius:50%;background:var(--success-bg);display:grid;place-items:center;margin-bottom:24px;position:relative;animation:pop-in 0.6s cubic-bezier(0.34,1.56,0.64,1);">
-            <div style="position:absolute;inset:-8px;border-radius:50%;border:2px solid var(--success);opacity:0.3;"></div>
-            <svg style="width:40px;height:40px;color:var(--success);"><use href="#i-check"/></svg>
-        </div>
-
-        <h1 style="font-size:32px;font-weight:800;letter-spacing:-0.035em;text-align:center;margin-bottom:8px;">Agendamento Confirmado!</h1>
-        <p style="font-size:16px;color:var(--text-muted);text-align:center;margin-bottom:32px;">Seu horário foi reservado com sucesso.</p>
-
-        <div style="width:100%;background:var(--card);backdrop-filter:blur(20px);border:1px solid var(--border-strong);border-radius:var(--r-lg);overflow:hidden;position:relative;margin-bottom:24px;">
-            <div style="position:absolute;width:24px;height:24px;background:var(--bg);border-radius:50%;top:50%;transform:translateY(-50%);left:-12px;z-index:2;"></div>
-            <div style="position:absolute;width:24px;height:24px;background:var(--bg);border-radius:50%;top:50%;transform:translateY(-50%);right:-12px;z-index:2;"></div>
-            <div style="background:var(--accent-glow);padding:20px 24px;border-bottom:2px dashed var(--border-strong);display:flex;align-items:center;justify-content:space-between;">
-                <span style="font-size:12px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.1em;">Protocolo #AG-{{ str_pad($agendamento->id, 4, '0', STR_PAD_LEFT) }}</span>
-                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--success-bg);color:var(--success);">
-                    <span style="width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse-dot 2s infinite;"></span>
-                    Confirmado
-                </span>
+    {{-- Overlay em tela cheia para destaque máximo --}}
+    <div class="success-overlay">
+        <div class="success-overlay-inner">
+            <div class="steps">
+                @foreach(['Unidade', 'Serviço', 'Profissional', 'Data/Hora', 'Confirmação'] as $si)
+                <div class="step-item done">
+                    <div class="step-num"><svg class="icon icon-xs"><use href="#i-check"/></svg></div>
+                    <span>{{ $si }}</span>
+                </div>
+                @if(!$loop->last)<div class="step-divider"></div>@endif
+                @endforeach
             </div>
-            <div style="padding:24px;">
-                <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-building"/></svg></div><div class="sum-info"><span class="lbl">Barbearia</span><span class="val">{{ $agendamento->barbearia?->nome ?? '-' }}</span></div></div>
-                <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-scissors-2"/></svg></div><div class="sum-info"><span class="lbl">Serviço</span><span class="val">{{ $agendamento->servicos->first()->nome ?? '-' }}</span></div></div>
-                <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-user-tag"/></svg></div><div class="sum-info"><span class="lbl">Profissional</span><span class="val">{{ $agendamento->barbeiro->nome }}</span></div></div>
-                <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-calendar"/></svg></div><div class="sum-info"><span class="lbl">Data</span><span class="val">{{ \Carbon\Carbon::parse($agendamento->data)->format('d/m/Y') }}</span></div></div>
-                <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-clock"/></svg></div><div class="sum-info"><span class="lbl">Horário</span><span class="val">{{ $agendamento->hora_inicio->format('H:i') }}</span></div></div>
-            </div>
-        </div>
 
-        <div style="width:100%;background:var(--info-bg);border:1px solid var(--info);border-radius:var(--r-md);padding:16px;display:flex;align-items:center;gap:14px;margin-bottom:32px;">
-            <div style="width:40px;height:40px;border-radius:10px;background:rgba(96,165,250,0.2);color:var(--info);display:grid;place-items:center;flex-shrink:0;">
-                <svg class="icon"><use href="#i-bell"/></svg>
-            </div>
-            <div style="font-size:14px;color:var(--text);line-height:1.4;">
-                Você receberá uma <strong>notificação 1 hora antes</strong> pelo sistema. Mantenha-se logado no Meus Agendamentos.
-            </div>
-        </div>
+            <div class="success-hero">
+                {{-- Ícone grande com animação --}}
+                <div class="success-icon-wrap">
+                    <div class="success-icon-ring"></div>
+                    <div class="success-icon-ring2"></div>
+                    <div class="success-icon">
+                        <svg style="width:52px;height:52px;"><use href="#i-check"/></svg>
+                    </div>
+                </div>
 
-        <div style="width:100%;display:flex;flex-direction:column;gap:12px;">
-            <button class="btn-primary-c" style="width:100%;justify-content:center;height:52px;" wire:click="novoAgendamento">
-                <svg class="icon icon-sm"><use href="#i-check"/></svg>
-                Novo Agendamento
-            </button>
-            <a href="{{ $slug ? route('tenant.site.meus-agendamentos', $slug) : route('site.meus-agendamentos') }}" class="btn-ghost-c" style="width:100%;justify-content:center;height:52px;text-decoration:none;">
-                Ver Meus Agendamentos
-            </a>
+                <h1 class="success-title">Agendamento Confirmado!</h1>
+                <p class="success-subtitle">Seu horário foi reservado com sucesso.<br>Estamos te esperando!</p>
+            </div>
+
+            {{-- Card do protocolo / resumo — maior e mais legível --}}
+            <div class="success-card">
+                <div class="success-card-notch-left"></div>
+                <div class="success-card-notch-right"></div>
+                <div class="success-card-header">
+                    <span class="success-protocol">Protocolo #AG-{{ str_pad($agendamento->id, 4, '0', STR_PAD_LEFT) }}</span>
+                    <span class="success-badge">
+                        <span class="success-badge-dot"></span>
+                        Confirmado
+                    </span>
+                </div>
+                <div class="success-card-body">
+                    <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-building"/></svg></div><div class="sum-info"><span class="lbl">Barbearia</span><span class="val">{{ $agendamento->barbearia?->nome ?? '-' }}</span></div></div>
+                    <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-scissors-2"/></svg></div><div class="sum-info"><span class="lbl">Serviço</span><span class="val">{{ $agendamento->servicos->first()->nome ?? '-' }}</span></div></div>
+                    <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-user-tag"/></svg></div><div class="sum-info"><span class="lbl">Profissional</span><span class="val">{{ $agendamento->barbeiro->nome }}</span></div></div>
+                    <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-calendar"/></svg></div><div class="sum-info"><span class="lbl">Data</span><span class="val">{{ \Carbon\Carbon::parse($agendamento->data)->format('d/m/Y') }}</span></div></div>
+                    <div class="summary-item"><div class="sum-ic"><svg class="icon icon-sm"><use href="#i-clock"/></svg></div><div class="sum-info"><span class="lbl">Horário</span><span class="val">{{ $agendamento->hora_inicio->format('H:i') }}</span></div></div>
+                </div>
+            </div>
+
+            <div class="success-info-box">
+                <div class="success-info-icon">
+                    <svg class="icon"><use href="#i-bell"/></svg>
+                </div>
+                <div class="success-info-text">
+                    Você receberá uma <strong>notificação 1 hora antes</strong> pelo sistema. Mantenha-se logado no Meus Agendamentos.
+                </div>
+            </div>
+
+            <div class="success-actions">
+                <a href="{{ $slug ? route('tenant.site.meus-agendamentos', $slug) : route('site.meus-agendamentos') }}" class="btn-primary-c success-btn-primary">
+                    <svg class="icon icon-sm"><use href="#i-calendar"/></svg>
+                    Ver Meus Agendamentos
+                </a>
+                <button class="btn-ghost-c success-btn-ghost" wire:click="novoAgendamento">
+                    <svg class="icon icon-sm"><use href="#i-check"/></svg>
+                    Fazer Novo Agendamento
+                </button>
+            </div>
         </div>
     </div>
 
@@ -559,6 +570,245 @@
     0% { transform: scale(0); opacity: 0; }
     70% { transform: scale(1.1); }
     100% { transform: scale(1); opacity: 1; }
+}
+@keyframes pulse-ring {
+    0% { transform: scale(0.85); opacity: 0.6; }
+    100% { transform: scale(1.35); opacity: 0; }
+}
+@keyframes pulse-ring2 {
+    0% { transform: scale(0.9); opacity: 0.4; }
+    100% { transform: scale(1.55); opacity: 0; }
+}
+@keyframes fade-up {
+    0% { transform: translateY(16px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+}
+/* ===== SUCCESS OVERLAY — TELA GRANDE ===== */
+.success-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: var(--bg);
+    background-image:
+        radial-gradient(900px 600px at 50% -10%, var(--accent-glow), transparent 60%),
+        radial-gradient(700px 500px at 0% 110%, rgba(96,165,250,0.06), transparent 60%);
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 32px 16px 40px;
+    animation: fade-up 0.45s ease;
+}
+.success-overlay-inner {
+    width: 100%;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: auto;
+    padding-top: 12px;
+}
+.success-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 28px;
+    animation: fade-up 0.5s ease 0.1s both;
+}
+.success-icon-wrap {
+    position: relative;
+    width: 168px;
+    height: 168px;
+    display: grid;
+    place-items: center;
+    margin-bottom: 34px;
+    animation: pop-in 0.7s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.success-icon {
+    width: 168px;
+    height: 168px;
+    border-radius: 50%;
+    background: var(--success-bg);
+    border: 4px solid var(--success);
+    display: grid;
+    place-items: center;
+    color: var(--success);
+    position: relative;
+    z-index: 2;
+    box-shadow: 0 16px 44px -12px rgba(74,222,128,0.55);
+}
+.success-icon svg { width: 78px !important; height: 78px !important; }
+.success-icon-ring,
+.success-icon-ring2 {
+    position: absolute;
+    inset: -6px;
+    border-radius: 50%;
+    border: 2px solid var(--success);
+    z-index: 1;
+    animation: pulse-ring 2s cubic-bezier(0.4,0,0.6,1) infinite;
+}
+.success-icon-ring2 {
+    inset: -14px;
+    animation: pulse-ring2 2s cubic-bezier(0.4,0,0.6,1) infinite 0.45s;
+    opacity: 0.35;
+}
+.success-title {
+    font-size: 56px;
+    font-weight: 900;
+    letter-spacing: -0.04em;
+    line-height: 1.05;
+    margin: 0 0 16px;
+    color: var(--text);
+    text-transform: uppercase;
+}
+.success-subtitle {
+    font-size: 20px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin: 0;
+    max-width: 460px;
+}
+.success-card {
+    width: 100%;
+    background: var(--card);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 20px;
+    box-shadow: 0 20px 60px -20px rgba(0,0,0,0.45);
+    animation: fade-up 0.5s ease 0.2s both;
+}
+.success-card-notch-left,
+.success-card-notch-right {
+    position: absolute;
+    width: 28px;
+    height: 28px;
+    background: var(--bg);
+    border-radius: 50%;
+    top: 68px;
+    z-index: 2;
+}
+.success-card-notch-left { left: -14px; }
+.success-card-notch-right { right: -14px; }
+.success-card-header {
+    background: var(--accent-glow);
+    padding: 22px 28px;
+    border-bottom: 2px dashed var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.success-protocol {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.11em;
+}
+.success-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--success-bg);
+    color: var(--success);
+    border: 1px solid rgba(74,222,128,0.25);
+}
+.success-badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse-dot 2s infinite;
+    flex-shrink: 0;
+}
+.success-card-body {
+    padding: 28px;
+}
+.success-card-body .summary-item {
+    padding: 16px 0;
+}
+.success-card-body .summary-item .sum-ic {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+}
+.success-card-body .sum-info .lbl {
+    font-size: 11.5px;
+}
+.success-card-body .sum-info .val {
+    font-size: 16px;
+}
+.success-info-box {
+    width: 100%;
+    background: var(--info-bg);
+    border: 1px solid rgba(96,165,250,0.35);
+    border-radius: var(--r-md);
+    padding: 18px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    animation: fade-up 0.5s ease 0.28s both;
+}
+.success-info-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(96,165,250,0.18);
+    color: var(--info);
+    display: grid;
+    place-items: center;
+    flex-shrink: 0;
+}
+.success-info-text {
+    font-size: 15px;
+    color: var(--text);
+    line-height: 1.45;
+}
+.success-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    animation: fade-up 0.5s ease 0.35s both;
+}
+.success-btn-primary,
+.success-btn-ghost {
+    width: 100%;
+    justify-content: center;
+    height: 56px;
+    font-size: 16px;
+    border-radius: 14px;
+    text-decoration: none;
+}
+.success-btn-primary { box-shadow: 0 10px 28px -10px var(--accent-glow); }
+@media (max-width: 640px) {
+    .success-overlay { padding: 20px 16px 32px; }
+    .success-icon-wrap { width: 128px; height: 128px; margin-bottom: 26px; }
+    .success-icon { width: 128px; height: 128px; }
+    .success-icon svg { width: 60px !important; height: 60px !important; }
+    .success-title { font-size: 34px; }
+    .success-subtitle { font-size: 16px; }
+    .success-card-header { padding: 18px 20px; }
+    .success-card-body { padding: 20px; }
+    .success-card-body .sum-info .val { font-size: 15px; }
+    .success-info-text { font-size: 13.5px; }
+    .success-btn-primary, .success-btn-ghost { height: 52px; font-size: 15px; }
+}
+@media (min-width: 900px) {
+    .success-overlay-inner { max-width: 800px; }
+    .success-title { font-size: 62px; }
+    .success-subtitle { font-size: 21px; max-width: 520px; }
 }
 </style>
 </div>
