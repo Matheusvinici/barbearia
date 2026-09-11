@@ -473,14 +473,28 @@ $slug = request()->route('barbearia')?->slug;
 <div class="modal fade" id="modalNovoAgendamento" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="{{ $slug ? route('tenant.admin.agendamentos.store', $slug) : route('admin.agendamentos.store') }}" method="POST">
+            <form action="{{ $slug ? route('tenant.admin.agendamentos.store', $slug) : route('admin.agendamentos.store') }}" method="POST" id="formNovoAgendamento">
                 @csrf
-                <input type="hidden" name="data" value="{{ request('data', now()->format('Y-m-d')) }}">
                 <div class="modal-header">
                     <h5 class="modal-title">Novo Agendamento</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    @if($errors->any())
+                        <div class="alert alert-danger py-2">
+                            <ul class="mb-0 small">
+                                @foreach($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                        </div>
+                    @endif
+                    @if(session('success'))
+                        <div class="alert alert-success py-2">{{ session('success') }}</div>
+                    @endif
+                    @if(session('error'))
+                        <div class="alert alert-danger py-2">{{ session('error') }}</div>
+                    @endif
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label>Barbearia</label>
@@ -492,11 +506,24 @@ $slug = request()->route('barbearia')?->slug;
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Cliente</label>
+                            <label>Data <span class="text-danger">*</span></label>
+                            <input type="date" name="data" class="form-control" id="dataAgendamento" value="{{ request('data', now()->format('Y-m-d')) }}" required>
+                        </div>
+                        <div class="col-md-12 mb-2">
+                            <label>Cliente <span class="text-muted" style="font-weight:normal">(busque existente)</span></label>
                             @livewire('admin.buscar-cliente')
+                            <small class="text-muted">Se não encontrar, preencha nome/telefone abaixo para criar novo cliente.</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Barbeiro</label>
+                            <label>Nome do cliente <span class="text-muted" style="font-weight:normal">(novo)</span></label>
+                            <input type="text" name="cliente_nome_manual" id="clienteNomeManual" class="form-control" placeholder="Ex: João Silva">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Telefone <span class="text-muted" style="font-weight:normal">(opcional)</span></label>
+                            <input type="tel" name="cliente_telefone_manual" id="clienteTelefoneManual" class="form-control" placeholder="(00) 00000-0000">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Barbeiro <span class="text-danger">*</span></label>
                             <select name="barbeiro_id" class="form-control" id="barbeiroSelect" required>
                                 <option value="">Selecione...</option>
                                 @foreach($barbeiros as $b)
@@ -505,18 +532,19 @@ $slug = request()->route('barbearia')?->slug;
                             </select>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Horário</label>
+                            <label>Horário <span class="text-danger">*</span></label>
                             <select name="hora_inicio" class="form-control" id="horarioSelect" required>
                                 <option value="">Selecione barbeiro e data primeiro</option>
                             </select>
+                            <small class="text-muted" id="horarioHelp">Mesma disponibilidade do agendamento do cliente + bloqueios.</small>
                         </div>
                         <div class="col-md-6 mb-3">
-                            <label>Serviços</label>
-                            <div class="border rounded p-2" style="max-height:150px;overflow-y:auto">
+                            <label>Serviços <span class="text-danger">*</span></label>
+                            <div class="border rounded p-2" style="max-height:150px;overflow-y:auto" id="servicosList">
                                 @foreach($servicos as $s)
                                 <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="servico_ids[]" value="{{ $s->id }}" id="servico{{ $s->id }}">
-                                    <label class="form-check-label small" for="servico{{ $s->id }}">{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }}</label>
+                                    <input class="form-check-input servico-check" type="checkbox" name="servico_ids[]" value="{{ $s->id }}" id="servico{{ $s->id }}">
+                                    <label class="form-check-label small" for="servico{{ $s->id }}">{{ $s->nome }} - R$ {{ number_format($s->preco, 2, ',', '.') }} <small class="text-muted">({{ $s->duracao_minutos }}min)</small></label>
                                 </div>
                                 @endforeach
                             </div>
@@ -596,15 +624,88 @@ function confirmarExclusao(url) {
     });
 }
 
-$('#barbeiroSelect').change(function() {
-    const barbeiroId = $(this).val();
-    const data = $('input[name="data"]').val();
-    if (barbeiroId && data) {
-        $.get('{{ route("admin.agendamentos.horarios") }}', { barbeiro_id: barbeiroId, data: data }, function(res) {
-            const select = $('#horarioSelect');
-            select.html('<option value="">Selecione...</option>');
-            res.forEach(function(h) { select.append('<option value="' + h + '">' + h + '</option>'); });
+const horariosUrl = '{{ $slug ? route("tenant.admin.agendamentos.horarios", $slug) : route("admin.agendamentos.horarios") }}';
+
+function getServicosSelecionados() {
+    const vals = [];
+    document.querySelectorAll('.servico-check:checked').forEach(el => vals.push(el.value));
+    return vals;
+}
+
+function carregarHorarios() {
+    const barbeiroId = document.getElementById('barbeiroSelect')?.value;
+    const data = document.getElementById('dataAgendamento')?.value;
+    const select = document.getElementById('horarioSelect');
+    if (!barbeiroId || !data) {
+        if (select) select.innerHTML = '<option value="">Selecione barbeiro e data primeiro</option>';
+        return;
+    }
+    if (select) select.innerHTML = '<option value="">Carregando...</option>';
+    const servicos = getServicosSelecionados();
+    const params = { barbeiro_id: barbeiroId, data: data };
+    // Envia servico_ids para considerar duração (opcional, mantém compatibilidade)
+    if (servicos.length) params['servico_ids[]'] = servicos;
+
+    // Monta query string manualmente para suportar array
+    const qs = new URLSearchParams();
+    qs.set('barbeiro_id', barbeiroId);
+    qs.set('data', data);
+    servicos.forEach(id => qs.append('servico_ids[]', id));
+
+    fetch(horariosUrl + '?' + qs.toString(), { headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(res => {
+            if (!Array.isArray(res)) res = [];
+            if (res.length === 0) {
+                select.innerHTML = '<option value="">Nenhum horário disponível (verifique bloqueios/dia fechado)</option>';
+                document.getElementById('horarioHelp').textContent = 'Nenhum horário para este barbeiro no dia selecionado. Verifique bloqueios ou horário de funcionamento.';
+                document.getElementById('horarioHelp').style.color = 'var(--danger)';
+            } else {
+                select.innerHTML = '<option value="">Selecione...</option>';
+                res.forEach(function(h) {
+                    const opt = document.createElement('option');
+                    opt.value = h;
+                    opt.textContent = h;
+                    select.appendChild(opt);
+                });
+                document.getElementById('horarioHelp').textContent = res.length + ' horários disponíveis - mesma regra do cliente + bloqueios.';
+                document.getElementById('horarioHelp').style.color = 'var(--text-muted)';
+            }
+        })
+        .catch(() => {
+            select.innerHTML = '<option value="">Erro ao carregar horários</option>';
         });
+}
+
+document.getElementById('barbeiroSelect')?.addEventListener('change', carregarHorarios);
+document.getElementById('dataAgendamento')?.addEventListener('change', carregarHorarios);
+document.querySelectorAll('.servico-check').forEach(el => el.addEventListener('change', carregarHorarios));
+
+// Quando a modal abrir, tenta carregar
+document.getElementById('modalNovoAgendamento')?.addEventListener('shown.bs.modal', carregarHorarios);
+
+// Compat jQuery antigo
+$('#barbeiroSelect').on('change', carregarHorarios);
+
+document.getElementById('formNovoAgendamento')?.addEventListener('submit', function(e) {
+    const clienteId = document.querySelector('input[name="cliente_id"]')?.value?.trim();
+    const nomeManual = document.getElementById('clienteNomeManual')?.value?.trim();
+    if (!clienteId && !nomeManual) {
+        e.preventDefault();
+        Swal.fire({title:'Informe o cliente', text:'Selecione um cliente existente ou digite o nome do novo cliente.', icon:'warning'});
+        return false;
+    }
+    const servicosSel = getServicosSelecionados();
+    if (servicosSel.length===0) {
+        e.preventDefault();
+        Swal.fire({title:'Selecione o serviço', text:'Escolha ao menos um serviço.', icon:'warning'});
+        return false;
+    }
+    const horario = document.getElementById('horarioSelect')?.value;
+    if (!horario) {
+        e.preventDefault();
+        Swal.fire({title:'Selecione o horário', text:'Escolha um horário disponível.', icon:'warning'});
+        return false;
     }
 });
 
@@ -688,5 +789,11 @@ function renderLista() {
     document.getElementById('countRealizados').textContent = [...rows].filter(r => r.dataset.status === 'realizado').length;
     renderLista();
 })();
+
+@if($errors->any())
+document.addEventListener('DOMContentLoaded', function(){
+    try { new bootstrap.Modal(document.getElementById('modalNovoAgendamento')).show(); } catch(e){}
+});
+@endif
 </script>
 @endpush

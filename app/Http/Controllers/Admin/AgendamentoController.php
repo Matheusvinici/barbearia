@@ -84,7 +84,11 @@ class AgendamentoController extends Controller
         $data = $request->validate([
             'barbearia_id' => 'nullable|exists:barbearias,id',
             'barbeiro_id' => 'required|exists:barbeiros,id',
-            'cliente_id' => 'required|exists:clientes,id',
+            'cliente_id' => 'nullable|exists:clientes,id',
+            'cliente_nome_manual' => 'nullable|string|max:255',
+            'cliente_telefone_manual' => 'nullable|string|max:20',
+            'nome_cliente' => 'nullable|string|max:255',
+            'telefone_cliente' => 'nullable|string|max:20',
             'servico_ids' => 'required|array',
             'servico_ids.*' => 'exists:servicos,id',
             'data' => 'required|date',
@@ -94,21 +98,121 @@ class AgendamentoController extends Controller
             'observacoes' => 'nullable|string',
         ]);
 
+        // Resolver cliente: aceita cliente_id existente OU nome/telefone manual (telefone opcional)
+        $clienteId = $data['cliente_id'] ?? null;
+        if (!$clienteId) {
+            $nomeManual = trim($data['cliente_nome_manual'] ?? $data['nome_cliente'] ?? $request->input('cliente_nome_manual') ?? $request->input('nome_cliente') ?? '');
+            $telManualRaw = $data['cliente_telefone_manual'] ?? $data['telefone_cliente'] ?? $request->input('cliente_telefone_manual') ?? $request->input('telefone_cliente') ?? '';
+            $telManual = preg_replace('/\D/', '', (string) $telManualRaw);
+
+            if ($nomeManual === '') {
+                return back()->withErrors(['cliente_id' => 'Informe o cliente: selecione um existente ou digite o nome.'])->withInput();
+            }
+
+            // Se telefone foi informado, tenta reaproveitar cliente existente pelo telefone
+            if ($telManual !== '' && strlen($telManual) >= 10) {
+                $clienteExistente = Cliente::where('telefone', $telManual)->first();
+                if ($clienteExistente) {
+                    $clienteId = $clienteExistente->id;
+                    // Opcional: atualiza nome se diferente
+                    if (strtolower(trim($clienteExistente->nome)) !== strtolower($nomeManual)) {
+                        // Mantém nome existente para não sobrescrever sem consentimento; apenas loga
+                    }
+                } else {
+                    $cliente = Cliente::create([
+                        'nome' => $nomeManual,
+                        'telefone' => $telManual,
+                        'barbearia_id' => $data['barbearia_id'] ?? $this->tenantId(),
+                    ]);
+                    $clienteId = $cliente->id;
+                }
+            } else {
+                // Telefone opcional/ausente: gera telefone único fictício para satisfazer constraint unique
+                $telDummy = $telManual !== '' ? $telManual : '999' . time() . rand(100, 999);
+                // Garante unicidade
+                $attempts = 0;
+                while (Cliente::where('telefone', $telDummy)->exists() && $attempts < 5) {
+                    $telDummy = '999' . time() . rand(100, 999) . $attempts;
+                    $attempts++;
+                }
+                // Se ainda existir, adiciona microtime
+                if (Cliente::where('telefone', $telDummy)->exists()) {
+                    $telDummy = '999' . microtime(true) * 10000 . rand(10, 99);
+                    $telDummy = substr(preg_replace('/\D/', '', $telDummy), 0, 20);
+                }
+                $cliente = Cliente::create([
+                    'nome' => $nomeManual,
+                    'telefone' => $telDummy,
+                    'barbearia_id' => $data['barbearia_id'] ?? $this->tenantId(),
+                ]);
+                $clienteId = $cliente->id;
+            }
+        }
+
         if ($this->isTenantContext() && empty($data['barbearia_id'])) {
             $data['barbearia_id'] = $this->tenantId();
         }
 
         $servicos = Servico::whereIn('id', $data['servico_ids'])->get();
-        $totalMinutos = $servicos->sum('duracao_minutos');
+        $totalMinutos = (int) $servicos->sum('duracao_minutos');
+        if ($totalMinutos <= 0) $totalMinutos = 30;
         $totalValor = $servicos->sum('preco');
 
         $horaInicio = Carbon::parse($data['data'] . ' ' . $data['hora_inicio']);
-        $horaFim = $horaInicio->copy()->addMinutes($totalMinutos);
+        $horaFim = $horaInicio->copy()->addMinutes((int) $totalMinutos);
+
+        // Validação de conflito: evita sobreposição com agendamentos/bloqueios (mesma lógica de horariosDisponiveis)
+        $diaSemanaStore = Carbon::parse($data['data'])->dayOfWeek;
+        $agendamentosDia = Agendamento::where('barbeiro_id', $data['barbeiro_id'])
+            ->whereDate('data', $data['data'])
+            ->whereNotIn('status', ['cancelado', 'ausente'])
+            ->get(['hora_inicio', 'hora_fim']);
+        foreach ($agendamentosDia as $ag) {
+            $hi = $ag->hora_inicio instanceof Carbon ? $ag->hora_inicio->format('H:i') : substr((string) $ag->hora_inicio, 0, 5);
+            $hf = $ag->hora_fim instanceof Carbon ? $ag->hora_fim->format('H:i') : substr((string) $ag->hora_fim, 0, 5);
+            $agIni = Carbon::parse($data['data'] . ' ' . $hi);
+            $agFim = Carbon::parse($data['data'] . ' ' . $hf);
+            if ($horaInicio < $agFim && $horaFim > $agIni) {
+                return back()->withErrors(['hora_inicio' => 'Horário conflita com outro agendamento (' . $hi . '-' . $hf . '). Escolha outro.'])->withInput();
+            }
+        }
+        $bloqueiosDia = BloqueioAgenda::where('barbeiro_id', $data['barbeiro_id'])
+            ->where(function ($q) use ($data) {
+                $q->whereDate('data', $data['data'])
+                  ->orWhere('recorrente', true);
+            })->get(['data', 'hora_inicio', 'hora_fim', 'recorrente', 'motivo']);
+        foreach ($bloqueiosDia as $bl) {
+            if ($bl->recorrente) {
+                $blDia = Carbon::parse($bl->data)->dayOfWeek;
+                if ($bl->data->format('Y-m-d') !== $data['data'] && $blDia !== $diaSemanaStore) {
+                    continue;
+                }
+            } else {
+                if ($bl->data->format('Y-m-d') !== $data['data']) continue;
+            }
+            $hi = $bl->hora_inicio instanceof Carbon ? $bl->hora_inicio->format('H:i') : substr((string) $bl->hora_inicio, 0, 5);
+            $hf = $bl->hora_fim instanceof Carbon ? $bl->hora_fim->format('H:i') : substr((string) $bl->hora_fim, 0, 5);
+            $blIni = Carbon::parse($data['data'] . ' ' . $hi);
+            $blFim = Carbon::parse($data['data'] . ' ' . $hf);
+            if ($horaInicio < $blFim && $horaFim > $blIni) {
+                return back()->withErrors(['hora_inicio' => 'Horário bloqueado (' . $hi . '-' . $hf . ($bl->motivo ? ' - ' . $bl->motivo : '') . '). Escolha outro.'])->withInput();
+            }
+        }
+
+        // Verifica se barbeiro atende no dia (se tem horários cadastrados mas não para este dia, bloqueia)
+        $barbeiroCheck = Barbeiro::with('horarios')->find($data['barbeiro_id']);
+        $horariosAtivos = $barbeiroCheck?->horarios->where('ativo', true);
+        if ($horariosAtivos && $horariosAtivos->isNotEmpty()) {
+            $temNoDia = $horariosAtivos->where('dia_semana', $diaSemanaStore)->isNotEmpty();
+            if (!$temNoDia) {
+                return back()->withErrors(['data' => 'Barbeiro não atende neste dia da semana. Escolha outro dia ou verifique a escala.'])->withInput();
+            }
+        }
 
         $agendamento = Agendamento::create([
             'barbearia_id' => $data['barbearia_id'] ?? null,
             'barbeiro_id' => $data['barbeiro_id'],
-            'cliente_id' => $data['cliente_id'],
+            'cliente_id' => $clienteId,
             'data' => $data['data'],
             'forma_pagamento' => $data['forma_pagamento'] ?? null,
             'hora_inicio' => $horaInicio->format('H:i'),
@@ -196,11 +300,12 @@ class AgendamentoController extends Controller
         ]);
 
         $servicos = Servico::whereIn('id', $data['servico_ids'])->get();
-        $totalMinutos = $servicos->sum('duracao_minutos');
+        $totalMinutos = (int) $servicos->sum('duracao_minutos');
+        if ($totalMinutos <= 0) $totalMinutos = 30;
         $totalValor = $servicos->sum('preco');
 
         $horaInicio = Carbon::parse($data['data'] . ' ' . $data['hora_inicio']);
-        $horaFim = $horaInicio->copy()->addMinutes($totalMinutos);
+        $horaFim = $horaInicio->copy()->addMinutes((int) $totalMinutos);
 
         $oldStatus = $agendamento->status;
 
@@ -276,6 +381,8 @@ class AgendamentoController extends Controller
         $request->validate([
             'barbeiro_id' => 'required|exists:barbeiros,id',
             'data' => 'required|date',
+            'servico_ids' => 'nullable|array',
+            'servico_ids.*' => 'exists:servicos,id',
         ]);
 
         $data = $request->data;
@@ -287,62 +394,179 @@ class AgendamentoController extends Controller
             ->whereNotIn('status', ['cancelado', 'ausente'])
             ->get(['hora_inicio', 'hora_fim']);
 
-        $bloqueios = BloqueioAgenda::where('barbeiro_id', $barbeiroId)
-            ->whereDate('data', $data)
-            ->get(['hora_inicio', 'hora_fim']);
+        // Bloqueios: considera data exata + recorrentes semanais (mesmo dia da semana)
+        $bloqueiosQuery = BloqueioAgenda::where('barbeiro_id', $barbeiroId)
+            ->where(function ($q) use ($data) {
+                $q->whereDate('data', $data)
+                  ->orWhere('recorrente', true);
+            })
+            ->get(['data', 'hora_inicio', 'hora_fim', 'recorrente']);
+
+        $bloqueios = $bloqueiosQuery->filter(function ($bl) use ($data, $diaSemana) {
+            if ($bl->recorrente) {
+                // Se é recorrente, verifica se o dia da semana bate
+                $blDia = Carbon::parse($bl->data)->dayOfWeek;
+                // Se a data do bloqueio é a mesma que a consultada, sempre considera
+                if ($bl->data->format('Y-m-d') === $data) {
+                    return true;
+                }
+                return $blDia === $diaSemana;
+            }
+            return $bl->data->format('Y-m-d') === $data;
+        })->values();
 
         $barbeiro = Barbeiro::with('horarios')->find($barbeiroId);
-        $horarioBarbeiro = $barbeiro?->horarios->where('dia_semana', $diaSemana)->where('ativo', true)->first();
+        $horariosBarbeiro = $barbeiro?->horarios->where('ativo', true);
+        $periodos = $horariosBarbeiro?->where('dia_semana', $diaSemana);
 
-        if ($horarioBarbeiro) {
-            $abertura = $horarioBarbeiro->hora_inicio;
-            $fechamento = $horarioBarbeiro->hora_fim;
+        $faixas = [];
+        if ($periodos && $periodos->isNotEmpty()) {
+            foreach ($periodos as $p) {
+                $hi = $p->hora_inicio instanceof Carbon ? $p->hora_inicio->format('H:i') : (is_string($p->hora_inicio) ? substr($p->hora_inicio, 0, 5) : Carbon::parse($p->hora_inicio)->format('H:i'));
+                $hf = $p->hora_fim instanceof Carbon ? $p->hora_fim->format('H:i') : (is_string($p->hora_fim) ? substr($p->hora_fim, 0, 5) : Carbon::parse($p->hora_fim)->format('H:i'));
+                $faixas[] = ['inicio' => $hi, 'fim' => $hf];
+            }
+        } elseif ($horariosBarbeiro && $horariosBarbeiro->isNotEmpty()) {
+            // Barbeiro tem horário cadastrado mas não atende neste dia
+            return response()->json([]);
         } else {
-            $abertura = Configuracao::get('horario_abertura', '08:00');
-            $fechamento = Configuracao::get('horario_fechamento', '18:00');
+            // Fallback: tenta usar horários da barbearia do barbeiro ou global
+            $barbearia = $barbeiro?->barbearia;
+            // Tenta buscar faixas agregadas de BarbeiroHorario da barbearia (como no wizard)
+            $horariosDaBarbearia = collect();
+            if ($barbearia) {
+                $horariosDaBarbearia = \App\Models\BarbeiroHorario::where('ativo', true)
+                    ->whereHas('barbeiro', function ($q) use ($barbearia) {
+                        $q->where('ativo', true)
+                          ->where(function ($q2) use ($barbearia) {
+                              $q2->where('barbearia_id', $barbearia->id)->orWhereNull('barbearia_id');
+                          });
+                    })
+                    ->where('dia_semana', $diaSemana)
+                    ->get(['hora_inicio', 'hora_fim']);
+            }
+
+            if ($horariosDaBarbearia->isNotEmpty()) {
+                $ab = $horariosDaBarbearia->min('hora_inicio');
+                $fe = $horariosDaBarbearia->max('hora_fim');
+                $abStr = $ab instanceof Carbon ? $ab->format('H:i') : substr((string) $ab, 0, 5);
+                $feStr = $fe instanceof Carbon ? $fe->format('H:i') : substr((string) $fe, 0, 5);
+                $faixas[] = ['inicio' => $abStr, 'fim' => $feStr];
+            } else {
+                // Verifica dias de funcionamento da barbearia / global
+                if ($barbearia) {
+                    $diasFunc = array_map('intval', explode(',', $barbearia->dias_funcionamento ?? Configuracao::get('dias_funcionamento', '1,2,3,4,5,6')));
+                    if (!in_array($diaSemana, $diasFunc)) {
+                        return response()->json([]);
+                    }
+                    $faixas[] = [
+                        'inicio' => $barbearia->horario_abertura ?? Configuracao::get('horario_abertura', '08:00'),
+                        'fim' => $barbearia->horario_fechamento ?? Configuracao::get('horario_fechamento', '18:00'),
+                    ];
+                } else {
+                    $diasFunc = array_map('intval', explode(',', Configuracao::get('dias_funcionamento', '1,2,3,4,5,6')));
+                    if (!in_array($diaSemana, $diasFunc)) {
+                        return response()->json([]);
+                    }
+                    $faixas[] = [
+                        'inicio' => Configuracao::get('horario_abertura', '08:00'),
+                        'fim' => Configuracao::get('horario_fechamento', '18:00'),
+                    ];
+                }
+            }
         }
 
-        $intervalo = (int) Configuracao::get('intervalo_minutos', '30');
+        // Merge faixas contíguas (ex: 14:00-18:00 + 18:00-22:00 => 14:00-22:00) para serviços que atravessam períodos
+        usort($faixas, fn($a,$b) => strcmp($a['inicio'], $b['inicio']));
+        $merged = [];
+        foreach ($faixas as $f) {
+            if (empty($merged)) {
+                $merged[] = $f;
+            } else {
+                $lastIdx = count($merged)-1;
+                $lastFim = $merged[$lastIdx]['fim'];
+                // Se a próxima faixa começa <= fim da anterior (contígua ou sobreposta), mescla
+                if ($f['inicio'] <= $lastFim) {
+                    if ($f['fim'] > $lastFim) $merged[$lastIdx]['fim'] = $f['fim'];
+                } else {
+                    $merged[] = $f;
+                }
+            }
+        }
+        $faixas = $merged;
+
+        // Intervalo e duração do serviço (para checar se cabe no slot)
+        $barbeariaIntervalo = $barbeiro?->barbearia?->intervalo_minutos ?? null;
+        $intervalo = (int) ($barbeariaIntervalo ?? Configuracao::get('intervalo_minutos', '30'));
+
+        $duracaoServico = null;
+        if ($request->filled('servico_ids')) {
+            $duracaoServico = (int) Servico::whereIn('id', $request->servico_ids)->sum('duracao_minutos');
+            if ($duracaoServico <= 0) {
+                $duracaoServico = $intervalo;
+            }
+        }
+        $slotDuracao = (int) ($duracaoServico ?: $intervalo);
+
+        $agora = Carbon::now();
+        $hoje = $agora->format('Y-m-d');
 
         $horarios = [];
-        $inicio = Carbon::parse($data . ' ' . $abertura);
-        $fim = Carbon::parse($data . ' ' . $fechamento);
+        foreach ($faixas as $faixa) {
+            $inicio = Carbon::parse($data . ' ' . $faixa['inicio']);
+            $fim = Carbon::parse($data . ' ' . $faixa['fim']);
 
-        while ($inicio < $fim) {
-            $fimSlot = $inicio->copy()->addMinutes($intervalo);
-
-            $disponivel = true;
-
-            foreach ($agendamentos as $ag) {
-                $hi = $ag->hora_inicio instanceof \Carbon\Carbon ? $ag->hora_inicio->format('H:i') : $ag->hora_inicio;
-                $hf = $ag->hora_fim instanceof \Carbon\Carbon ? $ag->hora_fim->format('H:i') : $ag->hora_fim;
-                $agInicio = Carbon::parse($data . ' ' . $hi);
-                $agFim = Carbon::parse($data . ' ' . $hf);
-                if ($inicio < $agFim && $fimSlot > $agInicio) {
-                    $disponivel = false;
-                    break;
+            while ($inicio->copy()->addMinutes($slotDuracao) <= $fim || ($slotDuracao === $intervalo && $inicio < $fim)) {
+                // Se for hoje, ignora horários já passados (igual wizard/bot)
+                if ($data === $hoje && $inicio <= $agora) {
+                    $inicio->addMinutes($intervalo);
+                    continue;
                 }
-            }
 
-            foreach ($bloqueios as $bl) {
-                $hi = $bl->hora_inicio instanceof \Carbon\Carbon ? $bl->hora_inicio->format('H:i') : $bl->hora_inicio;
-                $hf = $bl->hora_fim instanceof \Carbon\Carbon ? $bl->hora_fim->format('H:i') : $bl->hora_fim;
-                $blInicio = Carbon::parse($data . ' ' . $hi);
-                $blFim = Carbon::parse($data . ' ' . $hf);
-                if ($inicio < $blFim && $fimSlot > $blInicio) {
-                    $disponivel = false;
-                    break;
+                // Para slot com duração custom, garante que o fim do serviço não ultrapasse o fim da faixa
+                $fimSlot = $inicio->copy()->addMinutes($slotDuracao);
+                if ($fimSlot > $fim) {
+                    $inicio->addMinutes($intervalo);
+                    continue;
                 }
-            }
 
-            if ($disponivel) {
-                $horarios[] = $inicio->format('H:i');
-            }
+                $disponivel = true;
 
-            $inicio->addMinutes($intervalo);
+                foreach ($agendamentos as $ag) {
+                    $hi = $ag->hora_inicio instanceof Carbon ? $ag->hora_inicio->format('H:i') : (string) $ag->hora_inicio;
+                    $hf = $ag->hora_fim instanceof Carbon ? $ag->hora_fim->format('H:i') : (string) $ag->hora_fim;
+                    $agInicio = Carbon::parse($data . ' ' . substr($hi, 0, 5));
+                    $agFim = Carbon::parse($data . ' ' . substr($hf, 0, 5));
+                    if ($inicio < $agFim && $fimSlot > $agInicio) {
+                        $disponivel = false;
+                        break;
+                    }
+                }
+
+                if ($disponivel) {
+                    foreach ($bloqueios as $bl) {
+                        $hi = $bl->hora_inicio instanceof Carbon ? $bl->hora_inicio->format('H:i') : (string) $bl->hora_inicio;
+                        $hf = $bl->hora_fim instanceof Carbon ? $bl->hora_fim->format('H:i') : (string) $bl->hora_fim;
+                        $blInicio = Carbon::parse($data . ' ' . substr($hi, 0, 5));
+                        $blFim = Carbon::parse($data . ' ' . substr($hf, 0, 5));
+                        if ($inicio < $blFim && $fimSlot > $blInicio) {
+                            $disponivel = false;
+                            break;
+                        }
+                    }
+                }
+
+                if ($disponivel) {
+                    $horarios[] = $inicio->format('H:i');
+                }
+
+                $inicio->addMinutes($intervalo);
+            }
         }
 
-        return response()->json($horarios);
+        sort($horarios);
+
+        return response()->json(array_values(array_unique($horarios)));
     }
 
     private function registrarUsoPlano(Agendamento $ag)
