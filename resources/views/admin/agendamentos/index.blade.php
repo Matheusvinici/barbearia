@@ -357,24 +357,48 @@ $slug = request()->route('barbearia')?->slug;
                     $durationLabel = $diff >= 60 ? floor($diff / 60) . 'h ' . ($diff % 60) . 'min' : $diff . ' min';
                     $serviceNames = $agendamento->servicos->pluck('nome')->implode(', ');
                     $serviceMeta = $agendamento->servicos->count() . ' serviço(s)';
-                    $temPlano = $agendamento->cliente->relationLoaded('planos')
-                        ? $agendamento->cliente->planos->where('ativo', true)->isNotEmpty()
-                        : ($agendamento->cliente->planoAtivo ? true : false);
+                    $planoInfo = $agendamento->clientePlano ?? $agendamento->plano_info;
+                    $temPlano = $planoInfo ? true : false;
+                    $planoBadge = '';
+                    $cotasInfo = '';
+                    $validadeTxt = '';
+                    $pagoTxt = '';
+                    $resumo = null;
+                    if ($planoInfo) {
+                        $planoNome = $planoInfo->plano->nome ?? 'Plano';
+                        $planoBadge = $planoNome;
+                        $val = $planoInfo->vencimento ?? $planoInfo->data_fim;
+                        if ($val) {
+                            $validadeTxt = $val->format('d/m/Y');
+                            $dias = $planoInfo->dias_para_vencer;
+                            if ($planoInfo->expirado) $validadeTxt .= ' (VENCIDO)';
+                            elseif ($dias !== null && $dias <= 7) $validadeTxt .= " ({$dias}d)";
+                        }
+                        $cotasInfo = $planoInfo->total_restante . '/' . $planoInfo->total_contratada . ' restantes';
+                        $pagoTxt = $planoInfo->pago ? 'Pago' : 'Pendente';
+                        $resumo = $agendamento->resumo_plano;
+                    }
                     $initials = getInitials($agendamento->cliente->nome);
                     $venderUrl = $slug
                         ? route('tenant.admin.vendas.create', [$slug, 'agendamento_id' => $agendamento->id])
                         : route('admin.vendas.create', ['agendamento_id' => $agendamento->id]);
                 @endphp
-                <tr data-status="{{ $agendamento->status }}">
+                <tr data-status="{{ $agendamento->status }}" data-cliente-id="{{ $agendamento->cliente_id }}">
                     <td data-label="Hora">
                         <div class="time-cell">{{ $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio }}<span class="duration"><svg class="icon"><use href="#i-clock"/></svg>{{ $durationLabel }}</span></div>
                     </td>
                     <td data-label="Cliente">
                         <div class="client-cell">
                             <div class="client-avatar {{ $avClass }}">{{ $initials }}</div>
-                            <div>
-                                <div class="client-name">{{ $agendamento->cliente->nome }} @if($temPlano)<span class="badge-c gold" style="font-size:10px;padding:1px 6px;margin-left:4px;">Plano</span>@endif</div>
+                            <div style="min-width:0;flex:1">
+                                <div class="client-name">{{ $agendamento->cliente->nome }} @if($temPlano)<span class="badge-c gold" style="font-size:10px;padding:1px 6px;margin-left:4px;" title="{{ $planoBadge }} - {{ $cotasInfo }} - {{ $pagoTxt }}">{{ $planoBadge }}</span>@endif @if($planoInfo && $planoInfo->expirado)<span class="badge-c badge-danger" style="font-size:9px">Vencido</span>@endif</div>
                                 <div class="client-meta"><svg class="icon icon-sm"><use href="#i-call"/></svg>{{ $agendamento->cliente->telefone }}</div>
+                                @if($temPlano)
+                                <div class="small" style="font-size:11px;line-height:1.3;margin-top:3px;color:var(--text-muted)">
+                                    <span style="color:var(--accent)">📋 {{ $planoBadge }}</span> · {{ $cotasInfo }} · {{ $validadeTxt }} · <span class="{{ $planoInfo->pago ? 'text-success' : 'text-danger' }}">{{ $pagoTxt }}</span>
+                                    @if($agendamento->usar_plano)<span class="badge bg-info" style="font-size:9px;margin-left:4px">usando plano</span>@endif
+                                </div>
+                                @endif
                             </div>
                             <a href="{{ $venderUrl }}" class="client-sell-btn" title="Vender produtos para este cliente">
                                 Vender
@@ -385,6 +409,26 @@ $slug = request()->route('barbearia')?->slug;
                         <div class="service-cell">
                             <div class="svc-name">{{ $serviceNames }}</div>
                             <div class="svc-meta">{{ $serviceMeta }}</div>
+                            @if($temPlano && $resumo)
+                                <div style="margin-top:6px;display:flex;flex-direction:column;gap:3px">
+                                @foreach($resumo['servicos_status'] as $st)
+                                    <small style="font-size:11px;display:flex;align-items:center;gap:5px">
+                                        <span>{{ $st['servico_nome'] }} R$ {{ number_format($st['preco'],2,',','.') }}</span>
+                                        @if($st['dentro'])
+                                            <span class="badge bg-success" style="font-size:9px;padding:2px 5px">dentro</span>
+                                        @else
+                                            <span class="badge bg-danger" style="font-size:9px;padding:2px 5px">fora • {{ $st['motivo'] }}</span>
+                                        @endif
+                                    </small>
+                                @endforeach
+                                @if($resumo['valor_excedente']>0)
+                                    <small style="font-size:11px;color:var(--danger);font-weight:700">Excedente: R$ {{ number_format($resumo['valor_excedente'],2,',','.') }} a pagar</small>
+                                    @if($resumo['valor_coberto']>0)<small style="font-size:10px;color:var(--success)">Coberto: R$ {{ number_format($resumo['valor_coberto'],2,',','.') }}</small>@endif
+                                @elseif($resumo['dentro'])
+                                    <small style="font-size:11px;color:var(--success);font-weight:600">✓ Dentro da cota — sem cobrança</small>
+                                @endif
+                                </div>
+                            @endif
                         </div>
                     </td>
                     <td data-label="Ações">
@@ -396,7 +440,7 @@ $slug = request()->route('barbearia')?->slug;
                             @endphp
                             @php $horaAgd = $agendamento->hora_inicio instanceof \Carbon\Carbon ? $agendamento->hora_inicio->format('H:i') : $agendamento->hora_inicio; @endphp
                             @if(in_array($agendamento->status, ['pendente', 'confirmado']))
-                            <button class="action-btn warning" data-action="{{ $realizarUrl }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
+                            <button class="action-btn warning" data-action="{{ $realizarUrl }}" data-cliente-id="{{ $agendamento->cliente_id }}" onclick="abrirModalRealizar(this, '{{ addslashes($agendamento->cliente->nome) }}', '{{ $horaAgd }}')">
                                 <span class="action-label">Realizar</span>
                             </button>
                             @endif
@@ -446,10 +490,11 @@ $slug = request()->route('barbearia')?->slug;
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p id="realizarInfo" class="mb-4"></p>
+                    <p id="realizarInfo" class="mb-2"></p>
+                    <div id="realizarPlanoInfo" class="alert alert-light border small" style="display:none"></div>
                     <div class="mb-3">
-                        <label class="form-label fw-semibold">Forma de Pagamento</label>
-                        <select name="forma_pagamento" class="form-control" required>
+                        <label class="form-label fw-semibold">Forma de Pagamento *</label>
+                        <select name="forma_pagamento" id="realizarForma" class="form-control" required>
                             <option value="">Selecione...</option>
                             <option value="Dinheiro">Dinheiro</option>
                             <option value="Cartão de Crédito">Cartão de Crédito</option>
@@ -458,6 +503,14 @@ $slug = request()->route('barbearia')?->slug;
                             <option value="Boleto">Boleto</option>
                             <option value="Plano">Plano</option>
                         </select>
+                    </div>
+                    <div class="mb-3" id="realizarUsarPlanoWrap" style="display:none">
+                        <div class="form-check">
+                            <input type="checkbox" name="usar_plano" value="1" id="realizarUsarPlano" class="form-check-input">
+                            <label for="realizarUsarPlano" class="form-check-label fw-semibold">Usar cota do plano (desconta 1 cota por serviço)</label>
+                        </div>
+                        <small class="text-muted">Se marcado e dentro da cota, não lança no Caixa (já pago via mensalidade).</small>
+                        <input type="hidden" name="cliente_plano_id" id="realizarClientePlanoId">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -509,9 +562,14 @@ $slug = request()->route('barbearia')?->slug;
                             <label>Data <span class="text-danger">*</span></label>
                             <input type="date" name="data" class="form-control" id="dataAgendamento" value="{{ request('data', now()->format('Y-m-d')) }}" required>
                         </div>
+                        @php
+                        $__tenantAg = request()->route('barbearia');
+                        $agLivewireBarbeariaId = $__tenantAg?->id;
+                        $agLivewireTenantIds = $__tenantAg?->tenantTreeIds() ?? [];
+                        @endphp
                         <div class="col-md-12 mb-2">
-                            <label>Cliente <span class="text-muted" style="font-weight:normal">(busque existente)</span></label>
-                            @livewire('admin.buscar-cliente')
+                            <label>Cliente <span class="text-muted" style="font-weight:normal">(busque por nome ou telefone)</span></label>
+                            @livewire('admin.buscar-cliente', ['barbearia_id' => $agLivewireBarbeariaId, 'tenantIds' => $agLivewireTenantIds])
                             <small class="text-muted">Se não encontrar, preencha nome/telefone abaixo para criar novo cliente.</small>
                         </div>
                         <div class="col-md-6 mb-3">
@@ -549,9 +607,10 @@ $slug = request()->route('barbearia')?->slug;
                                 @endforeach
                             </div>
                         </div>
+                        <div class="col-12 mb-2" id="clientePlanoBox" style="display:none"></div>
                         <div class="col-md-6 mb-3">
                             <label>Forma de Pagamento</label>
-                            <select name="forma_pagamento" class="form-control">
+                            <select name="forma_pagamento" id="formaPagamentoSelect" class="form-control">
                                 <option value="">Selecione...</option>
                                 <option value="Dinheiro">Dinheiro</option>
                                 <option value="Cartão de Crédito">Cartão de Crédito</option>
@@ -560,13 +619,17 @@ $slug = request()->route('barbearia')?->slug;
                                 <option value="Boleto">Boleto</option>
                                 <option value="Plano">Plano</option>
                             </select>
+                            <small class="text-muted" id="formaHelp">Se plano dentro da cota, não gera cobrança extra.</small>
                         </div>
                         <div class="col-md-6 mb-3">
                             <div class="form-check mt-4">
                                 <input class="form-check-input" type="checkbox" name="usar_plano" value="1" id="usarPlano">
                                 <label class="form-check-label" for="usarPlano">Usar cota do plano</label>
                             </div>
+                            <input type="hidden" name="cliente_plano_id" id="clientePlanoIdInput">
+                            <small class="text-muted" id="usarPlanoHelp" style="display:block">Selecione cliente para ver plano.</small>
                         </div>
+                        <div class="col-12 mb-2" id="planoCotasPreview" style="display:none"></div>
                         <div class="col-md-12 mb-3">
                             <label>Observações</label>
                             <textarea name="observacoes" class="form-control" rows="2"></textarea>
@@ -602,11 +665,92 @@ function irParaData(data) {
     window.location.search = params.toString();
 }
 
+let currentRealizarPlano = null;
 function abrirModalRealizar(btn, nome, hora) {
     document.getElementById('realizarInfo').textContent = 'Realizar serviço de ' + nome + ' às ' + hora + '?';
     document.getElementById('formRealizar').action = btn.dataset.action;
+    // tenta buscar dados do agendamento inline (data attributes)
+    const tr = btn.closest('tr[data-status]');
+    const agendamentoId = btn.dataset.action.match(/agendamentos\/(\d+)/)?.[1];
+    // busca via dados da linha se tiver (fallback)
+    document.getElementById('realizarPlanoInfo').style.display='none';
+    document.getElementById('realizarPlanoInfo').innerHTML='';
+    document.getElementById('realizarUsarPlanoWrap').style.display='none';
+    document.getElementById('realizarUsarPlano').checked=false;
+    document.getElementById('realizarClientePlanoId').value='';
+    currentRealizarPlano = null;
+    if (agendamentoId) {
+        // tenta encontrar plano via API se cliente tiver plano - usa dataset do botão se houver
+        const clienteId = tr?.dataset?.clienteId || btn.dataset.clienteId;
+        // Se não temos clienteId, busca via Ajax no agendamento show? Simpler: parse from page data map
+        // Vamos ter um mapa window.agendamentosPlanos gerado pelo blade
+        const info = (window.agPlanosMap && window.agPlanosMap[agendamentoId]) ? window.agPlanosMap[agendamentoId] : null;
+        if (info && info.plano_id) {
+            currentRealizarPlano = info;
+            showRealizarPlano(info);
+        } else if (clienteId) {
+            fetchClientePlano(clienteId).then(showRealizarPlano);
+        }
+    }
     new bootstrap.Modal(document.getElementById('modalRealizar')).show();
 }
+function showRealizarPlano(info){
+    if (!info || !info.plano_id) {
+        document.getElementById('realizarPlanoInfo').style.display='none';
+        document.getElementById('realizarUsarPlanoWrap').style.display='none';
+        return;
+    }
+    currentRealizarPlano = info;
+    const box = document.getElementById('realizarPlanoInfo');
+    const wrap = document.getElementById('realizarUsarPlanoWrap');
+    const venc = info.vencimento_br || info.vencimento || '-';
+    const saldo = (info.total_restante ?? '-') + '/' + (info.total_contratada ?? '-');
+    const pagoBadge = info.pago ? '<span class="badge bg-success">Pago</span>' : '<span class="badge bg-warning text-dark">Pagamento pendente</span>';
+    const expBadge = info.expirado ? '<span class="badge bg-danger">VENCIDO</span>' : '<span class="badge bg-success">'+(info.dias_para_vencer ?? '?')+' dias restantes</span>';
+    const quotasHtml = (info.quotas||[]).map(q=> `${q.servico_nome}: <b>${q.usada}/${q.quantidade}</b> (${q.restante} rest.)`).join('<br>');
+
+    // Serviços do agendamento com status de cota
+    let servicosHtml = '';
+    let excedenteHtml = '';
+    let valorExcedente = info.valor_excedente ?? 0;
+    let valorTotal = info.valor_total ?? 0;
+    let valorCoberto = info.valor_coberto ?? 0;
+    if (info.servicos_status && info.servicos_status.length) {
+        servicosHtml = '<div style="margin-top:8px;padding-top:8px;border-top:1px solid #dee2e6"><strong>Serviços deste agendamento:</strong><br>' +
+            info.servicos_status.map(s=>{
+                const badge = s.dentro ? '<span class="badge bg-success">dentro</span>' : '<span class="badge bg-danger">FORA</span>';
+                const preco = parseFloat(s.preco).toFixed(2).replace('.', ',');
+                return `· ${s.servico_nome} (R$ ${preco}) ${badge} <small class="text-muted">- ${s.motivo}${s.dentro?' ('+s.restante+' restantes)':''}</small>`;
+            }).join('<br>') + '</div>';
+        if (valorExcedente > 0) {
+            excedenteHtml = `<div class="alert alert-warning py-2 small mb-0 mt-2" style="font-size:12px"><strong>⚠️ Excedente: R$ ${parseFloat(valorExcedente).toFixed(2).replace('.', ',')}</strong> — ${info.qtd_excedente} serviço(s) fora da cota. Será cobrado no Caixa. ${ valorCoberto>0 ? `Coberto pelo plano: R$ ${parseFloat(valorCoberto).toFixed(2).replace('.',',')}` : ''} (Total: R$ ${parseFloat(valorTotal).toFixed(2).replace('.',',')})</div>`;
+        } else if (info.dentro) {
+            excedenteHtml = `<div class="alert alert-success py-2 small mb-0 mt-2">✅ Tudo dentro da cota — <strong>sem cobrança</strong> se usar plano. (Total coberto: R$ ${parseFloat(valorTotal).toFixed(2).replace('.',',')})</div>`;
+        } else if (info.expirado) {
+            excedenteHtml = `<div class="alert alert-danger py-2 small mb-0 mt-2">❌ Plano vencido — todos os serviços serão cobrados (R$ ${parseFloat(valorTotal).toFixed(2).replace('.',',')})</div>`;
+        } else if (!info.pago) {
+            excedenteHtml = `<div class="alert alert-danger py-2 small mb-0 mt-2">❌ Plano com pagamento pendente — todos os serviços serão cobrados (R$ ${parseFloat(valorTotal).toFixed(2).replace('.',',')})</div>`;
+        }
+    }
+
+    box.innerHTML = `<strong>Plano:</strong> ${info.plano_nome} · <strong>Saldo:</strong> ${saldo} · <strong>Validade:</strong> ${venc} ${expBadge} · ${pagoBadge}<br><small>${quotasHtml}</small>` + servicosHtml + excedenteHtml;
+    box.style.display='block';
+    wrap.style.display='block';
+    document.getElementById('realizarClientePlanoId').value = info.id;
+    // auto-check só se tudo dentro e válido
+    if (info.dentro && !info.expirado && info.pago) {
+        document.getElementById('realizarUsarPlano').checked = true;
+        document.getElementById('realizarForma').value = 'Plano';
+    } else if (!info.dentro && info.valor_excedente>0 && !info.expirado && info.pago) {
+        // tem excedente mas ainda pode usar plano parcialmente -> marca e sugere forma para excedente
+        document.getElementById('realizarUsarPlano').checked = true;
+        document.getElementById('realizarForma').value = 'Plano';
+        // dica: excedente será cobrado
+    }
+}
+document.getElementById('realizarForma')?.addEventListener('change', function(){
+    if (this.value==='Plano' && currentRealizarPlano) document.getElementById('realizarUsarPlano').checked = true;
+});
 
 function confirmarExclusao(url) {
     Swal.fire({
@@ -711,7 +855,7 @@ document.getElementById('formNovoAgendamento')?.addEventListener('submit', funct
 
 const themeToggle = document.getElementById('themeToggle');
 const html = document.documentElement;
-themeToggle.addEventListener('click', function() {
+themeToggle?.addEventListener('click', function() {
     const isDark = html.getAttribute('data-bs-theme') === 'dark';
     html.setAttribute('data-bs-theme', isDark ? 'light' : 'dark');
     this.innerHTML = isDark
@@ -789,6 +933,110 @@ function renderLista() {
     document.getElementById('countRealizados').textContent = [...rows].filter(r => r.dataset.status === 'realizado').length;
     renderLista();
 })();
+
+// Mapeia agendamentos -> plano para modal Realizar
+window.agPlanosMap = @json($agPlanosMap ?? []);
+
+// Cliente->Plano fetch para Novo Agendamento
+const clientePlanoInfoUrlTemplate = '{{ $slug ? route("tenant.admin.clientes-planos.cliente-plano-info", [$slug, "__ID__"]) : route("admin.clientes-planos.cliente-plano-info", "__ID__") }}';
+async function fetchClientePlano(clienteId){
+    if(!clienteId) return null;
+    try{
+        const url = clientePlanoInfoUrlTemplate.replace('__ID__', clienteId);
+        const r = await fetch(url, {headers:{'Accept':'application/json'}});
+        if(!r.ok) return null;
+        const j = await r.json();
+        return (j.planos && j.planos[0]) ? j.planos[0] : null;
+    }catch(e){ return null; }
+}
+let currentNovoPlano = null;
+async function atualizarClientePlanoUI(){
+    const clienteId = document.querySelector('input[name="cliente_id"]')?.value;
+    const box = document.getElementById('clientePlanoBox');
+    const preview = document.getElementById('planoCotasPreview');
+    const help = document.getElementById('usarPlanoHelp');
+    const hidden = document.getElementById('clientePlanoIdInput');
+    if(!clienteId){
+        box.style.display='none'; box.innerHTML='';
+        preview.style.display='none'; preview.innerHTML='';
+        help.textContent='Selecione cliente para ver plano.';
+        hidden.value='';
+        currentNovoPlano=null;
+        return;
+    }
+    box.innerHTML='<small class="text-muted">Carregando plano do cliente...</small>'; box.style.display='block';
+    const info = await fetchClientePlano(clienteId);
+    currentNovoPlano = info;
+    if(!info){
+        box.innerHTML='<div class="alert alert-warning py-2 small mb-0">Cliente sem plano ativo. <a href="'+(window.agPlanosMap ? '' : '')+'">Vincular em Clientes-Planos</a></div>';
+        help.textContent='Cliente sem plano - desmarque "Usar cota".';
+        document.getElementById('usarPlano').checked=false;
+        hidden.value='';
+        preview.style.display='none';
+        return;
+    }
+    hidden.value = info.id;
+    const quotasHtml = (info.quotas||[]).map(q=> `${q.servico_nome}: <b>${q.restante}/${q.quantidade}</b> (usado ${q.usada})`).join(' · ');
+    const venc = info.vencimento_br || '-';
+    const expBadge = info.expirado ? '<span class="badge bg-danger">VENCIDO</span>' : '<span class="badge bg-success">'+info.dias_para_vencer+' dias restantes</span>';
+    const pagoBadge = info.pago ? '<span class="badge bg-success">Pago</span>' : '<span class="badge bg-warning text-dark">Pagamento pendente</span>';
+    box.innerHTML = `<div class="alert alert-info py-2 small mb-0"><strong>Plano do cliente:</strong> ${info.plano_nome} · <strong>Saldo:</strong> ${info.total_restante}/${info.total_contratada} · <strong>Validade:</strong> ${venc} ${expBadge} · ${pagoBadge}<br><small>${quotasHtml}</small></div>`;
+    // auto-check usar plano se válido
+    const todasDentro = (info.quotas||[]).every(q=> q.restante>0);
+    if (!info.expirado && info.pago && todasDentro) {
+        document.getElementById('usarPlano').checked = true;
+        document.getElementById('formaPagamentoSelect').value='Plano';
+        help.textContent='Plano válido - usar cota marcado automaticamente.';
+    } else {
+        help.textContent = info.expirado ? 'Plano vencido!' : (!info.pago ? 'Plano com pagamento pendente!' : (!todasDentro ? 'Cota esgotada!' : 'Plano válido.'));
+    }
+    atualizarCotasPreview();
+}
+function atualizarCotasPreview(){
+    const preview = document.getElementById('planoCotasPreview');
+    if (!currentNovoPlano) { preview.style.display='none'; return; }
+    const servicosSel = getServicosSelecionados();
+    if (!servicosSel.length) { preview.style.display='none'; return; }
+    // verifica se serviços selecionados estão dentro da cota
+    let html = '<div class="alert alert-light border py-2 small mb-0"><strong>Verificação de cotas para serviços selecionados:</strong><br>';
+    let temFora=false;
+    servicosSel.forEach(sid=>{
+        const q = (currentNovoPlano.quotas||[]).find(x=> String(x.servico_id)===String(sid));
+        const checkEl = document.getElementById('servico'+sid);
+        const nome = checkEl ? checkEl.nextElementSibling.textContent.trim().split('-')[0] : ('Serv#'+sid);
+        if (!q) {
+            html += `· ${nome}: <span class="badge bg-secondary">não incluso no plano</span><br>`;
+            temFora=true;
+        } else if (q.restante<=0) {
+            html += `· ${nome}: <span class="badge bg-danger">cota esgotada (${q.usada}/${q.quantidade}) - será cobrado</span><br>`;
+            temFora=true;
+        } else {
+            html += `· ${nome}: <span class="badge bg-success">dentro da cota (${q.restante} restantes)</span><br>`;
+        }
+    });
+    html += temFora ? '<small class="text-danger">Algum serviço fora da cota será cobrado normalmente no Caixa.</small>' : '<small class="text-success">Todos serviços dentro da cota - sem cobrança extra se usar plano.</small>';
+    html += '</div>';
+    preview.innerHTML=html; preview.style.display='block';
+}
+// Observa mudança do hidden cliente_id (Livewire)
+const clienteIdInput = document.querySelector('input[name="cliente_id"]');
+if(clienteIdInput){
+    new MutationObserver(atualizarClientePlanoUI).observe(clienteIdInput, {attributes:true, attributeFilter:['value']});
+    clienteIdInput.addEventListener('change', atualizarClientePlanoUI);
+    // polling fallback
+    let lastClienteId = clienteIdInput.value;
+    setInterval(()=>{ if(clienteIdInput.value!==lastClienteId){ lastClienteId=clienteIdInput.value; atualizarClientePlanoUI(); } }, 500);
+    document.addEventListener('livewire:update', atualizarClientePlanoUI);
+    // também escuta cliques nos resultados
+    document.addEventListener('click', (e)=>{
+        const t = e.target;
+        if(t.closest && t.closest('[wire\\:click^="select"]')) setTimeout(atualizarClientePlanoUI, 300);
+    });
+}
+document.querySelectorAll('.servico-check').forEach(el=> el.addEventListener('change', atualizarCotasPreview));
+document.getElementById('usarPlano')?.addEventListener('change', function(){
+    if(this.checked && currentNovoPlano) document.getElementById('formaPagamentoSelect').value='Plano';
+});
 
 @if($errors->any())
 document.addEventListener('DOMContentLoaded', function(){

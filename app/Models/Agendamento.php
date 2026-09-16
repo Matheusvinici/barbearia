@@ -13,6 +13,7 @@ class Agendamento extends Model
         'barbearia_id',
         'barbeiro_id',
         'cliente_id',
+        'cliente_plano_id',
         'data',
         'hora_inicio',
         'hora_fim',
@@ -73,15 +74,32 @@ class Agendamento extends Model
         return $this->hasOne(ClientePlanoUso::class);
     }
 
+    public function clientePlano()
+    {
+        return $this->belongsTo(ClientePlano::class, 'cliente_plano_id');
+    }
+
     public function getPlanoInfoAttribute()
     {
+        if ($this->clientePlano) {
+            return $this->clientePlano;
+        }
         if (!$this->cliente) {
             return null;
         }
+        // Prioridade: relação carregada com filtro de validade
         if ($this->cliente->relationLoaded('planos')) {
             $cp = $this->cliente->planos->where('ativo', true)->first();
+            if ($cp && $cp->validade && $cp->validade->isPast()) {
+                // se expirado, tenta outro válido
+                $cp = $this->cliente->planos->where('ativo', true)->filter(fn($p) => !$p->expirado)->first() ?? $cp;
+            }
         } else {
             $cp = $this->cliente->planoAtivo;
+            // if available, try expiration check
+            if ($cp && $cp->expirado) {
+                $cp = $this->cliente->planos()->where('ativo', true)->with('plano.quotas')->get()->filter(fn($p)=> !$p->expirado)->first() ?? $cp;
+            }
         }
         return $cp;
     }
@@ -92,22 +110,98 @@ class Agendamento extends Model
         if (!$cp) {
             return false;
         }
-
+        if ($cp->expirado || !$cp->pago) return false;
         $servicoIds = $this->servicos->pluck('id');
-
+        if ($servicoIds->isEmpty()) return true;
         foreach ($servicoIds as $servicoId) {
-            $quota = $cp->plano->quotas->where('servico_id', $servicoId)->first();
-            if ($quota) {
-                $usosCount = $cp->usos()
-                    ->where('servico_id', $servicoId)
-                    ->where('id', '!=', $this->planoUso?->id)
-                    ->count();
-                if ($usosCount >= $quota->quantidade) {
-                    return false;
-                }
+            if (!$cp->isServicoDentroDaCota($servicoId, $this->planoUso?->id ? $this->id : null)) {
+                return false;
             }
         }
-
         return true;
+    }
+
+    public function getServicosStatusAttribute(): array
+    {
+        $cp = $this->plano_info;
+        $result = [];
+        foreach ($this->servicos as $servico) {
+            $dentro = false;
+            $motivo = '';
+            $restante = 0;
+            $quotaQtd = 0;
+            if (!$cp) {
+                $motivo = 'sem plano';
+            } elseif ($cp->expirado) {
+                $motivo = 'plano vencido';
+            } elseif (!$cp->pago) {
+                $motivo = 'plano não pago';
+            } else {
+                $quota = $cp->plano->quotas->where('servico_id', $servico->id)->first();
+                $quotaQtd = $quota?->quantidade ?? 0;
+                $restante = $cp->getCotaRestanteParaServico($servico->id);
+                if (!$quota || $quota->quantidade <= 0) {
+                    $motivo = 'não incluso no plano';
+                } elseif ($restante <= 0) {
+                    $motivo = 'cota esgotada';
+                } else {
+                    $dentro = true;
+                    $motivo = 'dentro da cota';
+                }
+            }
+            $result[] = [
+                'servico_id' => $servico->id,
+                'servico_nome' => $servico->nome,
+                'preco' => (float) ($servico->pivot->preco_praticado ?? $servico->preco),
+                'dentro' => $dentro,
+                'motivo' => $motivo,
+                'quota_qtd' => $quotaQtd,
+                'restante' => $restante,
+            ];
+        }
+        return $result;
+    }
+
+    public function getServicosExcedentesAttribute()
+    {
+        return collect($this->servicos_status)->where('dentro', false);
+    }
+
+    public function getServicosDentroAttribute()
+    {
+        return collect($this->servicos_status)->where('dentro', true);
+    }
+
+    public function getValorExcedenteAttribute(): float
+    {
+        return (float) collect($this->servicos_status)->where('dentro', false)->sum('preco');
+    }
+
+    public function getValorDentroAttribute(): float
+    {
+        return (float) collect($this->servicos_status)->where('dentro', true)->sum('preco');
+    }
+
+    public function getResumoPlanoAttribute(): array
+    {
+        $cp = $this->plano_info;
+        $total = (float) ($this->total ?? $this->servicos->sum(fn($s)=> $s->pivot->preco_praticado ?? $s->preco));
+        $excedente = $this->valor_excedente;
+        $coberto = $this->valor_dentro;
+        $dentro = $this->dentro_da_cota;
+        $temPlano = (bool) $cp;
+        return [
+            'tem_plano' => $temPlano,
+            'plano_nome' => $cp?->plano->nome,
+            'expirado' => $cp?->expirado ?? false,
+            'pago' => $cp?->pago ?? false,
+            'dentro' => $dentro,
+            'servicos_status' => $this->servicos_status,
+            'valor_total' => $total,
+            'valor_excedente' => $excedente,
+            'valor_coberto' => $coberto,
+            'qtd_excedente' => $this->servicos_excedentes->count(),
+            'qtd_dentro' => $this->servicos_dentro->count(),
+        ];
     }
 }

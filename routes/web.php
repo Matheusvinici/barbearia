@@ -188,6 +188,7 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             Route::get('/', [ClientePlanoController::class, 'index'])->name('index');
             Route::post('/', [ClientePlanoController::class, 'store'])->name('store');
             Route::get('/dashboard', [ClientePlanoController::class, 'dashboard'])->name('dashboard');
+            Route::get('/cliente/{cliente}/plano-info', [ClientePlanoController::class, 'clientePlanoInfo'])->name('cliente-plano-info');
             Route::get('/{clientesPlano}/edit', [ClientePlanoController::class, 'edit'])->name('edit');
             Route::put('/{clientesPlano}', [ClientePlanoController::class, 'update'])->name('update');
             Route::delete('/{clientesPlano}', [ClientePlanoController::class, 'destroy'])->name('destroy');
@@ -373,6 +374,7 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             Route::get('/', [ClientePlanoController::class, 'index'])->name('index');
             Route::post('/', [ClientePlanoController::class, 'store'])->name('store');
             Route::get('/dashboard', [ClientePlanoController::class, 'dashboard'])->name('dashboard');
+            Route::get('/cliente/{cliente}/plano-info', [ClientePlanoController::class, 'clientePlanoInfo'])->name('cliente-plano-info');
             Route::get('/{clientesPlano}/edit', [ClientePlanoController::class, 'edit'])->name('edit');
             Route::put('/{clientesPlano}', [ClientePlanoController::class, 'update'])->name('update');
             Route::delete('/{clientesPlano}', [ClientePlanoController::class, 'destroy'])->name('destroy');

@@ -61,12 +61,26 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-12 mb-3">
-                    <div class="form-check">
+                <div class="col-md-8 mb-3">
+                    <div class="form-check mt-4">
                         <input class="form-check-input" type="checkbox" name="usar_plano" value="1" id="usarPlano" {{ $agendamento->usar_plano ? 'checked' : '' }}>
                         <label class="form-check-label" for="usarPlano">Usar cota do plano</label>
+                        <small class="d-block text-muted">Se marcado e com plano válido, desconta da cota.</small>
                     </div>
                 </div>
+                @php $pi = $agendamento->clientePlano ?? $agendamento->plano_info; @endphp
+                @if($pi)
+                <div class="col-12 mb-3">
+                    <div class="alert alert-info small mb-0">
+                        <strong>Plano do cliente:</strong> {{ $pi->plano->nome }} · {{ $pi->total_restante }}/{{ $pi->total_contratada }} restantes · Validade: {{ ($pi->vencimento ?? $pi->data_fim)? ($pi->vencimento ?? $pi->data_fim)->format('d/m/Y') : '-' }} @if($pi->expirado) <span class="badge bg-danger">VENCIDO</span> @else <span class="badge bg-success">{{ $pi->dias_para_vencer }} dias</span> @endif @if($pi->pago) <span class="badge bg-success">Pago</span> @else <span class="badge bg-warning text-dark">Pendente</span> @endif<br>
+                        @foreach($pi->plano->quotas as $q) @php $usada = $pi->usos->where('servico_id',$q->servico_id)->count(); $rest = max(0,$q->quantidade-$usada); @endphp
+                            {{ $q->servico->nome }}: {{ $usada }}/{{ $q->quantidade }} usado ({{ $rest }} restantes) · 
+                        @endforeach
+                        <br>Agendamento atual: @if($agendamento->dentro_da_cota) <span class="badge bg-success">Dentro da cota</span> @else <span class="badge bg-danger">Fora da cota</span> @endif
+                    </div>
+                    <input type="hidden" name="cliente_plano_id" value="{{ $pi->id }}">
+                </div>
+                @endif
                 <div class="col-md-12 mb-3">
                     <label>Observações</label>
                     <textarea name="observacoes" class="form-control" rows="2">{{ $agendamento->observacoes }}</textarea>

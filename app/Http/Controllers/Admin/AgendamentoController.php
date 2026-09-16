@@ -35,7 +35,7 @@ class AgendamentoController extends Controller
             $barbeiroId = $userBarbeiro->id;
         }
 
-        $query = Agendamento::with(['barbeiro', 'cliente', 'cliente.planos', 'servicos'])
+        $query = Agendamento::with(['barbeiro', 'cliente', 'cliente.planos.plano.quotas', 'cliente.planos.usos', 'servicos', 'clientePlano.plano'])
             ->whereDate('data', $data);
 
         if ($this->isTenantContext()) {
@@ -74,8 +74,51 @@ class AgendamentoController extends Controller
         $servicos = Servico::where('ativo', true)->get();
         $barbearias = $barbeariasQuery->get();
 
+        // Mapa para modal Realizar: evita lógica pesada no Blade + calcula excedente por agendamento
+        $agPlanosMap = [];
+        foreach ($agendamentos as $a) {
+            $a->loadMissing(['servicos']);
+            $pi = $a->clientePlano ?? $a->plano_info;
+            if (!$pi || !$pi->plano) {
+                $agPlanosMap[$a->id] = null;
+                continue;
+            }
+            $pi->loadMissing(['plano.quotas.servico', 'usos']);
+            $validade = $pi->vencimento ?? $pi->data_fim;
+            // status por serviço para este agendamento
+            $resumo = $a->resumo_plano;
+            $agPlanosMap[$a->id] = [
+                'id' => $pi->id,
+                'plano_id' => $pi->plano_id,
+                'plano_nome' => $pi->plano->nome ?? '',
+                'vencimento_br' => $validade ? $validade->format('d/m/Y') : null,
+                'vencimento' => $validade ? $validade->format('Y-m-d') : null,
+                'dias_para_vencer' => $pi->dias_para_vencer,
+                'expirado' => $pi->expirado,
+                'pago' => (bool) $pi->pago,
+                'total_contratada' => $pi->total_contratada,
+                'total_restante' => $pi->total_restante,
+                'dentro' => $resumo['dentro'],
+                'valor_total' => $resumo['valor_total'],
+                'valor_excedente' => $resumo['valor_excedente'],
+                'valor_coberto' => $resumo['valor_coberto'],
+                'qtd_excedente' => $resumo['qtd_excedente'],
+                'qtd_dentro' => $resumo['qtd_dentro'],
+                'servicos_status' => $resumo['servicos_status'],
+                'quotas' => $pi->plano->quotas->map(function ($q) use ($pi) {
+                    return [
+                        'servico_id' => $q->servico_id,
+                        'servico_nome' => $q->servico->nome ?? ('Serv#'.$q->servico_id),
+                        'quantidade' => $q->quantidade,
+                        'usada' => $pi->usos->where('servico_id', $q->servico_id)->count(),
+                        'restante' => max(0, $q->quantidade - $pi->usos->where('servico_id', $q->servico_id)->count()),
+                    ];
+                })->values()->all(),
+            ];
+        }
+
         return view('admin.agendamentos.index', compact(
-            'agendamentos', 'barbeiros', 'servicos', 'barbearias', 'data', 'barbeiroId', 'barbeariaId'
+            'agendamentos', 'barbeiros', 'servicos', 'barbearias', 'data', 'barbeiroId', 'barbeariaId', 'agPlanosMap'
         ));
     }
 
@@ -95,6 +138,7 @@ class AgendamentoController extends Controller
             'hora_inicio' => 'required',
             'forma_pagamento' => 'nullable|string|max:50',
             'usar_plano' => 'boolean',
+            'cliente_plano_id' => 'nullable|exists:cliente_plano,id',
             'observacoes' => 'nullable|string',
         ]);
 
@@ -209,17 +253,31 @@ class AgendamentoController extends Controller
             }
         }
 
+        // Decide cliente_plano_id se usar_plano
+        $clientePlanoId = $data['cliente_plano_id'] ?? null;
+        $usarPlano = $request->boolean('usar_plano');
+        if ($usarPlano && !$clientePlanoId && $clienteId) {
+            $cli = Cliente::with(['planos.plano.quotas', 'planos.usos'])->find($clienteId);
+            if ($cli) {
+                // escolhe primeiro plano ativo e válido com saldo
+                $candidato = $cli->planos->where('ativo', true)->filter(fn($cp)=> !$cp->expirado)->first();
+                if ($candidato) $clientePlanoId = $candidato->id;
+                else $clientePlanoId = $cli->planos->where('ativo', true)->first()?->id;
+            }
+        }
+
         $agendamento = Agendamento::create([
             'barbearia_id' => $data['barbearia_id'] ?? null,
             'barbeiro_id' => $data['barbeiro_id'],
             'cliente_id' => $clienteId,
+            'cliente_plano_id' => $clientePlanoId,
             'data' => $data['data'],
-            'forma_pagamento' => $data['forma_pagamento'] ?? null,
+            'forma_pagamento' => $data['forma_pagamento'] ?? ($usarPlano ? 'Plano' : null),
             'hora_inicio' => $horaInicio->format('H:i'),
             'hora_fim' => $horaFim->format('H:i'),
             'status' => 'pendente',
             'total' => $totalValor,
-            'usar_plano' => $request->boolean('usar_plano'),
+            'usar_plano' => $usarPlano,
             'observacoes' => $data['observacoes'] ?? null,
             'created_by' => Auth::guard('web')->id(),
             'origem' => 'admin',
@@ -256,8 +314,14 @@ class AgendamentoController extends Controller
     {
         $agendamento = $this->getAgendamentoFromRoute($request);
         $agendamento->load(['barbeiro', 'cliente', 'servicos', 'cliente.planos' => function ($q) {
-            $q->where('ativo', true)->with('plano.quotas');
-        }, 'planoUso']);
+            $q->where('ativo', true)->with('plano.quotas.servico');
+        }, 'planoUso', 'clientePlano.plano.quotas.servico', 'clientePlano.usos']);
+        // also ensure plano quotas are loaded for plano_info fallback
+        if ($agendamento->clientePlano) {
+            $agendamento->clientePlano->loadMissing(['plano.quotas.servico', 'usos']);
+        } elseif ($agendamento->plano_info) {
+            $agendamento->plano_info->loadMissing(['plano.quotas.servico', 'usos']);
+        }
         return view('admin.agendamentos.show', compact('agendamento'));
     }
 
@@ -296,6 +360,7 @@ class AgendamentoController extends Controller
             'status' => 'required|in:pendente,confirmado,realizado,cancelado,ausente',
             'forma_pagamento' => 'nullable|string|max:50',
             'usar_plano' => 'boolean',
+            'cliente_plano_id' => 'nullable|exists:cliente_plano,id',
             'observacoes' => 'nullable|string',
         ]);
 
@@ -309,6 +374,18 @@ class AgendamentoController extends Controller
 
         $oldStatus = $agendamento->status;
 
+        $usarPlanoUpd = $request->boolean('usar_plano');
+        $clientePlanoIdUpd = $data['cliente_plano_id'] ?? $agendamento->cliente_plano_id;
+        if ($usarPlanoUpd && !$clientePlanoIdUpd) {
+            $cli = Cliente::with(['planos'])->find($agendamento->cliente_id);
+            $clientePlanoIdUpd = $cli?->planos->where('ativo', true)->first()?->id;
+        } elseif (!$usarPlanoUpd) {
+            // se desmarcou, limpa
+            if (!$request->has('usar_plano') || !$usarPlanoUpd) {
+                // keep existing if not explicitly set? mas se forma_pagamento Plano, mantém
+            }
+        }
+
         $agendamento->update([
             'barbeiro_id' => $data['barbeiro_id'],
             'data' => $data['data'],
@@ -316,8 +393,9 @@ class AgendamentoController extends Controller
             'hora_fim' => $horaFim->format('H:i'),
             'status' => $data['status'],
             'total' => $totalValor,
-            'forma_pagamento' => $data['forma_pagamento'] ?? null,
-            'usar_plano' => $request->boolean('usar_plano'),
+            'forma_pagamento' => $data['forma_pagamento'] ?? ($usarPlanoUpd ? 'Plano' : null),
+            'usar_plano' => $usarPlanoUpd,
+            'cliente_plano_id' => $usarPlanoUpd ? $clientePlanoIdUpd : null,
             'observacoes' => $data['observacoes'] ?? null,
         ]);
 
@@ -329,9 +407,24 @@ class AgendamentoController extends Controller
         }
 
         if ($data['status'] === 'realizado' && $oldStatus !== 'realizado') {
-            $this->registrarNoCaixa($agendamento);
-            if ($agendamento->usar_plano) {
-                $this->registrarUsoPlano($agendamento);
+            $agFresh = $agendamento->fresh()->load(['servicos', 'cliente', 'clientePlano.plano', 'clientePlano.usos']);
+            $usarPlano = (bool) $agFresh->usar_plano;
+            if ($usarPlano) {
+                $resumo = $agFresh->resumo_plano;
+                if ($resumo['tem_plano'] && !$resumo['expirado'] && $resumo['pago']) {
+                    if (!$resumo['dentro'] && $resumo['valor_excedente'] > 0) {
+                        $this->registrarNoCaixa($agFresh, (float) $resumo['valor_excedente'], "Serviço realizado (excedente plano {$resumo['plano_nome']}) - {$agFresh->cliente->nome}");
+                    } elseif ($resumo['dentro']) {
+                        // não cobra
+                    } else {
+                        $this->registrarNoCaixa($agFresh);
+                    }
+                } else {
+                    $this->registrarNoCaixa($agFresh);
+                }
+                $this->registrarUsoPlano($agFresh);
+            } else {
+                $this->registrarNoCaixa($agFresh);
             }
         }
 
@@ -359,13 +452,60 @@ class AgendamentoController extends Controller
         if (!in_array($agendamento->status, ['pendente', 'confirmado'])) {
             return redirect()->back()->with('error', 'Agendamento não pode ser realizado.');
         }
-        $data = $request->validate(['forma_pagamento' => 'required|string|max:50']);
-        $agendamento->update(['status' => 'realizado', 'forma_pagamento' => $data['forma_pagamento']]);
-        $this->registrarNoCaixa($agendamento);
-        if ($agendamento->usar_plano) {
-            $this->registrarUsoPlano($agendamento);
+        $data = $request->validate([
+            'forma_pagamento' => 'required|string|max:50',
+            'usar_plano' => 'nullable|boolean',
+            'cliente_plano_id' => 'nullable|exists:cliente_plano,id',
+        ]);
+        $usarPlano = $request->boolean('usar_plano', $agendamento->usar_plano);
+        if (($data['forma_pagamento'] ?? null) === 'Plano') {
+            $usarPlano = true;
         }
-        return redirect()->back()->with('success', 'Serviço realizado com sucesso!');
+        $clientePlanoId = $data['cliente_plano_id'] ?? $agendamento->cliente_plano_id;
+        if ($usarPlano && !$clientePlanoId) {
+            $clientePlanoId = $agendamento->plano_info?->id;
+        }
+        $agendamento->update([
+            'status' => 'realizado',
+            'forma_pagamento' => $data['forma_pagamento'],
+            'usar_plano' => $usarPlano,
+            'cliente_plano_id' => $usarPlano ? $clientePlanoId : $agendamento->cliente_plano_id,
+        ]);
+        $agFresh = $agendamento->fresh()->load(['servicos', 'cliente', 'clientePlano.plano', 'clientePlano.usos']);
+        // Calcula valor excedente para decidir caixa
+        if ($usarPlano) {
+            $resumo = $agFresh->resumo_plano;
+            if ($resumo['tem_plano'] && !$resumo['expirado'] && $resumo['pago']) {
+                if ($resumo['dentro']) {
+                    // tudo coberto, não lança nada
+                } else {
+                    $valorExcedente = (float) $resumo['valor_excedente'];
+                    if ($valorExcedente > 0) {
+                        $this->registrarNoCaixa($agFresh, $valorExcedente, "Serviço realizado (excedente plano {$resumo['plano_nome']}) - {$agFresh->cliente->nome}");
+                    }
+                }
+            } else {
+                // plano inválido (vencido/não pago/sem cota) => cobra total
+                $this->registrarNoCaixa($agFresh);
+            }
+        } else {
+            $this->registrarNoCaixa($agFresh);
+        }
+        if ($usarPlano) {
+            $this->registrarUsoPlano($agFresh);
+        }
+        // mensagem diferenciada
+        $msg = 'Serviço realizado com sucesso!';
+        if ($usarPlano && isset($resumo)) {
+            if ($resumo['tem_plano'] && !$resumo['expirado'] && $resumo['pago']) {
+                if ($resumo['dentro']) {
+                    $msg = 'Serviço realizado com plano (sem cobrança, dentro da cota).';
+                } elseif ($resumo['valor_excedente'] > 0) {
+                    $msg = 'Serviço realizado! Excedente de R$ ' . number_format($resumo['valor_excedente'], 2, ',', '.') . ' lançado no caixa.';
+                }
+            }
+        }
+        return redirect()->back()->with('success', $msg);
     }
 
     public function destroy(Request $request)
@@ -571,9 +711,12 @@ class AgendamentoController extends Controller
 
     private function registrarUsoPlano(Agendamento $ag)
     {
-        $ag->load('cliente.planos', 'servicos');
-        $cp = $ag->cliente?->planos?->where('ativo', true)->first();
+        $ag->load(['cliente.planos', 'servicos', 'clientePlano']);
+        $cp = $ag->clientePlano ?? $ag->cliente?->planos?->where('ativo', true)->first();
+        // Se cliente tem múltiplos planos, tenta achar o que cobre o serviço
         if (!$cp) return;
+        // Evita duplicidade
+        if (ClientePlanoUso::where('agendamento_id', $ag->id)->exists()) return;
 
         foreach ($ag->servicos as $servico) {
             ClientePlanoUso::create([
@@ -585,8 +728,11 @@ class AgendamentoController extends Controller
         }
     }
 
-    private function registrarNoCaixa(Agendamento $agendamento)
+    private function registrarNoCaixa(Agendamento $agendamento, ?float $valorOverride = null, ?string $descricaoOverride = null)
     {
+        $valor = $valorOverride ?? (float) $agendamento->total;
+        if ($valor <= 0) return;
+        $descricao = $descricaoOverride ?? "Serviço realizado - {$agendamento->cliente->nome}";
         $dataStr = $agendamento->data instanceof Carbon
             ? $agendamento->data->format('Y-m-d')
             : Carbon::parse($agendamento->data)->format('Y-m-d');
@@ -611,7 +757,7 @@ class AgendamentoController extends Controller
         }
 
     if (!$caixa->fechado) {
-        $caixa->increment('total_entradas', $agendamento->total);
+        $caixa->increment('total_entradas', $valor);
         $caixa->saldo_final = $caixa->saldo_inicial + $caixa->total_entradas - $caixa->total_saidas;
         $caixa->save();
     }
@@ -620,8 +766,8 @@ class AgendamentoController extends Controller
         'barbearia_id' => $caixa->barbearia_id,
         'caixa_id' => $caixa->id,
         'tipo' => 'entrada',
-        'valor' => $agendamento->total,
-        'descricao' => "Serviço realizado - {$agendamento->cliente->nome}",
+        'valor' => $valor,
+        'descricao' => $descricao,
         'origem_type' => Agendamento::class,
         'origem_id' => $agendamento->id,
         'user_id' => Auth::guard('web')->id(),

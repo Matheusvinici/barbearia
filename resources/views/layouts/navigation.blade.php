@@ -134,9 +134,17 @@
     @endif
 
     @if($user->can('plano.view'))
-    <a href="{{ navRoute('planos.index') }}" class="nav-item {{ isActive(['admin/planos']) ? 'active' : '' }}">
+    <a href="{{ navRoute('planos.index') }}" class="nav-item {{ isActive(['admin/planos']) && !isActive(['admin/clientes-planos']) ? 'active' : '' }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
         <span>Planos</span>
+    </a>
+    <a href="{{ navRoute('clientes-planos.index') }}" class="nav-item {{ isActive(['admin/clientes-planos']) && !isActive(['admin/clientes-planos/dashboard']) ? 'active' : '' }}" style="padding-left: 48px; font-size: 13px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M16 11h4M19 8v6"/></svg>
+        <span>Clientes-Planos</span>
+    </a>
+    <a href="{{ navRoute('clientes-planos.dashboard') }}" class="nav-item {{ isActive(['admin/clientes-planos/dashboard']) ? 'active' : '' }}" style="padding-left: 48px; font-size: 13px;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span>Dashboard Cotas</span>
     </a>
     @endif
 

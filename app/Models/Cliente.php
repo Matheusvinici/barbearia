@@ -31,7 +31,12 @@ class Cliente extends Model
 
     public function planoAtivo()
     {
-        return $this->hasOne(ClientePlano::class)->where('ativo', true);
+        return $this->hasOne(ClientePlano::class)->where('ativo', true)->latestOfMany('data_inicio');
+    }
+
+    public function planosAtivos()
+    {
+        return $this->hasMany(ClientePlano::class)->where('ativo', true)->with('plano');
     }
 
     public function barbearia()

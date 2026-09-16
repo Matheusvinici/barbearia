@@ -1,5 +1,8 @@
 @php
-$slug = request()->route('barbearia')?->slug;
+$__tenantV = request()->route('barbearia');
+$slug = $__tenantV?->slug;
+$livewireBarbeariaId = $__tenantV?->id;
+$livewireTenantIds = $__tenantV?->tenantTreeIds() ?? [];
 $storeUrl = $slug ? route('tenant.admin.vendas.store', $slug) : route('admin.vendas.store');
 $selectedCliente = $clienteId ?? ($venda->cliente_id ?? null);
 $selectedAgendamento = $agendamentoId ?? ($venda->agendamento_id ?? null);
@@ -48,13 +51,10 @@ $editando = isset($venda);
             <div class="col-left">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label class="form-label">Cliente <span class="mut">(opcional)</span></label>
-                        <select name="cliente_id" class="form-select" id="clienteSelect">
-                            <option value="">Cliente avulso / sem cadastro</option>
-                            @foreach($clientes as $cliente)
-                            <option value="{{ $cliente->id }}" {{ (string)$selectedCliente === (string)$cliente->id ? 'selected' : '' }}>{{ $cliente->nome }}</option>
-                            @endforeach
-                        </select>
+                        <label class="form-label">Cliente <span class="mut">(opcional — busque por nome ou telefone)</span></label>
+                        @livewire('admin.buscar-cliente', ['cliente_id' => $selectedCliente, 'barbearia_id' => $livewireBarbeariaId, 'tenantIds' => $livewireTenantIds])
+                        <small class="text-muted" style="font-size:11px">Deixe vazio para cliente avulso / sem cadastro</small>
+                        @error('cliente_id') <small class="text-danger d-block">{{ $message }}</small> @enderror
                     </div>
                     <div class="form-group">
                         <label class="form-label">Forma de pagamento</label>

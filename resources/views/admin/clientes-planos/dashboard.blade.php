@@ -2,10 +2,13 @@
 @section('title', 'Dashboard de Cotas')
 @section('breadcrumb', 'Clientes Planos')
 
+@php $slug = request()->route('barbearia')?->slug; $backRoute = $slug ? route('tenant.admin.clientes-planos.index', $slug) : route('admin.clientes-planos.index'); @endphp
+
 @section('content')
 <div class="row mb-3">
-    <div class="col-md-12">
-        <a href="{{ route('admin.clientes-planos.index') }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+    <div class="col-md-12 d-flex gap-2">
+        <a href="{{ $backRoute }}" class="btn btn-secondary"><i class="fas fa-arrow-left"></i> Voltar</a>
+        <span class="ms-2 small text-muted align-self-center">Cotas, validade e pagamento (caixa)</span>
     </div>
 </div>
 
@@ -21,6 +24,13 @@
         <div>
             <span class="badge bg-light text-dark">{{ $item['plano']->nome }}</span>
             <span class="badge bg-light text-dark ms-1">R$ {{ number_format($item['plano']->valor, 2, ',', '.') }}</span>
+        </div>
+    </div>
+    <div class="card-body p-3">
+        <div class="row small mb-2">
+            <div class="col-md-4"><strong>Validade:</strong> {{ $item['vencimento'] ? $item['vencimento']->format('d/m/Y') : '-' }} @if($item['expirado']) <span class="badge bg-danger">VENCIDO</span> @else <span class="badge bg-success">{{ $item['dias_para_vencer'] }} dias restantes</span> @endif</div>
+            <div class="col-md-4"><strong>Pagamento:</strong> @if($item['pago']) <span class="badge bg-success">Pago R$ {{ number_format($item['valor_pago'],2,',','.') }} @if($item['forma_pagamento']) ({{ $item['forma_pagamento'] }}) @endif</span> @else <span class="badge bg-warning text-dark">Pendente</span> @endif</div>
+            <div class="col-md-4"><strong>CPF:</strong> {{ $item['cpf'] ?? '-' }}</div>
         </div>
     </div>
     <div class="card-body p-0">
