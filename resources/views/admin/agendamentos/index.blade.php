@@ -391,7 +391,7 @@ $slug = request()->route('barbearia')?->slug;
                         <div class="client-cell">
                             <div class="client-avatar {{ $avClass }}">{{ $initials }}</div>
                             <div style="min-width:0;flex:1">
-                                <div class="client-name">{{ $agendamento->cliente->nome }} @if($temPlano)<span class="badge-c gold" style="font-size:10px;padding:1px 6px;margin-left:4px;" title="{{ $planoBadge }} - {{ $cotasInfo }} - {{ $pagoTxt }}">{{ $planoBadge }}</span>@endif @if($planoInfo && $planoInfo->expirado)<span class="badge-c badge-danger" style="font-size:9px">Vencido</span>@endif</div>
+                                <div class="client-name">{{ $agendamento->cliente->nome }} @if($temPlano)<span class="badge-c gold" style="font-size:10px;padding:1px 6px;margin-left:4px;" title="{{ $planoBadge }} - {{ $cotasInfo }} - {{ $pagoTxt }}">{{ $planoBadge }}</span>@endif @if($planoInfo && $planoInfo->expirado)<span class="badge-c badge-danger" style="font-size:9px">Vencido</span>@endif @if($agendamento->encaixe)<span class="badge-c gold" style="font-size:9px;padding:1px 6px;margin-left:4px;border-style:dashed;" title="Cliente entrou entre horários (encaixe)">🔀 Encaixe</span>@endif</div>
                                 <div class="client-meta"><svg class="icon icon-sm"><use href="#i-call"/></svg>{{ $agendamento->cliente->telefone }}</div>
                                 @if($temPlano)
                                 <div class="small" style="font-size:11px;line-height:1.3;margin-top:3px;color:var(--text-muted)">
@@ -596,6 +596,22 @@ $slug = request()->route('barbearia')?->slug;
                             </select>
                             <small class="text-muted" id="horarioHelp">Mesma disponibilidade do agendamento do cliente + bloqueios.</small>
                         </div>
+                        <div class="col-12 mb-3">
+                            <div class="border rounded p-3" style="background:var(--bg-input)">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="encaixeFlag" name="encaixe" value="1">
+                                    <label class="form-check-label fw-semibold" for="encaixeFlag" title="Cliente entrou entre um horário e outro; libera sobreposição e sinaliza só o intervalo dele.">🔀 Encaixe (cliente entrou entre horários)</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" id="permitirPassado" value="1">
+                                    <label class="form-check-label fw-semibold" for="permitirPassado" title="Para lançar no fim do dia um horário vago que já passou (só mostra se não tinha ninguém).">⏪ Permitir horários já passados (lançamento no fim do dia)</label>
+                                </div>
+                                <div class="mt-2" id="horaFimEncaixeWrap" style="display:none">
+                                    <label class="form-label small mb-1">Fim do encaixe <span class="text-muted" style="font-weight:normal">(opcional — sinaliza só o intervalo do encaixe)</span></label>
+                                    <input type="time" name="hora_fim_manual" id="horaFimEncaixe" class="form-control" style="max-width:180px" placeholder="Ex: 16:20">
+                                </div>
+                            </div>
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label>Serviços <span class="text-danger">*</span></label>
                             <div class="border rounded p-2" style="max-height:150px;overflow-y:auto" id="servicosList">
@@ -786,15 +802,16 @@ function carregarHorarios() {
     }
     if (select) select.innerHTML = '<option value="">Carregando...</option>';
     const servicos = getServicosSelecionados();
-    const params = { barbeiro_id: barbeiroId, data: data };
-    // Envia servico_ids para considerar duração (opcional, mantém compatibilidade)
-    if (servicos.length) params['servico_ids[]'] = servicos;
+    const encaixe = document.getElementById('encaixeFlag')?.checked || false;
+    const permitirPassado = document.getElementById('permitirPassado')?.checked || false;
 
     // Monta query string manualmente para suportar array
     const qs = new URLSearchParams();
     qs.set('barbeiro_id', barbeiroId);
     qs.set('data', data);
     servicos.forEach(id => qs.append('servico_ids[]', id));
+    if (encaixe) qs.set('encaixe', 1);
+    if (permitirPassado) qs.set('permitir_passado', 1);
 
     fetch(horariosUrl + '?' + qs.toString(), { headers: { 'Accept': 'application/json' } })
         .then(r => r.json())
@@ -812,7 +829,11 @@ function carregarHorarios() {
                     opt.textContent = h;
                     select.appendChild(opt);
                 });
-                document.getElementById('horarioHelp').textContent = res.length + ' horários disponíveis - mesma regra do cliente + bloqueios.';
+                let msg;
+                if (encaixe) msg = res.length + ' horários (modo encaixe — pode sobrepor outros agendamentos).';
+                else if (permitirPassado) msg = res.length + ' horários (incluindo os que já passaram — só os vagos).';
+                else msg = res.length + ' horários disponíveis - mesma regra do cliente + bloqueios.';
+                document.getElementById('horarioHelp').textContent = msg;
                 document.getElementById('horarioHelp').style.color = 'var(--text-muted)';
             }
         })
@@ -824,6 +845,11 @@ function carregarHorarios() {
 document.getElementById('barbeiroSelect')?.addEventListener('change', carregarHorarios);
 document.getElementById('dataAgendamento')?.addEventListener('change', carregarHorarios);
 document.querySelectorAll('.servico-check').forEach(el => el.addEventListener('change', carregarHorarios));
+document.getElementById('encaixeFlag')?.addEventListener('change', function() {
+    document.getElementById('horaFimEncaixeWrap').style.display = this.checked ? 'block' : 'none';
+    carregarHorarios();
+});
+document.getElementById('permitirPassado')?.addEventListener('change', carregarHorarios);
 
 // Quando a modal abrir, tenta carregar
 document.getElementById('modalNovoAgendamento')?.addEventListener('shown.bs.modal', carregarHorarios);

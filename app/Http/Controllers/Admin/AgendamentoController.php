@@ -136,8 +136,10 @@ class AgendamentoController extends Controller
             'servico_ids.*' => 'exists:servicos,id',
             'data' => 'required|date',
             'hora_inicio' => 'required',
+            'hora_fim_manual' => 'nullable',
             'forma_pagamento' => 'nullable|string|max:50',
             'usar_plano' => 'boolean',
+            'encaixe' => 'boolean',
             'cliente_plano_id' => 'nullable|exists:cliente_plano,id',
             'observacoes' => 'nullable|string',
         ]);
@@ -205,41 +207,56 @@ class AgendamentoController extends Controller
         $horaInicio = Carbon::parse($data['data'] . ' ' . $data['hora_inicio']);
         $horaFim = $horaInicio->copy()->addMinutes((int) $totalMinutos);
 
-        // Validação de conflito: evita sobreposição com agendamentos/bloqueios (mesma lógica de horariosDisponiveis)
-        $diaSemanaStore = Carbon::parse($data['data'])->dayOfWeek;
-        $agendamentosDia = Agendamento::where('barbeiro_id', $data['barbeiro_id'])
-            ->whereDate('data', $data['data'])
-            ->whereNotIn('status', ['cancelado', 'ausente'])
-            ->get(['hora_inicio', 'hora_fim']);
-        foreach ($agendamentosDia as $ag) {
-            $hi = $ag->hora_inicio instanceof Carbon ? $ag->hora_inicio->format('H:i') : substr((string) $ag->hora_inicio, 0, 5);
-            $hf = $ag->hora_fim instanceof Carbon ? $ag->hora_fim->format('H:i') : substr((string) $ag->hora_fim, 0, 5);
-            $agIni = Carbon::parse($data['data'] . ' ' . $hi);
-            $agFim = Carbon::parse($data['data'] . ' ' . $hf);
-            if ($horaInicio < $agFim && $horaFim > $agIni) {
-                return back()->withErrors(['hora_inicio' => 'Horário conflita com outro agendamento (' . $hi . '-' . $hf . '). Escolha outro.'])->withInput();
+        $encaixe = $request->boolean('encaixe');
+
+        // Encaixe: cliente entrou entre horários, permite sobrepor e sinalizar só o intervalo
+        if ($encaixe && $request->filled('hora_fim_manual')) {
+            $hfManual = Carbon::parse($data['data'] . ' ' . $request->input('hora_fim_manual'));
+            if ($hfManual <= $horaInicio) {
+                return back()->withErrors(['hora_fim_manual' => 'Fim do encaixe deve ser depois da hora de início.'])->withInput();
             }
+            $horaFim = $hfManual;
         }
-        $bloqueiosDia = BloqueioAgenda::where('barbeiro_id', $data['barbeiro_id'])
-            ->where(function ($q) use ($data) {
-                $q->whereDate('data', $data['data'])
-                  ->orWhere('recorrente', true);
-            })->get(['data', 'hora_inicio', 'hora_fim', 'recorrente', 'motivo']);
-        foreach ($bloqueiosDia as $bl) {
-            if ($bl->recorrente) {
-                $blDia = Carbon::parse($bl->data)->dayOfWeek;
-                if ($bl->data->format('Y-m-d') !== $data['data'] && $blDia !== $diaSemanaStore) {
-                    continue;
+
+        // Validação de conflito: evita sobreposição com agendamentos/bloqueios (mesma lógica de horariosDisponiveis).
+        // Encaixes não geram conflito e não bloqueiam outros horários.
+        if (!$encaixe) {
+            $diaSemanaStore = Carbon::parse($data['data'])->dayOfWeek;
+            $agendamentosDia = Agendamento::where('barbeiro_id', $data['barbeiro_id'])
+                ->whereDate('data', $data['data'])
+                ->where('encaixe', false)
+                ->whereNotIn('status', ['cancelado', 'ausente'])
+                ->get(['hora_inicio', 'hora_fim']);
+            foreach ($agendamentosDia as $ag) {
+                $hi = $ag->hora_inicio instanceof Carbon ? $ag->hora_inicio->format('H:i') : substr((string) $ag->hora_inicio, 0, 5);
+                $hf = $ag->hora_fim instanceof Carbon ? $ag->hora_fim->format('H:i') : substr((string) $ag->hora_fim, 0, 5);
+                $agIni = Carbon::parse($data['data'] . ' ' . $hi);
+                $agFim = Carbon::parse($data['data'] . ' ' . $hf);
+                if ($horaInicio < $agFim && $horaFim > $agIni) {
+                    return back()->withErrors(['hora_inicio' => 'Horário conflita com outro agendamento (' . $hi . '-' . $hf . '). Escolha outro.'])->withInput();
                 }
-            } else {
-                if ($bl->data->format('Y-m-d') !== $data['data']) continue;
             }
-            $hi = $bl->hora_inicio instanceof Carbon ? $bl->hora_inicio->format('H:i') : substr((string) $bl->hora_inicio, 0, 5);
-            $hf = $bl->hora_fim instanceof Carbon ? $bl->hora_fim->format('H:i') : substr((string) $bl->hora_fim, 0, 5);
-            $blIni = Carbon::parse($data['data'] . ' ' . $hi);
-            $blFim = Carbon::parse($data['data'] . ' ' . $hf);
-            if ($horaInicio < $blFim && $horaFim > $blIni) {
-                return back()->withErrors(['hora_inicio' => 'Horário bloqueado (' . $hi . '-' . $hf . ($bl->motivo ? ' - ' . $bl->motivo : '') . '). Escolha outro.'])->withInput();
+            $bloqueiosDia = BloqueioAgenda::where('barbeiro_id', $data['barbeiro_id'])
+                ->where(function ($q) use ($data) {
+                    $q->whereDate('data', $data['data'])
+                      ->orWhere('recorrente', true);
+                })->get(['data', 'hora_inicio', 'hora_fim', 'recorrente', 'motivo']);
+            foreach ($bloqueiosDia as $bl) {
+                if ($bl->recorrente) {
+                    $blDia = Carbon::parse($bl->data)->dayOfWeek;
+                    if ($bl->data->format('Y-m-d') !== $data['data'] && $blDia !== $diaSemanaStore) {
+                        continue;
+                    }
+                } else {
+                    if ($bl->data->format('Y-m-d') !== $data['data']) continue;
+                }
+                $hi = $bl->hora_inicio instanceof Carbon ? $bl->hora_inicio->format('H:i') : substr((string) $bl->hora_inicio, 0, 5);
+                $hf = $bl->hora_fim instanceof Carbon ? $bl->hora_fim->format('H:i') : substr((string) $bl->hora_fim, 0, 5);
+                $blIni = Carbon::parse($data['data'] . ' ' . $hi);
+                $blFim = Carbon::parse($data['data'] . ' ' . $hf);
+                if ($horaInicio < $blFim && $horaFim > $blIni) {
+                    return back()->withErrors(['hora_inicio' => 'Horário bloqueado (' . $hi . '-' . $hf . ($bl->motivo ? ' - ' . $bl->motivo : '') . '). Escolha outro.'])->withInput();
+                }
             }
         }
 
@@ -278,6 +295,7 @@ class AgendamentoController extends Controller
             'status' => 'pendente',
             'total' => $totalValor,
             'usar_plano' => $usarPlano,
+            'encaixe' => $encaixe,
             'observacoes' => $data['observacoes'] ?? null,
             'created_by' => Auth::guard('web')->id(),
             'origem' => 'admin',
@@ -360,6 +378,7 @@ class AgendamentoController extends Controller
             'status' => 'required|in:pendente,confirmado,realizado,cancelado,ausente',
             'forma_pagamento' => 'nullable|string|max:50',
             'usar_plano' => 'boolean',
+            'encaixe' => 'boolean',
             'cliente_plano_id' => 'nullable|exists:cliente_plano,id',
             'observacoes' => 'nullable|string',
         ]);
@@ -371,6 +390,14 @@ class AgendamentoController extends Controller
 
         $horaInicio = Carbon::parse($data['data'] . ' ' . $data['hora_inicio']);
         $horaFim = $horaInicio->copy()->addMinutes((int) $totalMinutos);
+
+        if ($request->boolean('encaixe') && $request->filled('hora_fim_manual')) {
+            $hfManual = Carbon::parse($data['data'] . ' ' . $request->input('hora_fim_manual'));
+            if ($hfManual <= $horaInicio) {
+                return back()->withErrors(['hora_fim_manual' => 'Fim do encaixe deve ser depois da hora de início.'])->withInput();
+            }
+            $horaFim = $hfManual;
+        }
 
         $oldStatus = $agendamento->status;
 
@@ -395,6 +422,7 @@ class AgendamentoController extends Controller
             'total' => $totalValor,
             'forma_pagamento' => $data['forma_pagamento'] ?? ($usarPlanoUpd ? 'Plano' : null),
             'usar_plano' => $usarPlanoUpd,
+            'encaixe' => $request->boolean('encaixe'),
             'cliente_plano_id' => $usarPlanoUpd ? $clientePlanoIdUpd : null,
             'observacoes' => $data['observacoes'] ?? null,
         ]);
@@ -523,14 +551,21 @@ class AgendamentoController extends Controller
             'data' => 'required|date',
             'servico_ids' => 'nullable|array',
             'servico_ids.*' => 'exists:servicos,id',
+            'encaixe' => 'boolean',
+            'permitir_passado' => 'boolean',
         ]);
 
         $data = $request->data;
         $barbeiroId = $request->barbeiro_id;
         $diaSemana = Carbon::parse($data)->dayOfWeek;
 
+        $encaixe = $request->boolean('encaixe');
+        $permitirPassado = $request->boolean('permitir_passado');
+
+        // Encaixes não contam como conflito nem bloqueiam horários normais
         $agendamentos = Agendamento::where('barbeiro_id', $barbeiroId)
             ->whereDate('data', $data)
+            ->where('encaixe', false)
             ->whereNotIn('status', ['cancelado', 'ausente'])
             ->get(['hora_inicio', 'hora_fim']);
 
@@ -657,8 +692,8 @@ class AgendamentoController extends Controller
             $fim = Carbon::parse($data . ' ' . $faixa['fim']);
 
             while ($inicio->copy()->addMinutes($slotDuracao) <= $fim || ($slotDuracao === $intervalo && $inicio < $fim)) {
-                // Se for hoje, ignora horários já passados (igual wizard/bot)
-                if ($data === $hoje && $inicio <= $agora) {
+                // Se for hoje, ignora horários já passados (igual wizard/bot), exceto em modo encaixe/permitir horário passado
+                if (!$encaixe && !$permitirPassado && $data === $hoje && $inicio <= $agora) {
                     $inicio->addMinutes($intervalo);
                     continue;
                 }
@@ -672,18 +707,20 @@ class AgendamentoController extends Controller
 
                 $disponivel = true;
 
-                foreach ($agendamentos as $ag) {
-                    $hi = $ag->hora_inicio instanceof Carbon ? $ag->hora_inicio->format('H:i') : (string) $ag->hora_inicio;
-                    $hf = $ag->hora_fim instanceof Carbon ? $ag->hora_fim->format('H:i') : (string) $ag->hora_fim;
-                    $agInicio = Carbon::parse($data . ' ' . substr($hi, 0, 5));
-                    $agFim = Carbon::parse($data . ' ' . substr($hf, 0, 5));
-                    if ($inicio < $agFim && $fimSlot > $agInicio) {
-                        $disponivel = false;
-                        break;
+                if (!$encaixe) {
+                    foreach ($agendamentos as $ag) {
+                        $hi = $ag->hora_inicio instanceof Carbon ? $ag->hora_inicio->format('H:i') : (string) $ag->hora_inicio;
+                        $hf = $ag->hora_fim instanceof Carbon ? $ag->hora_fim->format('H:i') : (string) $ag->hora_fim;
+                        $agInicio = Carbon::parse($data . ' ' . substr($hi, 0, 5));
+                        $agFim = Carbon::parse($data . ' ' . substr($hf, 0, 5));
+                        if ($inicio < $agFim && $fimSlot > $agInicio) {
+                            $disponivel = false;
+                            break;
+                        }
                     }
                 }
 
-                if ($disponivel) {
+                if ($disponivel && !$encaixe) {
                     foreach ($bloqueios as $bl) {
                         $hi = $bl->hora_inicio instanceof Carbon ? $bl->hora_inicio->format('H:i') : (string) $bl->hora_inicio;
                         $hf = $bl->hora_fim instanceof Carbon ? $bl->hora_fim->format('H:i') : (string) $bl->hora_fim;

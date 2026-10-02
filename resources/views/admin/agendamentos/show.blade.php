@@ -20,6 +20,7 @@
             <tr><th>Valor Total</th><td>R$ {{ number_format($agendamento->total ?? 0, 2, ',', '.') }}</td></tr>
             <tr><th>Status</th><td><span class="badge-status status-{{ $agendamento->status }}">{{ ucfirst($agendamento->status) }}</span></td></tr>
             <tr><th>Forma Pagamento</th><td>{{ $agendamento->forma_pagamento ?? '-' }}</td></tr>
+            <tr><th>Encaixe</th><td>{{ $agendamento->encaixe ? 'Sim — sinalizado só o intervalo do encaixe' : 'Não' }}</td></tr>
             <tr><th>Usar Plano</th><td>{{ $agendamento->usar_plano ? 'Sim' : 'Não' }}</td></tr>
             <tr><th>Observações</th><td>{{ $agendamento->observacoes ?? '-' }}</td></tr>
             <tr><th>Origem</th><td>{{ $agendamento->origem }}</td></tr>

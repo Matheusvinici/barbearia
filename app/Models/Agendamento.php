@@ -22,6 +22,7 @@ class Agendamento extends Model
         'forma_pagamento',
         'observacoes',
         'usar_plano',
+        'encaixe',
         'created_by',
         'origem',
         'barber_notified_at',
@@ -36,6 +37,7 @@ class Agendamento extends Model
             'data' => 'date',
             'hora_inicio' => 'datetime:H:i',
             'hora_fim' => 'datetime:H:i',
+            'encaixe' => 'boolean',
             'total' => 'decimal:2',
         ];
     }

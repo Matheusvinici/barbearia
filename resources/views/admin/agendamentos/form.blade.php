@@ -30,6 +30,10 @@
                     <input type="time" name="hora_inicio" class="form-control" value="{{ $agendamento->hora_inicio->format('H:i') }}" required>
                 </div>
                 <div class="col-md-4 mb-3">
+                    <label>Fim do encaixe <small class="text-muted">(só para encaixe)</small></label>
+                    <input type="time" name="hora_fim_manual" class="form-control" value="{{ $agendamento->hora_fim?->format('H:i') }}">
+                </div>
+                <div class="col-md-4 mb-3">
                     <label>Status</label>
                     <select name="status" class="form-control" required>
                         @foreach(['pendente', 'confirmado', 'realizado', 'cancelado', 'ausente'] as $s)
@@ -66,6 +70,13 @@
                         <input class="form-check-input" type="checkbox" name="usar_plano" value="1" id="usarPlano" {{ $agendamento->usar_plano ? 'checked' : '' }}>
                         <label class="form-check-label" for="usarPlano">Usar cota do plano</label>
                         <small class="d-block text-muted">Se marcado e com plano válido, desconta da cota.</small>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="form-check mt-4">
+                        <input class="form-check-input" type="checkbox" name="encaixe" value="1" id="encaixeEdit" {{ $agendamento->encaixe ? 'checked' : '' }}>
+                        <label class="form-check-label" for="encaixeEdit">Encaixe (entrou entre horários)</label>
+                        <small class="d-block text-muted">Cliente entrou por encaixe, sem horário marcado.</small>
                     </div>
                 </div>
                 @php $pi = $agendamento->clientePlano ?? $agendamento->plano_info; @endphp
