@@ -220,8 +220,8 @@ class AgendamentoController extends Controller
 
         // Validação de conflito: evita sobreposição com agendamentos/bloqueios (mesma lógica de horariosDisponiveis).
         // Encaixes não geram conflito e não bloqueiam outros horários.
+        $diaSemanaStore = Carbon::parse($data['data'])->dayOfWeek;
         if (!$encaixe) {
-            $diaSemanaStore = Carbon::parse($data['data'])->dayOfWeek;
             $agendamentosDia = Agendamento::where('barbeiro_id', $data['barbeiro_id'])
                 ->whereDate('data', $data['data'])
                 ->where('encaixe', false)
