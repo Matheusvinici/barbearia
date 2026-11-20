@@ -18,7 +18,7 @@ git push -u origin $current_branch
 
 if [[ $current_branch == "main" ]]; then
     echo "🚀 Enviado para o GitHub! Iniciando deploy no servidor..."
-    ssh -p 65002 u597256450@147.93.38.80 "cd domains/barbercontrolpnz.shop/public_html && mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && chmod -R 775 bootstrap/cache storage && git pull origin $current_branch && composer install --no-dev --optimize-autoloader && php artisan migrate --force && php artisan db:seed --class=PermissionSeeder --force && php artisan db:seed --class=CategoriaProdutoSeeder --force && php artisan config:cache"
+    ssh -p 65002 u597256450@147.93.38.80 "cd domains/barbercontrolpnz.shop/public_html && mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs && chmod -R 775 bootstrap/cache storage && git pull origin $current_branch && /opt/alt/php83/usr/bin/php /usr/local/bin/composer install --no-dev --optimize-autoloader && /opt/alt/php83/usr/bin/php artisan migrate --force && /opt/alt/php83/usr/bin/php artisan db:seed --class=PermissionSeeder --force && /opt/alt/php83/usr/bin/php artisan db:seed --class=CategoriaProdutoSeeder --force && /opt/alt/php83/usr/bin/php artisan storage:link && /opt/alt/php83/usr/bin/php artisan optimize:clear && /opt/alt/php83/usr/bin/php artisan config:cache"
 else
     echo "Você está em uma branch de desenvolvimento, não será feito o deploy no servidor."
 fi
