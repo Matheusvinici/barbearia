@@ -202,6 +202,9 @@
                     <td>
                         <div class="svc-actions" style="display:flex;gap:4px;">
                             <a href="{{ route('admin.servicos.edit', $s) }}" class="action-btn edit" title="Editar"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7M18.5 1.5a2.12 2.12 0 0 1 3 3L12 14l-4 1 1-4 9.5-9.5z"/></svg>Editar</a>
+                            @if($s->foto)
+                            <a href="{{ $s->foto_url }}" download target="_blank" class="action-btn edit" title="Baixar imagem"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>Baixar</a>
+                            @endif
                             @if(request()->route('barbearia')?->isMatriz())
                             <form action="{{ route('tenant.admin.servicos.replicar', [request()->route('barbearia')->slug, $s]) }}" method="POST" style="display:inline;">
                                 @csrf

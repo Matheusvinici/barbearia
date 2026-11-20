@@ -16,6 +16,9 @@
             @if($servico->foto)
             <div class="col-md-4 text-center mb-3">
                 <img src="{{ $servico->foto_url }}" alt="{{ $servico->nome }}" class="img-fluid rounded" style="max-height:250px;object-fit:cover">
+                <div class="mt-2">
+                    <a href="{{ $servico->foto_url }}" download target="_blank" class="btn btn-outline-primary btn-sm"><i class="fas fa-download"></i> Baixar imagem</a>
+                </div>
             </div>
             @endif
             <div class="col-md-8">

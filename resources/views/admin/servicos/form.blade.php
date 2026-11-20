@@ -163,6 +163,7 @@
                             @if($edit && $servico->foto)
                             <div style="display:flex;align-items:center;gap:12px;margin-top:10px;">
                                 <img src="{{ $servico->foto_url }}" alt="Foto" style="height:50px;border-radius:8px;object-fit:cover;">
+                                <a href="{{ $servico->foto_url }}" download target="_blank" class="action-btn edit" title="Baixar imagem" style="text-decoration:none;"><svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12m0 0l-4-4m4 4l4-4M4 19h16"/></svg>Baixar</a>
                                 <label style="display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--danger);cursor:pointer;">
                                     <input type="checkbox" name="remover_foto" value="1" style="accent-color:var(--danger);"> Remover foto
                                 </label>
