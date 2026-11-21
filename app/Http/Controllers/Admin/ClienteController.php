@@ -7,6 +7,7 @@ use App\Http\Controllers\TenantScoped;
 use App\Models\Cliente;
 use App\Models\Venda;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class ClienteController extends Controller
 {
@@ -14,9 +15,9 @@ class ClienteController extends Controller
 
     public function index()
     {
-        $query = Cliente::withCount('agendamentos');
+        $query = Cliente::with(['agendamentos', 'planos'])->withCount('agendamentos');
         $query = $this->applyTenantScope($query);
-        $clientes = $query->paginate(15);
+        $clientes = $query->orderBy('nome')->paginate(15);
         return view('admin.clientes.index', compact('clientes'));
     }
 
@@ -27,9 +28,13 @@ class ClienteController extends Controller
 
     public function store(Request $request)
     {
+        $telefoneRule = $this->isTenantContext()
+            ? Rule::unique('clientes', 'telefone')->where(fn ($q) => $q->where('barbearia_id', $this->tenantId()))
+            : 'unique:clientes,telefone';
+
         $data = $request->validate([
             'nome' => 'required|string|max:255',
-            'telefone' => 'required|string|max:20|unique:clientes,telefone',
+            'telefone' => ['required', 'string', 'max:20', $telefoneRule],
             'email' => 'nullable|email|max:255',
             'observacoes' => 'nullable|string',
         ]);
@@ -50,7 +55,14 @@ class ClienteController extends Controller
     private function resolveCliente(Request $request): Cliente
     {
         $cliente = $request->route('cliente');
-        return $cliente instanceof Cliente ? $cliente : Cliente::findOrFail($cliente);
+        $cliente = $cliente instanceof Cliente ? $cliente : Cliente::findOrFail($cliente);
+
+        // Isolamento estrito: em contexto tenant, bloqueia acesso a clientes de outras barbearias.
+        if ($this->isTenantContext() && !in_array($cliente->barbearia_id, $this->tenantIds(), true)) {
+            abort(404);
+        }
+
+        return $cliente;
     }
 
     public function show(Request $request)
@@ -81,9 +93,13 @@ class ClienteController extends Controller
     public function update(Request $request, $clienteId = null)
     {
         $cliente = $this->resolveCliente($request);
+        $telefoneRule = $this->isTenantContext()
+            ? Rule::unique('clientes', 'telefone')->where(fn ($q) => $q->where('barbearia_id', $this->tenantId()))->ignore($cliente->id)
+            : 'unique:clientes,telefone,' . $cliente->id;
+
         $data = $request->validate([
             'nome' => 'required|string|max:255',
-            'telefone' => 'required|string|max:20|unique:clientes,telefone,' . $cliente->id,
+            'telefone' => ['required', 'string', 'max:20', $telefoneRule],
             'email' => 'nullable|email|max:255',
             'observacoes' => 'nullable|string',
         ]);
@@ -107,8 +123,10 @@ class ClienteController extends Controller
     public function search(Request $request)
     {
         $term = $request->get('q');
-        $query = Cliente::where('nome', 'LIKE', "%{$term}%")
-            ->orWhere('telefone', 'LIKE', "%{$term}%");
+        $query = Cliente::where(function ($q) use ($term) {
+            $q->where('nome', 'LIKE', "%{$term}%")
+                ->orWhere('telefone', 'LIKE', "%{$term}%");
+        });
         $query = $this->applyTenantScope($query);
         $clientes = $query->limit(10)->get(['id', 'nome', 'telefone']);
         return response()->json($clientes);

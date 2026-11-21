@@ -117,7 +117,9 @@ class Barbearia extends Model
         if ($this->isMatriz()) {
             return $this->children()->pluck('id')->push($this->id)->all();
         }
-        return $this->parent?->tenantTreeIds() ?? [$this->id];
+        // Filial enxerga apenas os próprios dados (isolamento estrito).
+        // A matriz já enxerga a rede toda pelo branch acima.
+        return [$this->id];
     }
 
     public function getLogoUrlAttribute()

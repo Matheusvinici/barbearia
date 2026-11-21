@@ -38,6 +38,13 @@ class CaixaController extends Controller
         $barbearias = $this->getAvailableBarbearias();
         $ids = $barbearias->pluck('id')->toArray();
 
+        if ($this->isTenantContext()) {
+            if (!in_array($caixa->barbearia_id, $ids, true)) {
+                abort(404);
+            }
+            return;
+        }
+
         if (!in_array($caixa->barbearia_id, $ids) && $caixa->barbearia_id !== null) {
             abort(403);
         }
@@ -56,10 +63,7 @@ class CaixaController extends Controller
         if ($barbeariaFilter) {
             $query->where('barbearia_id', $barbeariaFilter);
         } elseif (!empty($ids)) {
-            $query->where(function ($q) use ($ids) {
-                $q->whereIn('barbearia_id', $ids)
-                  ->orWhereNull('barbearia_id');
-            });
+            $query->whereIn('barbearia_id', $ids);
         }
 
         $caixas = $query->paginate(20);

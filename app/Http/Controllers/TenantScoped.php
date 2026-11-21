@@ -31,9 +31,7 @@ trait TenantScoped
     {
         $ids = $this->tenantIds();
         if (!empty($ids)) {
-            return $query->where(function ($q) use ($ids, $column) {
-                $q->whereIn($column, $ids)->orWhereNull($column);
-            });
+            return $query->whereIn($column, $ids);
         }
         return $query;
     }

@@ -2,6 +2,13 @@
 
 @section('title', 'Clientes')
 
+@php
+$tenantSlug = request()->route('barbearia')?->slug;
+$createUrl = $tenantSlug
+    ? route('tenant.admin.clientes.create', $tenantSlug)
+    : route('admin.clientes.create');
+@endphp
+
 @push('styles')
 <style>
 .action-btn {
@@ -57,7 +64,7 @@
     <input type="text" placeholder="Buscar cliente…" id="searchInput">
     <span class="kbd">⌘K</span>
 </div>
-<a href="{{ route('admin.clientes.create') }}" class="btn-primary-c">
+<a href="{{ $createUrl }}" class="btn-primary-c">
     <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M14 7.5c0 2.07-1.68 3.75-3.75 3.75S6.5 9.57 6.5 7.5 8.18 3.75 10.25 3.75 14 5.43 14 7.5z"/><path d="M2.5 20c0-3.5 3-5.5 6-5.5M19 8v6M22 11h-6"/></svg>
     Novo Cliente
 </a>
@@ -204,10 +211,18 @@
                             </td>
                             <td data-label="Ações">
                                 <div class="actions-cell" style="display:flex;gap:4px;justify-content:flex-end;">
-                                    <a href="{{ route('admin.clientes.edit', $c) }}" class="action-btn edit" title="Editar">
+                                    @php
+                                        $editUrl = $tenantSlug
+                                            ? route('tenant.admin.clientes.edit', [$tenantSlug, $c])
+                                            : route('admin.clientes.edit', $c);
+                                        $destroyUrl = $tenantSlug
+                                            ? route('tenant.admin.clientes.destroy', [$tenantSlug, $c])
+                                            : route('admin.clientes.destroy', $c);
+                                    @endphp
+                                    <a href="{{ $editUrl }}" class="action-btn edit" title="Editar">
                                         <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4v16h16v-7M18.5 1.5a2.12 2.12 0 0 1 3 3L12 14l-4 1 1-4 9.5-9.5z"/></svg>Editar
                                     </a>
-                                    <button type="button" class="action-btn danger" title="Excluir" onclick="confirmarExclusao('{{ route('admin.clientes.destroy', $c) }}')">
+                                    <button type="button" class="action-btn danger" title="Excluir" onclick="confirmarExclusao('{{ $destroyUrl }}')">
                                         <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13c0 1 .5 2 2 2h8c1.5 0 2-1 2-2l1-13M9 7V4c0-1 .5-1 1-1h4c.5 0 1 0 1 1v3"/></svg>Excluir
                                     </button>
                                 </div>
@@ -236,7 +251,7 @@
                     </div>
                     <h4>Nenhum cliente encontrado</h4>
                     <p>Comece cadastrando seu primeiro cliente.</p>
-                    <a href="{{ route('admin.clientes.create') }}" class="btn-primary-c">
+                    <a href="{{ $createUrl }}" class="btn-primary-c">
                         <svg class="icon icon-sm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 12h12M12 6v12"/></svg>
                         Novo Cliente
                     </a>

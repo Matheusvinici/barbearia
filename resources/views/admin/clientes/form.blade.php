@@ -20,10 +20,24 @@
 
 @section('title', ($edit ?? false) ? 'Editar Cliente' : 'Novo Cliente')
 
+@php
+$tenantSlug = request()->route('barbearia')?->slug;
+$clientesIndexUrl = $tenantSlug
+    ? route('tenant.admin.clientes.index', $tenantSlug)
+    : route('admin.clientes.index');
+$formAction = ($edit ?? false)
+    ? ($tenantSlug
+        ? route('tenant.admin.clientes.update', [$tenantSlug, $cliente])
+        : route('admin.clientes.update', $cliente))
+    : ($tenantSlug
+        ? route('tenant.admin.clientes.store', $tenantSlug)
+        : route('admin.clientes.store'));
+@endphp
+
 @section('breadcrumb')
     <svg class="icon icon-sm"><use href="#i-home"/></svg>
     <span class="sep">/</span>
-    <a href="{{ route('admin.clientes.index') }}" style="color:inherit;text-decoration:none;">Clientes</a>
+    <a href="{{ $clientesIndexUrl }}" style="color:inherit;text-decoration:none;">Clientes</a>
     <span class="sep">/</span>
     <span class="current">{{ ($edit ?? false) ? 'Editar' : 'Novo' }}</span>
 @endsection
@@ -39,7 +53,7 @@
     <button class="mobile-menu-btn" id="mobileMenuBtn"><svg class="icon"><use href="#i-menu"/></svg></button>
     <button class="icon-btn" id="themeToggle" title="Alternar tema"><svg class="icon"><use href="#i-sun"/></svg></button>
     <button class="icon-btn"><svg class="icon"><use href="#i-bell"/></svg><span class="dot-notif"></span></button>
-    <a href="{{ route('admin.clientes.index') }}" class="btn-ghost-c"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Voltar</a>
+    <a href="{{ $clientesIndexUrl }}" class="btn-ghost-c"><svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>Voltar</a>
     <button type="submit" form="cliente-form" class="btn-primary-c"><svg class="icon icon-sm"><use href="#i-check"/></svg>{{ ($edit ?? false) ? 'Atualizar' : 'Salvar' }}</button>
 @endsection
 
@@ -57,7 +71,7 @@
                 </div>
             </div>
             <div class="panel-body">
-                <form id="cliente-form" action="{{ ($edit ?? false) ? route('admin.clientes.update', $cliente) : route('admin.clientes.store') }}" method="POST">
+                <form id="cliente-form" action="{{ $formAction }}" method="POST">
                     @csrf
                     @if($edit ?? false) @method('PUT') @endif
                     <div class="form-grid">
@@ -129,7 +143,7 @@
                 <svg class="icon icon-sm"><use href="#i-check"/></svg>
                 {{ ($edit ?? false) ? 'Atualizar Cliente' : 'Salvar Cliente' }}
             </button>
-            <a href="{{ route('admin.clientes.index') }}" class="btn-ghost-c">
+            <a href="{{ $clientesIndexUrl }}" class="btn-ghost-c">
                 <svg class="icon icon-sm"><use href="#i-arrow-left"/></svg>
                 Cancelar
             </a>

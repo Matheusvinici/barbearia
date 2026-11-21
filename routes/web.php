@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\AvaliacaoController;
 use App\Http\Controllers\Admin\SecretariaController;
 use App\Http\Controllers\Admin\ProdutoController;
 use App\Http\Controllers\Admin\VendaController;
+use App\Http\Controllers\Admin\MonitoramentoController;
 use App\Http\Controllers\Barbeiro\AuthController as BarberAuthController;
 use App\Http\Controllers\Barbeiro\DashboardController as BarberDashboardController;
 use App\Http\Controllers\Barbeiro\AgendamentoController as BarberAgendamentoController;
@@ -104,6 +105,9 @@ Route::middleware(['auth:web,barbeiro'])->group(function () {
             'destroy' => 'clientes.destroy',
         ]);
         Route::get('/clientes/search/ajax', [ClienteController::class, 'search'])->name('clientes.search');
+
+        Route::get('/monitoramento', [MonitoramentoController::class, 'index'])->name('monitoramento.index');
+        Route::get('/monitoramento/export', [MonitoramentoController::class, 'export'])->name('monitoramento.export');
 
         Route::get('/agendamentos', [AgendamentoController::class, 'index'])->name('agendamentos.index');
         Route::post('/agendamentos', [AgendamentoController::class, 'store'])->name('agendamentos.store');
@@ -297,6 +301,9 @@ Route::prefix('{barbearia:slug}')->middleware(['tenant'])->name('tenant.')->grou
             'destroy' => 'clientes.destroy',
         ]);
         Route::get('/clientes/search/ajax', [ClienteController::class, 'search'])->name('clientes.search');
+
+        Route::get('/monitoramento', [MonitoramentoController::class, 'index'])->name('monitoramento.index');
+        Route::get('/monitoramento/export', [MonitoramentoController::class, 'export'])->name('monitoramento.export');
 
         Route::get('/agendamentos', [AgendamentoController::class, 'index'])->name('agendamentos.index');
         Route::post('/agendamentos', [AgendamentoController::class, 'store'])->name('agendamentos.store');

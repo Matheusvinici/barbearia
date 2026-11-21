@@ -47,9 +47,13 @@
     @endif
 
     @if($user->can('cliente.view'))
-    <a href="{{ navRoute('clientes.index') }}" class="nav-item {{ isActive(['admin/clientes']) && !isActive(['admin/clientes-planos']) ? 'active' : '' }}">
+    <a href="{{ navRoute('clientes.index') }}" class="nav-item {{ isActive(['admin/clientes']) && !isActive(['admin/clientes-planos']) && !isActive(['admin/monitoramento']) ? 'active' : '' }}">
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>Clientes</span>
+    </a>
+    <a href="{{ navRoute('monitoramento.index') }}" class="nav-item {{ isActive(['admin/monitoramento']) ? 'active' : '' }}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/></svg>
+        <span>Monitoramento</span>
     </a>
     @endif
 
