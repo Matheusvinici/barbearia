@@ -27,6 +27,10 @@ class AgendamentoController extends Controller
     public function index()
     {
         $data = request('data', Carbon::today()->format('Y-m-d'));
+        $visao = request('visao', 'semana');
+        if (!in_array($visao, ['dia', 'semana', 'mes'])) {
+            $visao = 'semana';
+        }
         $barbeiroId = request('barbeiro_id');
         $barbeariaId = request('barbearia_id');
 
@@ -35,23 +39,77 @@ class AgendamentoController extends Controller
             $barbeiroId = $userBarbeiro->id;
         }
 
+        try {
+            $ref = Carbon::parse($data)->startOfDay();
+        } catch (\Exception $e) {
+            $ref = Carbon::today();
+            $data = $ref->format('Y-m-d');
+        }
+
+        // Define período conforme visão
+        if ($visao === 'dia') {
+            $periodoInicio = $ref->copy()->startOfDay();
+            $periodoFim = $ref->copy()->endOfDay();
+            // segunda a domingo contendo a referência (para navegação / compat)
+            $semanaInicio = $ref->copy()->startOfWeek(Carbon::MONDAY);
+            $semanaFim = $ref->copy()->endOfWeek(Carbon::SUNDAY);
+        } elseif ($visao === 'mes') {
+            $mesInicio = $ref->copy()->startOfMonth();
+            $mesFim = $ref->copy()->endOfMonth();
+            // Grade seg→dom cobrindo o mês inteiro (inclui dias adjacentes)
+            $periodoInicio = $mesInicio->copy()->startOfWeek(Carbon::MONDAY);
+            $periodoFim = $mesFim->copy()->endOfWeek(Carbon::SUNDAY);
+            $semanaInicio = $ref->copy()->startOfWeek(Carbon::MONDAY);
+            $semanaFim = $ref->copy()->endOfWeek(Carbon::SUNDAY);
+        } else {
+            $visao = 'semana';
+            $semanaInicio = $ref->copy()->startOfWeek(Carbon::MONDAY);
+            $semanaFim = $ref->copy()->endOfWeek(Carbon::SUNDAY);
+            $periodoInicio = $semanaInicio->copy()->startOfDay();
+            $periodoFim = $semanaFim->copy()->endOfDay();
+        }
+
+        $applyScope = function ($query) use ($barbeariaId, $barbeiroId) {
+            if ($this->isTenantContext()) {
+                $query = $this->applyTenantScope($query);
+            } elseif ($barbeariaId) {
+                $query->where('barbearia_id', $barbeariaId);
+            }
+            if ($barbeiroId) {
+                $query->where('barbeiro_id', $barbeiroId);
+            }
+            return $query;
+        };
+
         $query = Agendamento::with(['barbeiro', 'cliente', 'cliente.planos.plano.quotas', 'cliente.planos.usos', 'servicos', 'clientePlano.plano'])
-            ->whereDate('data', $data);
-
-        if ($this->isTenantContext()) {
-            $query = $this->applyTenantScope($query);
-        } elseif ($barbeariaId) {
-            $query->where('barbearia_id', $barbeariaId);
-        }
-
-        if ($barbeiroId) {
-            $query->where('barbeiro_id', $barbeiroId);
-        }
+            ->whereBetween('data', [$periodoInicio->format('Y-m-d'), $periodoFim->format('Y-m-d')]);
+        $query = $applyScope($query);
 
         $agendamentos = $query
+            ->orderBy('data')
             ->orderByRaw("CASE status WHEN 'pendente' THEN 0 WHEN 'confirmado' THEN 1 WHEN 'cancelado' THEN 2 WHEN 'ausente' THEN 2 ELSE 3 END")
             ->orderBy('hora_inicio')
             ->get();
+
+        // Agendamentos do dia de referência (para stats + visão dia)
+        $agendamentosDia = $agendamentos->filter(fn ($a) => Carbon::parse($a->data)->format('Y-m-d') === $ref->format('Y-m-d'))->values();
+
+        // Agrupamento por data Y-m-d (para semana/mês)
+        $agendamentosPorData = $agendamentos->groupBy(fn ($a) => Carbon::parse($a->data)->format('Y-m-d'));
+
+        // Dias da semana seg→dom contendo a referência
+        $semanaDias = collect(range(0, 6))->map(fn ($i) => $semanaInicio->copy()->addDays($i))->values();
+
+        // Grade do mês: semanas (cada uma com 7 dias seg→dom)
+        $mesGrade = collect();
+        if ($visao === 'mes') {
+            $cursor = $periodoInicio->copy();
+            while ($cursor->lte($periodoFim)) {
+                $semana = collect(range(0, 6))->map(fn ($i) => $cursor->copy()->addDays($i))->values();
+                $mesGrade->push($semana);
+                $cursor->addDays(7);
+            }
+        }
 
         $barbeirosQuery = Barbeiro::where('ativo', true);
         $barbeariasQuery = Barbearia::orderBy('nome');
@@ -118,7 +176,9 @@ class AgendamentoController extends Controller
         }
 
         return view('admin.agendamentos.index', compact(
-            'agendamentos', 'barbeiros', 'servicos', 'barbearias', 'data', 'barbeiroId', 'barbeariaId', 'agPlanosMap'
+            'agendamentos', 'agendamentosDia', 'agendamentosPorData', 'semanaDias', 'semanaInicio', 'semanaFim',
+            'mesGrade', 'periodoInicio', 'periodoFim', 'ref', 'visao',
+            'barbeiros', 'servicos', 'barbearias', 'data', 'barbeiroId', 'barbeariaId', 'agPlanosMap'
         ));
     }
 
